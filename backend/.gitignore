@@ -1,0 +1,74 @@
+# ========================
+# Python и Django
+# ========================
+# Виртуальное окружение
+/venv/
+/.venv/
+/env/
+/.env/
+
+# Кэш Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# БД и миграции (если не хотите коммитить тестовую БД)
+*.sqlite3
+*.db
+/db.sqlite3
+
+# Статика (если собирается автоматически)
+/staticfiles/
+/mediafiles/
+
+# Environments
+.env
+.env.local
+.env.*.local
+
+# ========================
+# IDE и редакторы
+# ========================
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# MacOS
+.DS_Store
+
+# ========================
+# Frontend (если добавится позже)
+# ========================
+/node_modules/
+/dist/
+/.next/
+/out/
+/.cache/
+/.svelte-kit/
+/build/
+*.log
+
+# ========================
+# Прочее
+# ========================
+# Логи
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Временные файлы
+*.tmp
+*.temp
+
+# Файлы документации
+/docs/_build/
