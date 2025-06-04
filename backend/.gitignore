@@ -16,6 +16,7 @@ __pycache__/
 *.sqlite3
 *.db
 /db.sqlite3
+*migrations
 
 # Статика (если собирается автоматически)
 /staticfiles/
@@ -72,3 +73,6 @@ yarn-error.log*
 
 # Файлы документации
 /docs/_build/
+
+# Файлы линтера
+.ruff_cache
