@@ -1,6 +1,7 @@
 import pytest
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
+from rest_framework.test import APIClient
 
 from apps.users.models import Location
 
@@ -62,3 +63,46 @@ class TestUserModel:
         )
         assert user.location.country == 'Cyprus'
         assert user.location.city == 'Nicosia'
+
+    def test_obtain_jwt_token(self):
+        client = APIClient()
+        User.objects.create_user(
+            username='testuser_token',
+            email='token@example.com',
+            password='password123',
+            phone_number='+12236532323'
+        )
+        response = client.post('/api/auth/token/', {
+            'username': 'testuser_token',
+            'password': 'password123',
+        }, format='json')
+
+        assert response.status_code == 200
+        assert 'access' in response.data
+        assert 'refresh' in response.data
+
+    def test_refresh_jwt_token(self):
+        client = APIClient()
+        User.objects.create_user(
+            username='testuser_token',
+            email='token@example.com',
+            password='password123',
+            phone_number='+12236532323'
+        )
+        response = client.post('/api/auth/token/', {
+            'username': 'testuser_token',
+            'password': 'password123',
+        }, format='json')
+
+        assert response.status_code == 200
+
+        refresh_token = response.data['refresh']
+
+        refresh_response = client.post('/api/auth/token/refresh/', {
+        'refresh': refresh_token,
+        }, format='json')
+
+        assert refresh_response.status_code == 200
+        assert 'access' in refresh_response.data
+        assert isinstance(refresh_response.data['access'], str)
+        assert refresh_response.data['access']
