@@ -1,9 +1,8 @@
-from django.urls import path
+from django.urls import include, path
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
 )
-
 
 app_name = 'api'
 
@@ -16,4 +15,5 @@ urlpatterns = [
         view=TokenRefreshView.as_view(),
         name='token_refresh',
     ),
+    path('', include('apps.players.urls')),
 ]
