@@ -6,8 +6,8 @@ from phonenumber_field.modelfields import PhoneNumberField
 class Location(models.Model):
     """Модель локации."""
 
-    country = models.CharField(max_length=100)
-    city = models.CharField(max_length=100)
+    country = models.CharField(max_length=100, verbose_name='Страна')
+    city = models.CharField(max_length=100, verbose_name='Город')
 
 
 class User(AbstractUser):
@@ -41,6 +41,7 @@ class User(AbstractUser):
         Location,
         on_delete=models.SET_NULL,
         null=True,
+        verbose_name='Локация',
     )
     rating = models.PositiveIntegerField(
         default=1000,
