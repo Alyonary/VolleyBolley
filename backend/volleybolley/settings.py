@@ -5,7 +5,6 @@ from pathlib import Path
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -34,10 +33,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
+    'djoser',
     'apps.users.apps.UsersConfig',
     'apps.api.apps.ApiConfig',
     'phonenumber_field',
 ]
+
+CSRF_USE_SESSIONS = False
+CSRF_COOKIE_HTTPONLY = False
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -48,17 +52,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
-
-REST_FRAMEWORK = {
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-    )
-}
-
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-}
 
 ROOT_URLCONF = 'volleybolley.urls'
 
@@ -132,9 +125,20 @@ USE_I18N = True
 USE_TZ = True
 
 REST_FRAMEWORK = {
-
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'TEST_REQUEST_DEFAULT_FORMAT': 'json',
+    'TEST_REQUEST_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
 }
 
+SIMPLE_JWT = {
+    'AUTH_HEADER_TYPES': ('JWT',),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+}
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -150,3 +154,57 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'users.User'
+
+DJOSER = {
+    'PASSWORD_RESET_CONFIRM_URL': 'auth/password/reset/confirm/{uid}/{token}',
+    'PERMISSIONS': {
+        'user_list': ['rest_framework.permissions.IsAuthenticated'],
+        'user': ['rest_framework.permissions.IsAuthenticated'],
+    },
+    'HIDE_USERS': False,
+    'LOGOUT_SERIALIZER': 'djoser.serializers.TokenSerializer',
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'django.request': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        'django.security': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        'rest_framework': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        'rest_framework.authentication': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'rest_framework.permissions': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+    },
+}
