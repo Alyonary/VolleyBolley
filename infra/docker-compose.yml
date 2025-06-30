@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:17.5-alpine
+    container_name: postgres_db
+    restart: always
+    env_file:
+      - ./.env
+    volumes:
+      - pg_data_volleybolley:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  backend:
+    container_name: volleybolley_backend
+    build: ../backend
+    env_file: ./.env
+    volumes:
+      - static:/app/backend_static
+      - media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+  nginx:
+    container_name: volleybolley-proxy
+    build: ../infra
+    env_file: ./.env
+    ports:
+      - "80:80"
+    volumes:
+      - static:/staticfiles
+      - media:/media
+    depends_on:
+      - backend
+
+volumes:
+  pg_data_volleybolley:
+  static:
+  media:
