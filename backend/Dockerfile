@@ -10,6 +10,11 @@ RUN poetry config virtualenvs.create false && \
     poetry install --only main --no-interaction --no-ansi
 
 COPY . .
+# Явное копирование и проверка entrypoint
+COPY entrypoint.sh /app/entrypoint.sh
+RUN sed -i 's/\r$//' /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh && \
+    ls -la /app/entrypoint.sh
 
 RUN chmod +x /app/entrypoint.sh
 
