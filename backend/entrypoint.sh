@@ -21,6 +21,10 @@ else
     echo "Warning: Volume directory $VOLUME_STATIC_DIR not found!"
 fi
 
+# Создаем миграции
+echo "Creating migrations..."
+python manage.py makemigrations --noinput
+
 # Выполняем миграции
 echo "Applying database migrations..."
 python manage.py migrate --noinput
