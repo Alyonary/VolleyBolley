@@ -11,7 +11,7 @@ class TestUserRegistration:
         url = '/api/auth/users/'
         response = api_client.post(url, user_data)
         assert response.status_code == status.HTTP_201_CREATED
-        assert User.objects.filter(username=user_data['username']).exists()
+        assert User.objects.filter(email=user_data['email']).exists()
 
     def test_get_current_user_unauthorized(self, api_client):
         url = '/api/auth/users/me/'
@@ -23,7 +23,7 @@ class TestUserRegistration:
         api_client.force_authenticate(user=active_user)
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['username'] == active_user.username
+        assert response.data['email'] == active_user.email
 
     def test_get_user_list(self, api_client, active_user, bulk_create_users):
         url = '/api/auth/users/'
@@ -32,7 +32,7 @@ class TestUserRegistration:
             user.refresh_from_db()
         response = api_client.get(url)
         assert len(response.data) == len(bulk_create_users) + 1
-    
+
     def test_set_password(self, api_client, active_user):
         url = '/api/auth/users/set_password/'
         data = {

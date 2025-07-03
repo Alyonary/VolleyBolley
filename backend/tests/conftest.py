@@ -15,43 +15,49 @@ def api_client():
 @pytest.fixture
 def user_data():
     return {
-        'username': 'testuser',
-        'email': 'test@example.com',
+        'first_name': 'NameTestUser',
+        'last_name': 'LastnameTestUser',
+        'gender': 'M',
+        'birth_date': '1991-01-01',
+        'email': 'testemail@example.com',
         'password': 'TestPass123',
-        'phone_number': '+12345678900',
-        'game_skill_level': User.GameSkillLevel.BEGINNER,
     }
+
 
 @pytest.fixture
 def bulk_users_data():
     return [
         {
-            'username': 'testuser1',
-            'email': 'test1@example.com',
-            'password': 'TestPass1',
-            'phone_number': '+12345678901',
-            'game_skill_level': User.GameSkillLevel.BEGINNER,
+            'first_name': 'NameTestUser',
+            'last_name': 'LastnameTestUser',
+            'gender': 'M',
+            'birth_date': '1991-01-01',
+            'email': 'testfirst@example.com',
+            'password': 'TestPass123',
         },
         {
-            'username': 'testuser2',
-            'email': 'test2@example.com',
-            'password': 'TestPass2',
-            'phone_number': '+12345678902',
-            'game_skill_level': User.GameSkillLevel.AMATEUR,
+            'first_name': 'NameTestUserSecond',
+            'last_name': 'LastnameTestUserSecond',
+            'gender': 'F',
+            'birth_date': '2000-02-02',
+            'email': 'testsecond@example.com',
+            'password': 'TestPass1234',
         },
         {
-            'username': 'testuser3',
-            'email': 'test3@example.com',
-            'password': 'TestPass3',
-            'phone_number': '+12345678903',
-            'game_skill_level': User.GameSkillLevel.ADVANCED,
+            'first_name': 'NameTestUserThird',
+            'last_name': 'LastnameTestUserThird',
+            'gender': 'O',
+            'birth_date': '1993-03-03',
+            'email': 'testthird@example.com',
+            'password': 'TestPass12345',
         },
         {
-            'username': 'testuser4',
-            'email': 'test4@example.com',
-            'password': 'TestPass4',
-            'phone_number': '+12345678904',
-            'game_skill_level': User.GameSkillLevel.PRO, 
+            'first_name': 'NameTestUserFourth',
+            'last_name': 'LastnameTestUserFourth',
+            'gender': 'M',
+            'birth_date': '1981-10-11',
+            'email': 'testfourth@example.com',
+            'password': 'TestPass1235',
         },
     ]
 
@@ -60,11 +66,9 @@ def bulk_users_data():
 def user_with_location():
     location = Location.objects.create(country='Russia', city='Moscow')
     user = User.objects.create_user(
-        username='locuser',
-        email='loc@example.com',
+        email='locationmain@example.com',
         password='TestPass123',
-        phone_number='+79999999999',
-        location=location
+        location=location,
     )
     return user
 
@@ -80,6 +84,7 @@ def active_user(user_data):
     user.is_active = True
     user.save()
     return user
+
 
 @pytest.fixture
 def bulk_create_users(bulk_users_data):
