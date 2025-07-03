@@ -149,6 +149,9 @@ DJOSER = {
     },
     'HIDE_USERS': False,
     'LOGOUT_SERIALIZER': 'djoser.serializers.TokenSerializer',
+    'SERIALIZERS': {
+        'user_create': 'apps.users.serializers.UserSerializer',
+    }
 }
 
 LOGGING = {
