@@ -1,0 +1,51 @@
+services:
+  db:
+    image: postgres:17.5-alpine
+    container_name: postgres_db
+    restart: unless-stopped
+    env_file:
+      - ./.env
+    volumes:
+      - pg_data_volleybolley:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  backend:
+    container_name: volleybolley-backend
+    image: dorofrik/volleybolley-backend
+    env_file: ./.env
+    volumes:
+      - static:/app/backend_static
+      - media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: [
+        "CMD-SHELL",
+        "python -c \"import requests; exit(0 if requests.get('http://localhost:8000/admin/').status_code == 200 else 1)\""
+      ]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+  nginx:
+    container_name: volleybolley-proxy
+    image: dorofrik/volleybolley-proxy
+    env_file: ./.env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - static:/staticfiles
+      - media:/media
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  pg_data_volleybolley:
+  static:
+  media:
