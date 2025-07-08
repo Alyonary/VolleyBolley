@@ -2,6 +2,49 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 
+from apps.users.enums import UserFieldLength
+
+
+class UserGender(models.Model):
+    """Модель гендера."""
+
+    class GenderChoices(models.TextChoices):
+        MIX = 'mix', 'MIX'
+        MEN = 'men', 'Men'
+        WOMEN = 'women', 'Women'
+
+    name = models.CharField(
+        max_length=UserFieldLength.NAME.value,
+        choices=GenderChoices.choices,
+        unique=True,
+    )
+
+
+class UserGameLevel(models.Model):
+    """Модель игрового уровня."""
+
+    class GameLevelChoices(models.TextChoices):
+        LIGHT = 'light', 'Light'
+        MEDIUM = 'medium', 'Medium'
+        HARD = 'hard', 'Hard'
+        PRO = 'pro', 'Pro'
+
+    name = models.CharField(
+        max_length=UserFieldLength.NAME.value,
+        choices=GameLevelChoices.choices,
+        unique=True,
+    )
+
+
+class UserPaymentType(models.Model):
+    """Модель типов оплаты пользователя."""
+
+    name = models.CharField(
+        max_length=UserFieldLength.PAYMENT_TYPE.value,
+        unique=True,
+        default='default',
+    )
+
 
 class Location(models.Model):
     """Модель локации."""
