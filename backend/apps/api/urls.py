@@ -9,6 +9,7 @@ app_name = 'api'
 
 urlpatterns = [
     path('', include(api_v1.urls)),
+    path('', include('apps.courts.urls')),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     re_path(r'^auth/', include('djoser.urls')),
     re_path(r'^auth/', include('djoser.urls.jwt')),
