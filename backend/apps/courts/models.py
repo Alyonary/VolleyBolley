@@ -1,9 +1,13 @@
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .constants import (MAX_LATITUDE, MIN_LATITUDE,
-                        MAX_LONGTITUDE, MIN_LONGTITUDE)
+from .constants import (
+    MAX_LATITUDE,
+    MAX_LONGTITUDE,
+    MIN_LATITUDE,
+    MIN_LONGTITUDE,
+)
 
 
 class Location(models.Model):

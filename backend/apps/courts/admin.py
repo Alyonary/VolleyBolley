@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Location, Contact, Tag, Court
+from .models import Contact, Court, Location, Tag
 
 
 @admin.register(Location)

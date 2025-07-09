@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Court, Tag, Contact, Location
+from .models import Contact, Court, Location, Tag
 
 
 class TagSerializer(serializers.ModelSerializer):
