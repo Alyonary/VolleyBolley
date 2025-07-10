@@ -28,7 +28,6 @@ INSTALLED_APPS = [
     'apps.users.apps.UsersConfig',
     'apps.api.apps.ApiConfig',
     'apps.event.apps.EventConfig',
-    'apps.location.apps.LocationConfig',
 
 ]
 MIDDLEWARE = [

@@ -3,9 +3,10 @@ from rest_framework.routers import DefaultRouter
 
 from .views import LogoutView
 
+app_name = 'api'
+
 api_v1 = DefaultRouter()
 
-app_name = 'api'
 
 urlpatterns = [
     path('', include(api_v1.urls)),

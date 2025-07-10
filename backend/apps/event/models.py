@@ -13,6 +13,7 @@ class Event(m.Model):
     message = m.TextField(
         validators=[MaxLengthValidator(EventFieldLength.MESSAGE.value)]
     )
+
     date = m.DateField()
     start_time = m.CharField(
         max_length=EventFieldLength.EVENT_TIME.value,
@@ -20,8 +21,8 @@ class Event(m.Model):
     end_time = m.CharField(
         max_length=EventFieldLength.EVENT_TIME.value,
     )
-    area = m.ForeignKey(
-        'Area',  # todo: ждем таблицу площадок, меняем название под нее
+    court = m.ForeignKey(
+        'Court',
         on_delete=m.SET_NULL,
         null=True,
         blank=True,
@@ -54,7 +55,7 @@ class Event(m.Model):
         max_digits=8,
         decimal_places=2,
         default=0,
-        null=True,
+        null=False,
         blank=True,
     )
     payment_type = m.ForeignKey(
@@ -79,7 +80,7 @@ class Event(m.Model):
         ordering = ('date',)
         constraints = [
             m.UniqueConstraint(
-                fields=['title', 'date', 'area'],
+                fields=['title', 'date', 'court'],
                 name='unique_event_title_date_area',
             )
         ]
