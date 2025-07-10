@@ -1,10 +1,10 @@
-from rest_framework.generics import ListCreateAPIView
+from rest_framework.viewsets import ModelViewSet
 
 from .models import Court
 from .serializers import CourtSerializer
 
 
-class CourtsView(ListCreateAPIView):
+class CourtViewSet(ModelViewSet):
 
     queryset = Court.objects.all()
     serializer_class = CourtSerializer

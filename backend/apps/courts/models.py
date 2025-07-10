@@ -99,7 +99,8 @@ class Court(models.Model):
         Contact,
         blank=True
     )
-    photo_url = models.URLField(
+    photo_url = models.ImageField(
+        upload_to='courts/images/',
         null=True,
         blank=True
     )
@@ -112,6 +113,7 @@ class Court(models.Model):
         max_length=255,
         blank=True
     )
+    is_active = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = _('Корт')

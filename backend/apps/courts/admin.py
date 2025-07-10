@@ -25,7 +25,8 @@ class CourtAdmin(admin.ModelAdmin):
         'price_description',
         'description',
         'photo_url',
-        'working_hours'
+        'working_hours',
+        'is_active'
     )
     fields = (
         'location',
@@ -34,7 +35,8 @@ class CourtAdmin(admin.ModelAdmin):
         'contacts_list',
         'photo_url',
         'tag_list',
-        'working_hours'
+        'working_hours',
+        'is_active'
     )
     search_fields = ('name',)
     list_display_links = ('location',)
