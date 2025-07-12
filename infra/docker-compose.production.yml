@@ -4,7 +4,7 @@ services:
     container_name: postgres_db
     restart: unless-stopped
     env_file:
-      - ./.env
+      - .env
     volumes:
       - pg_data_volleybolley:/var/lib/postgresql/data
     healthcheck:
@@ -15,7 +15,7 @@ services:
   backend:
     container_name: volleybolley-backend
     image: dorofrik/volleybolley-backend
-    env_file: ./.env
+    env_file: .env
     volumes:
       - static:/app/backend_static
       - media:/app/media
@@ -34,7 +34,7 @@ services:
   nginx:
     container_name: volleybolley-proxy
     image: dorofrik/volleybolley-proxy
-    env_file: ./.env
+    env_file: .env
     ports:
       - "80:80"
       - "443:443"
