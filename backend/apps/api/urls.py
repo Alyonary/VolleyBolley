@@ -1,8 +1,9 @@
 from django.urls import include, path, re_path
 from rest_framework.routers import DefaultRouter
 
-from .views import LogoutView
 from apps.courts.views import CourtViewSet
+
+from .views import LogoutView
 
 api_v1 = DefaultRouter()
 api_v1.register('courts', CourtViewSet, basename='courts')
