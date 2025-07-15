@@ -3,13 +3,6 @@ from django.db import models
 from phonenumber_field.modelfields import PhoneNumberField
 
 
-class Location(models.Model):
-    """Модель локации."""
-
-    country = models.CharField(max_length=100)
-    city = models.CharField(max_length=100)
-
-
 class User(AbstractUser):
     """Базовая модель пользователя."""
 
@@ -37,11 +30,11 @@ class User(AbstractUser):
         blank=True,
         verbose_name='Аватар',
     )
-    location = models.ForeignKey(
-        Location,
-        on_delete=models.SET_NULL,
-        null=True,
-    )
+    # location = models.ForeignKey(
+    #     Location,
+    #     on_delete=models.SET_NULL,
+    #     null=True,
+    # )
     rating = models.PositiveIntegerField(
         default=1000,
         verbose_name='Рейтинг',
