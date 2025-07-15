@@ -1,11 +1,10 @@
 from django.contrib import admin
 
-from .models import Contact, Court, Location, Tag
+from .models import Court, Location
 
 
 @admin.register(Location)
 class LocationAdmin(admin.ModelAdmin):
-
     list_display = (
         'id',
         'longitude',
@@ -42,7 +41,3 @@ class CourtAdmin(admin.ModelAdmin):
     list_display_links = ('location',)
     empty_value_display = 'Не задано'
     filter_horizontal = ('tag_list', 'contacts_list')
-
-
-admin.site.register(Tag)
-admin.site.register(Contact)

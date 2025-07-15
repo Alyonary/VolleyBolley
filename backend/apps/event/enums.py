@@ -2,10 +2,10 @@ from enum import Enum
 
 
 class EventFieldLength(int, Enum):
+    """Константы для приложения Event."""
+
     TITLE = 150
-    STR_MAX_LEN = 50
-    WORKING_HOURS = 100
+    STR_MAX_LEN = 30
     MESSAGE = 300
-    PAYMENT_TYPE = 30
     PAYMENT_VALUE = 60
-    EVENT_TIME = 20
+    ADMIN_LIST_PER_PAGE = 25

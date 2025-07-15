@@ -1,86 +1,58 @@
 from django.conf import settings
-from django.core.validators import MaxLengthValidator
 from django.db import models as m
+from django.utils.translation import gettext_lazy as _
 
-from apps.event.enums import EventFieldLength
+from apps.core.mixins.created_updated import CreatedUpdatedMixin
+from apps.event.mixins import EventMixin
 
 
-class Event(m.Model):
-    """Модель события."""
-    title = m.CharField(
-        max_length=EventFieldLength.TITLE.value,
-    )
-    message = m.TextField(
-        validators=[MaxLengthValidator(EventFieldLength.MESSAGE.value)]
-    )
-
-    date = m.DateField()
-    start_time = m.CharField(
-        max_length=EventFieldLength.EVENT_TIME.value,
-    )
-    end_time = m.CharField(
-        max_length=EventFieldLength.EVENT_TIME.value,
-    )
-    court = m.ForeignKey(
-        'Court',
-        on_delete=m.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='events',
-    )
-    max_players = m.PositiveIntegerField()
-    gender = m.ForeignKey(
-        'users.UserGender',
-        on_delete=m.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='events',
-    )
-    player_levels = m.ManyToManyField(
-        'users.UserGameLevel',
-        related_name='events',
-    )
-    creator = m.ForeignKey(
+class Game(EventMixin, CreatedUpdatedMixin):
+    """Модель игры."""
+    host = m.ForeignKey(
         settings.AUTH_USER_MODEL,
+        verbose_name=_('Организатор'),
         on_delete=m.SET_NULL,
         null=True,
         blank=True,
-        related_name='created_events',
+        related_name='games_host',
     )
     players = m.ManyToManyField(
         settings.AUTH_USER_MODEL,
-        related_name='joined_events',
+        verbose_name=_('Игроки'),
+        related_name='games_players',
     )
-    price_per_person = m.DecimalField(
-        max_digits=8,
-        decimal_places=2,
-        default=0,
-        null=False,
-        blank=True,
-    )
-    payment_type = m.ForeignKey(
-        'users.UserPaymentType',
+
+    class Meta:
+        verbose_name = _('Игра')
+        verbose_name_plural = _('Игры')
+        default_related_name = 'games'
+
+
+class Tourney(EventMixin, CreatedUpdatedMixin):
+    """Модель турнира."""
+
+    host = m.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_('Организатор'),
         on_delete=m.SET_NULL,
         null=True,
         blank=True,
-        related_name='events',
+        related_name='tournaments_host',
     )
-    payment_value = m.CharField(
-        max_length=EventFieldLength.PAYMENT_VALUE.value,
+    players = m.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        verbose_name=_('Игроки'),
+        related_name='tournaments_players',
     )
-    is_private = m.BooleanField(default=False)
-    created_at = m.DateTimeField(auto_now_add=True)
-    updated_at = m.DateTimeField(auto_now=True)
-    is_active = m.BooleanField(default=True)
-
-    def __str__(self):
-        return self.title[:EventFieldLength.STR_MAX_LEN.value]
+    is_individual = m.BooleanField(
+        verbose_name=_('Индивидуальный формат'),
+        default=False,
+    )
+    maximum_teams = m.PositiveIntegerField(
+        verbose_name=_('Максимум команд'),
+    )
 
     class Meta:
-        ordering = ('date',)
-        constraints = [
-            m.UniqueConstraint(
-                fields=['title', 'date', 'court'],
-                name='unique_event_title_date_area',
-            )
-        ]
+        verbose_name = _('Турнир')
+        verbose_name_plural = _('Турниры')
+        default_related_name = 'tournaments'
