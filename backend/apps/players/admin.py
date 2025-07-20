@@ -1,0 +1,30 @@
+from django.contrib import admin
+
+from .models import Player
+
+
+@admin.register(Player)
+class PlayerAdmin(admin.ModelAdmin):
+
+    list_display = (
+        'id',
+        'user',
+        'get_first_name',
+        'get_last_name',
+        'gender',
+        'level',
+        'location',
+        'rating',
+    )
+    search_fields = ('user__first_name', 'user__last_name')
+    list_filter = ('gender', 'location', 'level')
+    empty_value_display = 'Не задано'
+    list_display_links = ('id', 'user')
+
+    def get_first_name(self, obj):
+        return obj.user.first_name
+    get_first_name.short_description = 'имя'
+    
+    def get_last_name(self, obj):
+        return obj.user.last_name
+    get_last_name.short_description = 'фамилия'

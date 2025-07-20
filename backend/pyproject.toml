@@ -30,3 +30,4 @@ package-mode = false
 pytest = "^8.4.0"
 pytest-django = "^4.11.1"
 ruff = "^0.12.1"
+psycopg2 = "^2.9.10"
