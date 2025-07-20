@@ -5,10 +5,11 @@ from apps.courts.views import CourtViewSet
 
 from .views import LogoutView
 
+app_name = 'api'
+
 api_v1 = DefaultRouter()
 api_v1.register('courts', CourtViewSet, basename='courts')
 
-app_name = 'api'
 
 urlpatterns = [
     path('', include(api_v1.urls)),

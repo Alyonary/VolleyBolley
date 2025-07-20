@@ -55,33 +55,6 @@ class Location(models.Model):
         return self.court_name
 
 
-class Contact(models.Model):
-    '''Модель контакта.'''
-    value = models.CharField(max_length=255)
-
-    class Meta:
-        verbose_name = _('Контакт')
-        verbose_name_plural = _('Контакты')
-        default_related_name = 'contacts'
-
-    def __str__(self):
-        return self.value
-
-
-class Tag(models.Model):
-    '''Модель тэга.'''
-    name = models.CharField(max_length=100)
-
-    class Meta:
-        verbose_name = _('Тэг')
-        verbose_name_plural = _('Тэги')
-        default_related_name = 'tags'
-        ordering = ('name',)
-
-    def __str__(self):
-        return self.name
-
-
 class Court(models.Model):
     '''Модель корта.'''
     location = models.ForeignKey(
@@ -96,7 +69,7 @@ class Court(models.Model):
         blank=True
     )
     contacts_list = models.ManyToManyField(
-        Contact,
+        'core.Contact',
         blank=True
     )
     photo_url = models.ImageField(
@@ -105,8 +78,8 @@ class Court(models.Model):
         blank=True
     )
     tag_list = models.ManyToManyField(
-        Tag,
-        blank=True
+        'core.Tag',
+        blank=True,
     )
     working_hours = models.CharField(
         _('Часы работы'),
