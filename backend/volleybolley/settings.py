@@ -36,10 +36,10 @@ INSTALLED_APPS = [
     'djoser',
     'apps.users.apps.UsersConfig',
     'apps.api.apps.ApiConfig',
-    'apps.players',
-    'apps.courts',
-    'apps.event',
-    'apps.core',
+    'apps.players.apps.PlayersConfig',
+    'apps.courts.apps.CourtsConfig',
+    'apps.event.apps.EventConfig',
+    'apps.core.apps.CoreConfig',
     'phonenumber_field',
 ]
 
