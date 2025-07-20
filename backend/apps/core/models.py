@@ -1,7 +1,6 @@
 from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
-
 from apps.core.enums import CoreFieldLength
 from apps.core.mixins.name_title import NameMixin, TitleMixin
 

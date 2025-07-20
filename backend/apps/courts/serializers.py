@@ -1,7 +1,8 @@
 from rest_framework import serializers
 
+from apps.core.serializers import ContactSerializer, TagSerializer
+
 from .models import Court, Location
-from apps.core.serializers import TagSerializer, ContactSerializer
 
 
 class LocationSerializer(serializers.ModelSerializer):

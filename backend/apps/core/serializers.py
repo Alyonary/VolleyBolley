@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.core.models import Tag, Contact
+from apps.core.models import Contact, Tag
 
 
 class TagSerializer(serializers.ModelSerializer):
