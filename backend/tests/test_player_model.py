@@ -20,7 +20,6 @@ class TestPlayerModel:
     def test_create_player_with_required_fields(
         self, active_user, sample_location
     ):
-        """Тест создания игрока с обязательными полями."""
         player = Player.objects.create(
             user=active_user,
             gender='male',
@@ -35,7 +34,6 @@ class TestPlayerModel:
         assert player.rating == 1
 
     def test_player_user_relationship(self, active_user, sample_location):
-        """Тест связи игрока с пользователем."""
         player = Player.objects.create(
             user=active_user,
             gender='male',
@@ -46,7 +44,6 @@ class TestPlayerModel:
         assert active_user.player.first() == player
 
     def test_player_location_relationship(self, active_user, sample_location):
-        """Тест связи игрока с локацией."""
         player = Player.objects.create(
             user=active_user,
             gender='male',
@@ -58,7 +55,6 @@ class TestPlayerModel:
         assert sample_location.player_set.first() == player
 
     def test_player_without_user_fails(self, sample_location):
-        """Тест, что нельзя создать игрока без пользователя."""
         with pytest.raises(IntegrityError):
             Player.objects.create(
                 gender='male',
@@ -67,7 +63,6 @@ class TestPlayerModel:
             )
 
     def test_player_without_gender_fails(self, active_user, sample_location):
-        """Тест пола игрока по умолчанию."""
         player = Player.objects.create(
             user=active_user,
             level='light',
@@ -79,7 +74,6 @@ class TestPlayerModel:
     def test_player_gender_choices_validation(
         self, active_user, sample_location
     ):
-        """Тест валидации выбора пола."""
         with pytest.raises(ValidationError):
             player = Player(
                 user=active_user,
@@ -92,7 +86,6 @@ class TestPlayerModel:
     def test_player_level_choices_validation(
         self, active_user, sample_location
     ):
-        """Тест валидации выбора уровня."""
         with pytest.raises(ValidationError):
             player = Player(
                 user=active_user,
@@ -103,7 +96,6 @@ class TestPlayerModel:
             player.full_clean()
 
     def test_player_default_level(self, active_user, sample_location):
-        """Тест значения уровня по умолчанию."""
         player = Player.objects.create(
             user=active_user,
             gender='male',
@@ -113,7 +105,6 @@ class TestPlayerModel:
         assert player.level == 'light'
 
     def test_player_default_rating(self, active_user, sample_location):
-        """Тест рейтинга по умолчанию."""
         player = Player.objects.create(
             user=active_user,
             gender='male',
@@ -124,7 +115,6 @@ class TestPlayerModel:
         assert player.rating == 1
 
     def test_player_optional_location(self, active_user):
-        """Тест необязательной локации."""
         player = Player.objects.create(
             user=active_user,
             gender='male',

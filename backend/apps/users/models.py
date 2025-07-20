@@ -1,11 +1,12 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
 
 class User(AbstractUser):
-    """Модель пользователя."""
+    """User model."""
 
     MAX_LENGTH = 150
     REQUIRED_FIELDS = ['first_name', 'last_name']
@@ -15,10 +16,10 @@ class User(AbstractUser):
         unique=True,
         blank=True,
         null=True,
-        verbose_name='номер телефона',
+        verbose_name=_('Phone number'),
     )
     username = models.CharField(
-        'имя пользователя',
+        _('Username'),
         max_length=MAX_LENGTH,
         unique=True,
         help_text=(
@@ -30,10 +31,16 @@ class User(AbstractUser):
             "unique": "A user with that username already exists.",
         },
     )
-    first_name = models.CharField('имя', max_length=MAX_LENGTH, blank=False)
-    last_name = models.CharField('фамилия', max_length=MAX_LENGTH, blank=False)
-    email = models.EmailField('электронная почта', blank=True, null=True)
+    first_name = models.CharField(
+        _('First name'), max_length=MAX_LENGTH, blank=False
+    )
+    last_name = models.CharField(
+        _('Last name'), max_length=MAX_LENGTH, blank=False
+    )
+    email = models.EmailField(
+        _('email'), blank=True, null=True
+    )
 
     class Meta:
-        verbose_name = 'Пользователь'
-        verbose_name_plural = 'Пользователи'
+        verbose_name = _('User')
+        verbose_name_plural = _('Users')
