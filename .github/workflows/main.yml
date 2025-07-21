@@ -12,6 +12,14 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
+    env:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      DEBUG: False
+      ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
+      DATABASE_URL: postgresql://django_user:django_password@postgres:5432/django_db
+
     services:
       postgres:
         image: postgres:17.5-alpine
@@ -22,34 +30,35 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    defaults:
+      run:
+        working-directory: ./backend
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+
       - name: Install dependencies
         run: |
-          cd backend
           python -m pip install --upgrade pip 
           pip install poetry
           poetry install --no-root --no-interaction
-      - name: Run lint and tests
-        env:
-          POSTGRES_USER: django_user
-          POSTGRES_PASSWORD: django_password
-          POSTGRES_DB: django_db
-          DB_HOST: 127.0.0.1
-          DB_PORT: 5432
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          DEBUG: False
-          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
+
+      - name: Apply migrations
         run: |
-          cd backend/
-          source $HOME/.cache/pypoetry/virtualenvs/backend-PJn1A_Q3-py3.11/bin/activate
-          ruff check
-          pytest tests/ --cov=apps --cov-report=xml
+          poetry run python manage.py makemigrations
+          poetry run python manage.py migrate
+
+      - name: Run lint and tests
+        run: |
+          poetry run ruff check
+          poetry run pytest tests/ --cov=apps --cov-report=xml
 
   build_and_push_to_docker_hub:
     if: github.ref_name == 'main'
@@ -119,7 +128,6 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        # passphrase: ${{ secrets.SSH_PASSPHRASE }}
         source: "docker-compose.production.yml"
         target: "volleybolley"
 
@@ -143,7 +151,6 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        # passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
           docker image prune -f
           docker network prune -f
