@@ -47,6 +47,7 @@ jobs:
           ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
         run: |
           cd backend/
+          source $HOME/.cache/pypoetry/virtualenvs/backend-PJn1A_Q3-py3.11/bin/activate
           ruff check
           pytest tests/ --cov=apps --cov-report=xml
 
