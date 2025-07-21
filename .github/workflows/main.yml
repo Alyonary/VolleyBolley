@@ -131,7 +131,10 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        script: sudo mkdir -p /home/${{ secrets.USER }}/VolleyBolley/
+        script: |
+          sudo mkdir -p '/home/${{ secrets.USER }}/VolleyBolley'
+          sudo chmod 775 '/home/${{ secrets.USER }}/VolleyBolley'
+          sudo chown -R '${{ secrets.USER }}:' '/home/${{ secrets.USER }}/VolleyBolley'
 
     - name: Copy docker-compose.production.yml via ssh
       uses: appleboy/scp-action@master
