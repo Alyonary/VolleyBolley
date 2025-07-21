@@ -125,6 +125,14 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v3
 
+    - name: Test connection and create workdir
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        key: ${{ secrets.SSH_KEY }}
+        script: mkdir -p /home/{{ secrets.USER }}/VolleyBolley/
+
     - name: Copy docker-compose.yml via ssh
       uses: appleboy/scp-action@master
       with:
@@ -132,7 +140,7 @@ jobs:
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
         source: "infra/docker-compose.production.yml"
-        target: "volleybolley"
+        target: "/home/{{ secrets.USER }}/VolleyBolley/"
 
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
@@ -140,10 +148,8 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
-          mkdir -p volleybolley
-          cd volleybolley
+          cd /home/{{ secrets.USER }}/VolleyBolley/
           sudo docker compose -f docker-compose.production.yml pull
           sudo docker compose -f docker-compose.production.yml down
           sudo docker compose -f docker-compose.production.yml up -d
