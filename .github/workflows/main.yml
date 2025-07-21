@@ -13,7 +13,7 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     env:
-      DB_HOST: postgres
+      DB_HOST: localhost
       DB_PORT: 5432
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       DEBUG: False
