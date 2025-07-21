@@ -15,10 +15,13 @@ jobs:
     env:
       DB_HOST: localhost
       DB_PORT: 5432
+      POSTGRES_DB: django_db
+      POSTGRES_USER: django_user
+      POSTGRES_PASSWORD: django_password
+      DATABASE_URL: postgresql://django_user:django_password@localhost:5432/django_db
       SECRET_KEY: ${{ secrets.SECRET_KEY }}
       DEBUG: False
       ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
-      DATABASE_URL: postgresql://django_user:django_password@postgres:5432/django_db
 
     services:
       postgres:
