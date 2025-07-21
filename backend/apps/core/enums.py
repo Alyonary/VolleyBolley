@@ -16,10 +16,10 @@ class CoreFieldLength(int, Enum):
     ADMIN_INFO_SHORT_CONTENT = 50
 
 
-class Level(models.TextChoices):
+class Levels(models.TextChoices):
     """Level enums for players and games."""
 
-    LIGHT = 'light', _('Beginner')
-    MEDIUM = 'medium', _('Confident amateur')
-    HARD = 'hard', _('Advanced')
-    PRO = 'pro', _('Professional')
+    LIGHT = 'LIGHT', _('Beginner')
+    MEDIUM = 'MEDIUM', _('Confident amateur')
+    HARD = 'HARD', _('Advanced')
+    PRO = 'PRO', _('Professional')

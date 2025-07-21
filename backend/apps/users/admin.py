@@ -13,13 +13,13 @@ class UserAdmin(admin.ModelAdmin):
         'last_name',
         'email',
         'phone_number',
-        'is_admin',
+        'is_superuser',
         'is_staff',
         'is_active',
         'date_joined',
         'last_login',
     )
     search_fields = ('username', 'email', 'first_name', 'last_name')
-    list_filter = ('is_admin', 'is_staff', 'is_active')
+    list_filter = ('is_superuser', 'is_staff', 'is_active')
     empty_value_display = _('Not defined')
     list_display_links = ('id', 'username')

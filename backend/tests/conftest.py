@@ -2,6 +2,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
+from apps.players.models import Player, PlayerLocation
+
 User = get_user_model()
 
 
@@ -75,6 +77,30 @@ def active_user(user_data):
     user.save()
     return user
 
+
 @pytest.fixture
 def bulk_create_users(bulk_users_data):
     return [User.objects.create(**user) for user in bulk_users_data]
+
+
+@pytest.fixture
+def sample_location():
+    return PlayerLocation.objects.create(
+        country='Russia',
+        city='Moscow'
+    )
+
+
+@pytest.fixture
+def player_data(active_user, sample_location):
+    return {
+        'user': active_user,
+        'gender': 'MALE',
+        'level': 'LIGHT',
+        'location': sample_location
+    }
+
+
+@pytest.fixture
+def player_male_light(player_data):
+    return Player.objects.create(**player_data)

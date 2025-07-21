@@ -4,7 +4,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 
-class PlayerEnum(int, Enum):
+class PlayerEnums(int, Enum):
 
     DEFAULT_RATING = 1
 
@@ -13,8 +13,8 @@ class PlayerEnum(int, Enum):
     LEVEL_MAX_LENGTH = 6
 
 
-class Gender(models.TextChoices):
+class Genders(models.TextChoices):
     """Gender enums for player."""
 
-    MALE = 'male', _('Male')
-    FEMALE = 'female', _('Female')
+    MALE = 'MALE', _('Male')
+    FEMALE = 'FEMALE', _('Female')

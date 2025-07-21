@@ -2,8 +2,8 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.enums import Level
-from apps.players.enums import Gender, PlayerEnum
+from apps.core.enums import Levels
+from apps.players.enums import Genders, PlayerEnums
 
 User = get_user_model()
 
@@ -12,15 +12,18 @@ class PlayerLocation(models.Model):
     """Players location model."""
 
     country = models.CharField(
-        _('Country'), max_length=PlayerEnum.LOCATION_MAX_LENGTH.value
+        _('Country'), max_length=PlayerEnums.LOCATION_MAX_LENGTH.value
     )
     city = models.CharField(
-        _('City'), max_length=PlayerEnum.LOCATION_MAX_LENGTH.value
+        _('City'), max_length=PlayerEnums.LOCATION_MAX_LENGTH.value
     )
 
     class Meta:
         verbose_name = _('Location')
         verbose_name_plural = _('Locations')
+
+    def __str__(self):
+        return f"{self.city}, {self.country}"
 
 
 class Player(models.Model):
@@ -36,16 +39,16 @@ class Player(models.Model):
     )
     gender = models.CharField(
         verbose_name=_('Gender'),
-        max_length=PlayerEnum.GENDER_MAX_LENGTH.value,
-        choices=Gender.choices,
+        max_length=PlayerEnums.GENDER_MAX_LENGTH.value,
+        choices=Genders.choices,
         blank=False,
-        default=Gender.MALE
+        default=Genders.MALE
     )
     level = models.CharField(
         verbose_name=_('Level of player'),
-        max_length=PlayerEnum.LEVEL_MAX_LENGTH.value,
-        choices=Level.choices,
-        default=Level.LIGHT,
+        max_length=PlayerEnums.LEVEL_MAX_LENGTH.value,
+        choices=Levels.choices,
+        default=Levels.LIGHT,
     )
     avatar = models.ImageField(
         verbose_name=_('Avatar'),
@@ -61,7 +64,7 @@ class Player(models.Model):
         verbose_name=_('Location of player'),
     )
     rating = models.PositiveIntegerField(
-        default=PlayerEnum.DEFAULT_RATING.value,
+        default=PlayerEnums.DEFAULT_RATING.value,
         verbose_name=_('Rating of player'),
     )
 
