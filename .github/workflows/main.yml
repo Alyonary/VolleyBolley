@@ -140,7 +140,9 @@ jobs:
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
         source: "infra/docker-compose.production.yml"
-        target: "/home/${{ secrets.USER }}/VolleyBolley/docker-compose.production.yml"
+        target: "/home/${{ secrets.USER }}/VolleyBolley"
+        strip_components: 1
+        overwrite: true
 
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
