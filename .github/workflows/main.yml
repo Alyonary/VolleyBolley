@@ -131,7 +131,7 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        script: mkdir -p /home/{{ secrets.USER }}/VolleyBolley/
+        script: sudo mkdir -p /home/{{ secrets.USER }}/VolleyBolley/
 
     - name: Copy docker-compose.yml via ssh
       uses: appleboy/scp-action@master
