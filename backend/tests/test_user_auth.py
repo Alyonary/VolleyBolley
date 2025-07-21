@@ -25,19 +25,14 @@ class TestDjoserEndpoints:
     @pytest.mark.parametrize(
         "test_case, username, password, expected_status",
         [
-            # Вход активного пользователя с валидными данными
-            ("valid_credentials", "testuser","TestPass123",
+            ("valid_credentials", "testuser", "TestPass123",
              status.HTTP_200_OK),
-            # Вход без логина
             ("no_username", None, "TestPass123",
              status.HTTP_400_BAD_REQUEST),
-            # Вход без пароля
             ("no_password", "testuser", None,
              status.HTTP_400_BAD_REQUEST),
-            # Вход с неправильным логином
             ("wrong_username", "wronguser", "TestPass123",
              status.HTTP_401_UNAUTHORIZED),
-            # Вход с неправильным паролем
             ("wrong_password", "testuser", "WrongPass123",
              status.HTTP_401_UNAUTHORIZED),
         ]
@@ -104,7 +99,7 @@ class TestDjoserEndpoints:
     def test_user_logout(self, api_client, active_user):
         refresh = RefreshToken.for_user(active_user)
 
-        # Отправляем запрос на выход
+        # Send request to logout
         response = api_client.post(
             '/api/auth/logout/',
             {'refresh': str(refresh)},
@@ -113,7 +108,7 @@ class TestDjoserEndpoints:
         print(response.data)
         assert response.status_code == status.HTTP_205_RESET_CONTENT
 
-        # Проверяем, что токен добавлен в черный список
+        # Check if token is in blacklist
         assert BlacklistedToken.objects.filter(
             token__jti=refresh['jti']
         ).exists()

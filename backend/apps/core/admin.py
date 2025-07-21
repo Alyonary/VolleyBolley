@@ -6,10 +6,10 @@ from .models import (
     Contact,
     GameLevel,
     Gender,
+    InfoPage,
+    InfoSection,
     PaymentType,
     Tag,
-    InfoSection,
-    InfoPage,
 )
 
 
@@ -76,9 +76,15 @@ class InfoSectionAdmin(admin.ModelAdmin):
     @admin.display(description=_('Содержимое (коротко)'))
     def short_content(self, obj):
         return (
-            (obj.content[:CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value] + '...')
+            (
+                obj.content[:CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value]
+                + '...'
+            )
             if obj.content
-               and len(obj.content) > CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value
+               and (
+                   len(obj.content)
+                   > CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value
+                   )
             else obj.content
         )
 

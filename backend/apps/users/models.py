@@ -1,45 +1,46 @@
 from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.db import models
+from django.utils.translation import gettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 
 
 class User(AbstractUser):
-    """Базовая модель пользователя."""
+    """User model."""
 
-    class GameSkillLevel(models.TextChoices):
-        """Класс перечисления уровней навыков игрока."""
-
-        BEGINNER = 'beginner', 'Beginner'
-        AMATEUR = 'amateur', 'Amateur'
-        ADVANCED = 'advanced', 'Advanced'
-        PRO = 'pro', 'Pro'
+    MAX_LENGTH = 150
+    REQUIRED_FIELDS = ['first_name', 'last_name']
+    username_validator = UnicodeUsernameValidator()
 
     phone_number = PhoneNumberField(
         unique=True,
-        verbose_name='Телефон',
-    )
-    game_skill_level = models.CharField(
-        max_length=12,
-        choices=GameSkillLevel.choices,
-        default=GameSkillLevel.BEGINNER,
-        verbose_name='Уровень Игры',
-    )
-    avatar = models.ImageField(
-        upload_to='avatars/',
-        null=True,
         blank=True,
-        verbose_name='Аватар',
+        null=True,
+        verbose_name=_('Phone number'),
     )
-    # location = models.ForeignKey(
-    #     Location,
-    #     on_delete=models.SET_NULL,
-    #     null=True,
-    # )
-    rating = models.PositiveIntegerField(
-        default=1000,
-        verbose_name='Рейтинг',
+    username = models.CharField(
+        _('Username'),
+        max_length=MAX_LENGTH,
+        unique=True,
+        help_text=(
+            f"Required. {MAX_LENGTH} characters or fewer. "
+            "Letters, digits and @/./+/-/_ only."
+        ),
+        validators=[username_validator],
+        error_messages={
+            "unique": "A user with that username already exists.",
+        },
+    )
+    first_name = models.CharField(
+        _('First name'), max_length=MAX_LENGTH, blank=False
+    )
+    last_name = models.CharField(
+        _('Last name'), max_length=MAX_LENGTH, blank=False
+    )
+    email = models.EmailField(
+        _('email'), blank=True, null=True
     )
 
     class Meta:
-        verbose_name = 'Пользователь'
-        verbose_name_plural = 'Пользователи'
+        verbose_name = _('User')
+        verbose_name_plural = _('Users')
