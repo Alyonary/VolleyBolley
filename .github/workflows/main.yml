@@ -133,14 +133,14 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         script: sudo mkdir -p /home/${{ secrets.USER }}/VolleyBolley/
 
-    - name: Copy docker-compose.yml via ssh
+    - name: Copy docker-compose.production.yml via ssh
       uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
         source: "infra/docker-compose.production.yml"
-        target: "/home/${{ secrets.USER }}/VolleyBolley/"
+        target: "/home/${{ secrets.USER }}/VolleyBolley/docker-compose.production.yml"
 
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
