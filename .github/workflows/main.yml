@@ -131,7 +131,7 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        script: sudo mkdir -p /home/{{ secrets.USER }}/VolleyBolley/
+        script: sudo mkdir -p /home/${{ secrets.USER }}/VolleyBolley/
 
     - name: Copy docker-compose.yml via ssh
       uses: appleboy/scp-action@master
@@ -140,7 +140,7 @@ jobs:
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
         source: "infra/docker-compose.production.yml"
-        target: "/home/{{ secrets.USER }}/VolleyBolley/"
+        target: "/home/${{ secrets.USER }}/VolleyBolley/"
 
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
@@ -149,7 +149,7 @@ jobs:
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
         script: |
-          cd /home/{{ secrets.USER }}/VolleyBolley/
+          cd /home/${{ secrets.USER }}/VolleyBolley/
           sudo docker compose -f docker-compose.production.yml pull
           sudo docker compose -f docker-compose.production.yml down
           sudo docker compose -f docker-compose.production.yml up -d
