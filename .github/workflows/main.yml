@@ -131,7 +131,7 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        source: "docker-compose.production.yml"
+        source: "infra/docker-compose.production.yml"
         target: "volleybolley"
 
     - name: Executing remote ssh commands to deploy
