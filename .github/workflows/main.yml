@@ -155,9 +155,9 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         script: |
           cd /home/${{ secrets.USER }}/VolleyBolley/
-          sudo docker compose -f docker-compose.production.yml pull
-          sudo docker compose -f docker-compose.production.yml down
-          sudo docker compose -f docker-compose.production.yml up -d
+          docker compose -f docker-compose.production.yml pull
+          docker compose -f docker-compose.production.yml down
+          docker compose -f docker-compose.production.yml up -d
 
     - name: Cleanup old images
       uses: appleboy/ssh-action@master
