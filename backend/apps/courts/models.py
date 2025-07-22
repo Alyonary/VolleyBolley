@@ -3,7 +3,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.courts.enums import LocationEnums, CourtEnums
-from apps.core.models import Contact, Tag
+from apps.core.models import Tag
 
 
 class Location(models.Model):
@@ -68,10 +68,7 @@ class Court(models.Model):
         _('Description'),
         blank=True
     )
-    contacts_list = models.ManyToManyField(
-        Contact,
-        blank=True
-    )
+
     photo_url = models.ImageField(
         upload_to='courts/images/',
         null=True,

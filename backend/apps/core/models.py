@@ -17,10 +17,15 @@ class Tag(NameMixin):
 class Contact(m.Model):
     """Contact model."""
 
-    type = m.CharField(_('Contact type'),
-                       max_length=CoreFieldLength.CONTACT_NAME.value)
-    value = m.CharField(_('Contact value'),
-                        max_length=CoreFieldLength.CONTACT_NAME.value)
+    contact_type = m.CharField(
+        _('Contact type'),
+        max_length=CoreFieldLength.CONTACT_NAME.value
+    )
+    contact = m.CharField(
+        _('Contact value'),
+        max_length=CoreFieldLength.CONTACT_NAME.value
+    )
+    court = m.ForeignKey('courts.Court', on_delete=m.CASCADE, default=None)
 
     class Meta:
         verbose_name = _('Contact')
@@ -28,7 +33,7 @@ class Contact(m.Model):
         default_related_name = 'contacts'
 
     def __str__(self):
-        return self.value
+        return f'{self.contact_type} {self.contact}'
 
 
 class PaymentType(NameMixin):

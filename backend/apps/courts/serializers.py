@@ -14,16 +14,21 @@ class LocationSerializer(serializers.ModelSerializer):
 
 
 class CourtSerializer(serializers.ModelSerializer):
-    tag_list = TagSerializer(many=True, read_only=True)
 
-    contacts_list = ContactSerializer(many=True, read_only=True)
+    tag_list = serializers.StringRelatedField(many=True, read_only=True)
+
+    contacts_list = ContactSerializer(
+        many=True,
+        source='contacts',
+        read_only=True
+    )
 
     location = LocationSerializer(read_only=True)
 
     class Meta:
         model = Court
         fields = (
-            'id',
+            #'court_id',
             'price_description',
             'description',
             'contacts_list',
@@ -31,3 +36,8 @@ class CourtSerializer(serializers.ModelSerializer):
             'tag_list',
             'location'
         )
+
+    def to_representation(self, instance):
+        repr = super().to_representation(instance)
+        repr['court_id'] = instance.pk
+        return repr
