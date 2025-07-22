@@ -34,12 +34,12 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'djoser',
-    'apps.users.apps.UsersConfig',
-    'apps.api.apps.ApiConfig',
-    'apps.players.apps.PlayersConfig',
-    'apps.courts.apps.CourtsConfig',
-    'apps.event.apps.EventConfig',
-    'apps.core.apps.CoreConfig',
+    'apps.users',
+    'apps.api',
+    'apps.players',
+    'apps.courts',
+    'apps.event',
+    'apps.core',
     'phonenumber_field',
     'django_filters'
 ]
