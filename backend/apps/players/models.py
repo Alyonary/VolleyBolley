@@ -29,7 +29,7 @@ class PlayerLocation(models.Model):
 class Player(models.Model):
     """Player model."""
 
-    user = models.ForeignKey(
+    user = models.OneToOneField(
         User,
         related_name='player',
         verbose_name=_('User tied to player'),

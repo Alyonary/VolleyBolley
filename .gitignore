@@ -17,7 +17,7 @@ __pycache__/
 *.db
 /db.sqlite3
 
-backend/apps/*/migrations/000*
+backend/apps/*/migrations/0*
 
 # Статика (если собирается автоматически)
 /staticfiles/
