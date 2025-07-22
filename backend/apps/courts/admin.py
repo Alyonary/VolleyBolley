@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
 from .models import Court, Location
 
@@ -10,17 +11,18 @@ class LocationAdmin(admin.ModelAdmin):
         'longitude',
         'latitude',
         'court_name',
-        'name')
-    search_fields = ('court_name',)
-    list_filter = ('name',)
-    empty_value_display = 'Не задано'
-    list_display_links = ('id', 'name')
+        'location_name')
+    search_fields = ('court_name', 'location_name')
+    list_filter = ('location_name',)
+    empty_value_display = _('Not defined')
+    list_display_links = ('id', 'location_name')
 
 
 @admin.register(Court)
 class CourtAdmin(admin.ModelAdmin):
     list_display = (
         'location',
+        'court_name',
         'price_description',
         'description',
         'photo_url',
@@ -29,6 +31,7 @@ class CourtAdmin(admin.ModelAdmin):
     )
     fields = (
         'location',
+        'court_name',
         'price_description',
         'description',
         'contacts_list',
@@ -37,7 +40,11 @@ class CourtAdmin(admin.ModelAdmin):
         'working_hours',
         'is_active'
     )
-    search_fields = ('name',)
+    search_fields = ('court_name',)
     list_display_links = ('location',)
-    empty_value_display = 'Не задано'
+    empty_value_display = _('Not defined')
     filter_horizontal = ('tag_list', 'contacts_list')
+
+    def court_name(self, obj):
+        return obj.location.court_name
+    court_name.short_description = _('Court name')

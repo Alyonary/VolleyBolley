@@ -2,74 +2,74 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .constants import (
-    MAX_LATITUDE,
-    MAX_LONGTITUDE,
-    MIN_LATITUDE,
-    MIN_LONGTITUDE,
-)
+from apps.courts.enums import LocationEnums, CourtEnums
+from apps.core.models import Contact, Tag
 
 
 class Location(models.Model):
-    '''Модель локации.'''
+    '''Court location model.'''
 
     longitude = models.FloatField(
-        _('Долгота'),
+        _('Longtitude'),
         validators=(
             MinValueValidator(
-                MIN_LONGTITUDE,
-                message=_(f'Минимальная долгота: {MIN_LONGTITUDE}')),
+                LocationEnums.MIN_LONGTITUDE.value,
+                message=_(
+                    f'Min longtitude: {LocationEnums.MIN_LONGTITUDE.value}')),
             MaxValueValidator(
-                MAX_LONGTITUDE,
-                message=_(f'Максимальная долгота: {MIN_LONGTITUDE}')),
+                LocationEnums.MAX_LONGTITUDE.value,
+                message=_(
+                    f'Max longtitude: {LocationEnums.MAX_LONGTITUDE.value}')),
         )
     )
 
     latitude = models.FloatField(
-        _('Широта'),
+        _('latitude'),
         validators=(
             MinValueValidator(
-                MIN_LATITUDE,
-                message=_(f'Минимальная широта: {MIN_LATITUDE}')),
+                LocationEnums.MIN_LATITUDE.value,
+                message=_(
+                    f'Min latitude: {LocationEnums.MIN_LATITUDE.value}')),
             MaxValueValidator(
-                MAX_LATITUDE,
-                message=_(f'Максимальная широта: {MAX_LATITUDE}')),
+                LocationEnums.MAX_LATITUDE.value,
+                message=_(
+                    f'Max latitude: {LocationEnums.MAX_LATITUDE.value}')),
         )
     )
     court_name = models.CharField(
-        _('Название корта'),
-        max_length=100
+        _('Court name'),
+        max_length=LocationEnums.LOCATION_NAME_LENGTH.value
     )
-    name = models.CharField(
-        _('Название локации'),
-        max_length=255
+    location_name = models.CharField(
+        _('Location name'),
+        max_length=LocationEnums.LOCATION_NAME_LENGTH.value
     )
 
     class Meta:
-        verbose_name = _('Локация')
-        verbose_name_plural = _('Локации')
+        verbose_name = _('Location')
+        verbose_name_plural = _('Locations')
         default_related_name = 'locations'
-        ordering = ('-name',)
+        ordering = ('-location_name',)
 
     def __str__(self):
         return self.court_name
 
 
 class Court(models.Model):
-    '''Модель корта.'''
+    '''Court model.'''
     location = models.ForeignKey(
         Location, on_delete=models.CASCADE
     )
     price_description = models.TextField(
-        _('Стоимость'),
+        _('Price'),
         blank=True,
     )
     description = models.TextField(
-        _('Описание'),
+        _('Description'),
         blank=True
     )
     contacts_list = models.ManyToManyField(
-        'core.Contact',
+        Contact,
         blank=True
     )
     photo_url = models.ImageField(
@@ -78,19 +78,19 @@ class Court(models.Model):
         blank=True
     )
     tag_list = models.ManyToManyField(
-        'core.Tag',
+        Tag,
         blank=True,
     )
     working_hours = models.CharField(
-        _('Часы работы'),
-        max_length=255,
+        _('Working hours'),
+        max_length=CourtEnums.WORKING_HOURS_LENGTH.value,
         blank=True
     )
     is_active = models.BooleanField(default=True)
 
     class Meta:
-        verbose_name = _('Корт')
-        verbose_name_plural = _('Корты')
+        verbose_name = _('Court')
+        verbose_name_plural = _('Courts')
         default_related_name = 'courts'
 
     def __str__(self):

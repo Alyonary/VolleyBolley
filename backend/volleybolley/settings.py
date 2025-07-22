@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
+    'django_filters',
     'djoser',
     'apps.users.apps.UsersConfig',
     'apps.api.apps.ApiConfig',
@@ -133,6 +134,8 @@ REST_FRAMEWORK = {
     'TEST_REQUEST_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend']
 }
 
 SIMPLE_JWT = {

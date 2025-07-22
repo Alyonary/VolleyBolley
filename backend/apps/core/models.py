@@ -6,21 +6,25 @@ from apps.core.mixins.name_title import NameMixin, TitleMixin
 
 
 class Tag(NameMixin):
-    """Модель тэга."""
+    """Tag model."""
 
     class Meta:
-        verbose_name = _('Тэг')
-        verbose_name_plural = _('Тэги')
+        verbose_name = _('Tag')
+        verbose_name_plural = _('Tags')
         default_related_name = 'tags'
 
 
 class Contact(m.Model):
-    """Модель контакта."""
-    value = m.CharField(max_length=CoreFieldLength.CONTACT_NAME.value)
+    """Contact model."""
+
+    type = m.CharField(_('Contact type'),
+                       max_length=CoreFieldLength.CONTACT_NAME.value)
+    value = m.CharField(_('Contact value'),
+                        max_length=CoreFieldLength.CONTACT_NAME.value)
 
     class Meta:
-        verbose_name = _('Контакт')
-        verbose_name_plural = _('Контакты')
+        verbose_name = _('Contact')
+        verbose_name_plural = _('Contacts')
         default_related_name = 'contacts'
 
     def __str__(self):

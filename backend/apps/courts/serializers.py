@@ -6,7 +6,7 @@ from .models import Court, Location
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    """Сериализатор всех полей модели Location."""
+    '''Location serializer for all fileds exclude id.'''
 
     class Meta:
         exclude = ('id',)
