@@ -2,8 +2,8 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.courts.enums import LocationEnums, CourtEnums
 from apps.core.models import Tag
+from apps.courts.enums import CourtEnums, LocationEnums
 
 
 class Location(models.Model):

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.core.serializers import ContactSerializer, TagSerializer
+from apps.core.serializers import ContactSerializer
 
 from .models import Court, Location
 
@@ -14,6 +14,7 @@ class LocationSerializer(serializers.ModelSerializer):
 
 
 class CourtSerializer(serializers.ModelSerializer):
+    '''Court model serializer.'''
 
     tag_list = serializers.StringRelatedField(many=True, read_only=True)
 
@@ -28,7 +29,6 @@ class CourtSerializer(serializers.ModelSerializer):
     class Meta:
         model = Court
         fields = (
-            #'court_id',
             'price_description',
             'description',
             'contacts_list',

@@ -10,10 +10,10 @@ class CourtFilter(filters.FilterSet):
     in the related Location model.
     '''
 
-    search_param = filters.CharFilter(
-        field_name='location__location_name',
+    search_query = filters.CharFilter(
+        field_name='location__court_name',
         lookup_expr='icontains')
 
     class Meta:
         model = Court
-        fields = ('search_param',)
+        fields = ('search_query',)
