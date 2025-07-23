@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 from apps.players.models import Player, PlayerLocation
+from apps.locations.models import City, Country
 
 User = get_user_model()
 
@@ -104,3 +105,17 @@ def player_data(active_user, sample_location):
 @pytest.fixture
 def player_male_light(player_data):
     return Player.objects.create(**player_data)
+
+
+@pytest.fixture
+def countries_cities():
+    '''Create test cities and countries data.'''
+    thailand = Country.objects.create(name='Thailand')
+    cyprus = Country.objects.create(name='Cyprus')
+    
+    City.objects.create(name='Bangkok', country=thailand)
+    City.objects.create(name='Pattaya', country=thailand)
+    City.objects.create(name='Limassol', country=cyprus)
+    City.objects.create(name='Nicosia', country=cyprus)
+    
+    return {'thailand': thailand, 'cyprus': cyprus}
