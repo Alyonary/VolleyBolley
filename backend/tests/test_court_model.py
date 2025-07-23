@@ -89,11 +89,7 @@ class TestCourtApiModel:
             self,
             api_client,
             court_list_url,
-            court_api_response_data,
-            court_obj_with_tag,
-            contact_object,
             location_for_court_data,
-            location_for_court,
             court_data
             ):
 
