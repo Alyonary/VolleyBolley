@@ -1,9 +1,8 @@
 import pytest
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APIClient
 
-from apps.locations.models import City, Country
+from apps.locations.models import Country
 
 
 @pytest.mark.django_db
@@ -84,7 +83,11 @@ class TestCountriesAPI:
         response = api_client.delete(url)
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
-    def test_countries_alphabetical_sorting(self, api_client, countries_cities):
+    def test_countries_alphabetical_sorting(
+        self,
+        api_client,
+        countries_cities
+    ):
         '''Test that countries are sorted alphabetically.'''
         Country.objects.create(name='Vietnam')
         Country.objects.create(name='Malaysia')

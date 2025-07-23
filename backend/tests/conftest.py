@@ -2,8 +2,8 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
-from apps.players.models import Player, PlayerLocation
 from apps.locations.models import City, Country
+from apps.players.models import Player, PlayerLocation
 
 User = get_user_model()
 
