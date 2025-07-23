@@ -1,5 +1,5 @@
 import django_filters
-from django.db.models import Q, Case, When, IntegerField
+from django.db.models import Case, IntegerField, Q, When
 
 from apps.players.models import Player
 
@@ -15,7 +15,7 @@ class PlayersFilter(django_filters.FilterSet):
         """Filter by first_name OR last_name containing the search value.
         For Thailand users - also filters by location proximity.
         For Cyprus users - location is ignored.
-        Results are sorted by relevance (exact match > starts with > contains).
+        Results are sorted by relevance (exact match>startswith>contains).
         """
         if not value:
             return queryset

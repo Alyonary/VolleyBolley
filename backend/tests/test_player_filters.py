@@ -2,7 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIRequestFactory
 
-from apps.api.filters import PlayersFilter
+from apps.players.filters import PlayersFilter
 from apps.players.models import Player, PlayerLocation
 
 User = get_user_model()
@@ -10,161 +10,161 @@ User = get_user_model()
 
 @pytest.mark.django_db
 class TestPlayersFilter:
-    """Tests for player filter with location sorting."""
+    '''Tests for player filter with location sorting.'''
 
     @pytest.fixture
     def setup_test_data(self):
-        """Creates test data for filters."""
+        '''Creates test data for filters.'''
 
         bangkok = PlayerLocation.objects.create(
-            country="Thailand", city="Bangkok"
+            country='Thailand', city='Bangkok'
         )
         pattaya = PlayerLocation.objects.create(
-            country="Thailand", city="Pattaya"
+            country='Thailand', city='Pattaya'
         )
         chiang_mai = PlayerLocation.objects.create(
-            country="Thailand", city="Chiang Mai"
+            country='Thailand', city='Chiang Mai'
         )
 
         limassol = PlayerLocation.objects.create(
-            country="Cyprus", city="Limassol"
+            country='Cyprus', city='Limassol'
         )
         nicosia = PlayerLocation.objects.create(
-            country="Cyprus", city="Nicosia"
+            country='Cyprus', city='Nicosia'
         )
         larnaca = PlayerLocation.objects.create(
-            country="Cyprus", city="Larnaca"
+            country='Cyprus', city='Larnaca'
         )
 
         john_bangkok_user = User.objects.create_user(
-            username="john_bangkok",
-            first_name="John",
-            last_name="Smith",
-            email="john.bangkok@example.com",
+            username='john_bangkok',
+            first_name='John',
+            last_name='Smith',
+            email='john.bangkok@example.com',
         )
         john_pattaya_user = User.objects.create_user(
-            username="john_pattaya",
-            first_name="John",
-            last_name="Doe",
-            email="john.pattaya@example.com",
+            username='john_pattaya',
+            first_name='John',
+            last_name='Doe',
+            email='john.pattaya@example.com',
         )
         jane_bangkok_user = User.objects.create_user(
-            username="jane_bangkok",
-            first_name="Jane",
-            last_name="Wilson",
-            email="jane.bangkok@example.com",
+            username='jane_bangkok',
+            first_name='Jane',
+            last_name='Wilson',
+            email='jane.bangkok@example.com',
         )
         requesting_user_bangkok = User.objects.create_user(
-            username="requesting_user_bangkok",
-            first_name="Mike",
-            last_name="Johnson",
-            email="mike.bangkok@example.com",
+            username='requesting_user_bangkok',
+            first_name='Mike',
+            last_name='Johnson',
+            email='mike.bangkok@example.com',
         )
         requesting_user_pattaya = User.objects.create_user(
-            username="requesting_user_pattaya",
-            first_name="Alex",
-            last_name="Brown",
-            email="alex.pattaya@example.com",
+            username='requesting_user_pattaya',
+            first_name='Alex',
+            last_name='Brown',
+            email='alex.pattaya@example.com',
         )
 
         john_limassol_user = User.objects.create_user(
-            username="john_limassol",
-            first_name="John",
-            last_name="Green",
-            email="john.limassol@example.com",
+            username='john_limassol',
+            first_name='John',
+            last_name='Green',
+            email='john.limassol@example.com',
         )
         john_nicosia_user = User.objects.create_user(
-            username="john_nicosia",
-            first_name="John",
-            last_name="White",
-            email="john.nicosia@example.com",
+            username='john_nicosia',
+            first_name='John',
+            last_name='White',
+            email='john.nicosia@example.com',
         )
         jane_larnaca_user = User.objects.create_user(
-            username="jane_larnaca",
-            first_name="Jane",
-            last_name="Black",
-            email="jane.larnaca@example.com",
+            username='jane_larnaca',
+            first_name='Jane',
+            last_name='Black',
+            email='jane.larnaca@example.com',
         )
         requesting_user_limassol = User.objects.create_user(
-            username="requesting_user_limassol",
-            first_name="Maria",
-            last_name="Miller",
-            email="maria.limassol@example.com",
+            username='requesting_user_limassol',
+            first_name='Maria',
+            last_name='Miller',
+            email='maria.limassol@example.com',
         )
 
         john_bangkok = Player.objects.create(
             user=john_bangkok_user,
-            gender="MALE",
-            level="LIGHT",
+            gender='MALE',
+            level='LIGHT',
             location=bangkok,
         )
         john_pattaya = Player.objects.create(
             user=john_pattaya_user,
-            gender="MALE",
-            level="PRO",
+            gender='MALE',
+            level='PRO',
             location=pattaya,
         )
         jane_bangkok = Player.objects.create(
             user=jane_bangkok_user,
-            gender="FEMALE",
-            level="LIGHT",
+            gender='FEMALE',
+            level='LIGHT',
             location=bangkok,
         )
         requesting_player_bangkok = Player.objects.create(
             user=requesting_user_bangkok,
-            gender="MALE",
-            level="PRO",
+            gender='MALE',
+            level='PRO',
             location=bangkok,
         )
         requesting_player_pattaya = Player.objects.create(
             user=requesting_user_pattaya,
-            gender="MALE",
-            level="LIGHT",
+            gender='MALE',
+            level='LIGHT',
             location=pattaya,
         )
 
         john_limassol = Player.objects.create(
             user=john_limassol_user,
-            gender="MALE",
-            level="LIGHT",
+            gender='MALE',
+            level='LIGHT',
             location=limassol,
         )
         john_nicosia = Player.objects.create(
             user=john_nicosia_user,
-            gender="MALE",
-            level="PRO",
+            gender='MALE',
+            level='PRO',
             location=nicosia,
         )
         jane_larnaca = Player.objects.create(
             user=jane_larnaca_user,
-            gender="FEMALE",
-            level="LIGHT",
+            gender='FEMALE',
+            level='LIGHT',
             location=larnaca,
         )
         requesting_player_limassol = Player.objects.create(
             user=requesting_user_limassol,
-            gender="FEMALE",
-            level="PRO",
+            gender='FEMALE',
+            level='PRO',
             location=limassol,
         )
 
         return {
-            "thailand_locations": [bangkok, pattaya, chiang_mai],
-            "cyprus_locations": [limassol, nicosia, larnaca],
-            "thailand_players": [john_bangkok, john_pattaya, jane_bangkok],
-            "cyprus_players": [john_limassol, john_nicosia, jane_larnaca],
-            "requesting_player_bangkok": requesting_player_bangkok,
-            "requesting_player_pattaya": requesting_player_pattaya,
-            "requesting_player_limassol": requesting_player_limassol,
+            'thailand_locations': [bangkok, pattaya, chiang_mai],
+            'cyprus_locations': [limassol, nicosia, larnaca],
+            'thailand_players': [john_bangkok, john_pattaya, jane_bangkok],
+            'cyprus_players': [john_limassol, john_nicosia, jane_larnaca],
+            'requesting_player_bangkok': requesting_player_bangkok,
+            'requesting_player_pattaya': requesting_player_pattaya,
+            'requesting_player_limassol': requesting_player_limassol,
         }
 
     def test_thailand_user_sees_only_same_city_players(self, setup_test_data):
-        """Test that Thailand users only see players from their city."""
+        '''Test Thailand users only see players from their city.'''
         factory = APIRequestFactory()
-        request = factory.get("/players/?search=John")
-        request.user = setup_test_data["requesting_player_bangkok"].user
+        request = factory.get('/players/?search=John')
+        request.user = setup_test_data['requesting_player_bangkok'].user
 
-        data = {"search": "John"}
+        data = {'search': 'John'}
         filter_instance = PlayersFilter(data, queryset=Player.objects.all())
         filter_instance.request = request
 
@@ -172,19 +172,19 @@ class TestPlayersFilter:
 
         assert filtered_players.count() == 1
         player = filtered_players.first()
-        assert player.user.first_name == "John"
-        assert player.location.city == "Bangkok"
-        assert player.user.username == "john_bangkok"
+        assert player.user.first_name == 'John'
+        assert player.location.city == 'Bangkok'
+        assert player.user.username == 'john_bangkok'
 
     def test_thailand_user_different_city_no_cross_city_results(
         self, setup_test_data
     ):
-        """Test that Thailand user from Pattaya doesn't see Bangkok players."""
+        '''Test Thailand user from Pattaya doesn't see Bangkok players.'''
         factory = APIRequestFactory()
-        request = factory.get("/players/?search=John")
-        request.user = setup_test_data["requesting_player_pattaya"].user
+        request = factory.get('/players/?search=John')
+        request.user = setup_test_data['requesting_player_pattaya'].user
 
-        data = {"search": "John"}
+        data = {'search': 'John'}
         filter_instance = PlayersFilter(data, queryset=Player.objects.all())
         filter_instance.request = request
 
@@ -192,17 +192,17 @@ class TestPlayersFilter:
 
         assert filtered_players.count() == 1
         player = filtered_players.first()
-        assert player.user.first_name == "John"
-        assert player.location.city == "Pattaya"
-        assert player.user.username == "john_pattaya"
+        assert player.user.first_name == 'John'
+        assert player.location.city == 'Pattaya'
+        assert player.user.username == 'john_pattaya'
 
     def test_cyprus_user_sees_all_cyprus_cities(self, setup_test_data):
-        """Test that Cyprus users see players from all Cyprus cities."""
+        '''Test Cyprus users see players from all Cyprus cities.'''
         factory = APIRequestFactory()
-        request = factory.get("/players/?search=John")
-        request.user = setup_test_data["requesting_player_limassol"].user
+        request = factory.get('/players/?search=John')
+        request.user = setup_test_data['requesting_player_limassol'].user
 
-        data = {"search": "John"}
+        data = {'search': 'John'}
         filter_instance = PlayersFilter(data, queryset=Player.objects.all())
         filter_instance.request = request
 
@@ -213,39 +213,39 @@ class TestPlayersFilter:
         cities = [p.location.city for p in filtered_players]
         countries = [p.location.country for p in filtered_players]
 
-        assert "Limassol" in cities
-        assert "Nicosia" in cities
-        assert all(country == "Cyprus" for country in countries)
+        assert 'Limassol' in cities
+        assert 'Nicosia' in cities
+        assert all(country == 'Cyprus' for country in countries)
 
     def test_cyprus_user_no_thailand_players_in_results(self, setup_test_data):
-        """Test that Cyprus users don't see Thailand players."""
+        '''Test Cyprus users don't see Thailand players.'''
         factory = APIRequestFactory()
-        request = factory.get("/players/?search=John")
-        request.user = setup_test_data["requesting_player_limassol"].user
+        request = factory.get('/players/?search=John')
+        request.user = setup_test_data['requesting_player_limassol'].user
 
-        data = {"search": "John"}
+        data = {'search': 'John'}
         filter_instance = PlayersFilter(data, queryset=Player.objects.all())
         filter_instance.request = request
 
         filtered_players = list(filter_instance.qs)
 
         thailand_players = [
-            p for p in filtered_players if p.location.country == "Thailand"
+            p for p in filtered_players if p.location.country == 'Thailand'
         ]
         cyprus_players = [
-            p for p in filtered_players if p.location.country == "Cyprus"
+            p for p in filtered_players if p.location.country == 'Cyprus'
         ]
 
         assert len(thailand_players) == 0
         assert len(cyprus_players) == 2
 
     def test_cyprus_user_multiple_cities_same_name(self, setup_test_data):
-        """Test Cyprus user sees players with same name from different cities."""
+        '''Test Cyprus user sees players with same name from other cities.'''
         factory = APIRequestFactory()
-        request = factory.get("/players/?search=Jane")
-        request.user = setup_test_data["requesting_player_limassol"].user
+        request = factory.get('/players/?search=Jane')
+        request.user = setup_test_data['requesting_player_limassol'].user
 
-        data = {"search": "Jane"}
+        data = {'search': 'Jane'}
         filter_instance = PlayersFilter(data, queryset=Player.objects.all())
         filter_instance.request = request
 
@@ -255,49 +255,48 @@ class TestPlayersFilter:
         countries = [p.location.country for p in filtered_players]
 
         assert len(filtered_players) == 1
-        assert "Larnaca" in cities
-        assert all(country == "Cyprus" for country in countries)
-        # Jane из Bangkok (Thailand) не должна попасть в результаты
+        assert 'Larnaca' in cities
+        assert all(country == 'Cyprus' for country in countries)
 
     def test_thailand_city_isolation(self, setup_test_data):
-        """Test that Thailand cities are properly isolated."""
+        '''Test that Thailand cities are properly isolated.'''
         factory = APIRequestFactory()
 
-        request_bangkok = factory.get("/players/?search=Jane")
+        request_bangkok = factory.get('/players/?search=Jane')
         request_bangkok.user = setup_test_data[
-            "requesting_player_bangkok"
+            'requesting_player_bangkok'
         ].user
 
         filter_bangkok = PlayersFilter(
-            {"search": "Jane"}, queryset=Player.objects.all()
+            {'search': 'Jane'}, queryset=Player.objects.all()
         )
         filter_bangkok.request = request_bangkok
         bangkok_results = list(filter_bangkok.qs)
 
-        request_pattaya = factory.get("/players/?search=Jane")
+        request_pattaya = factory.get('/players/?search=Jane')
         request_pattaya.user = setup_test_data[
-            "requesting_player_pattaya"
+            'requesting_player_pattaya'
         ].user
 
         filter_pattaya = PlayersFilter(
-            {"search": "Jane"}, queryset=Player.objects.all()
+            {'search': 'Jane'}, queryset=Player.objects.all()
         )
         filter_pattaya.request = request_pattaya
         pattaya_results = list(filter_pattaya.qs)
 
         assert len(bangkok_results) == 1
-        assert bangkok_results[0].location.city == "Bangkok"
-        assert bangkok_results[0].user.first_name == "Jane"
+        assert bangkok_results[0].location.city == 'Bangkok'
+        assert bangkok_results[0].user.first_name == 'Jane'
 
         assert len(pattaya_results) == 0
 
     def test_cyprus_country_wide_search(self, setup_test_data):
-        """Test that Cyprus search works country-wide, not city-specific."""
+        '''Test Cyprus search works country-wide, not city-specific.'''
         factory = APIRequestFactory()
-        request = factory.get("/players/?search=John")
-        request.user = setup_test_data["requesting_player_limassol"].user
+        request = factory.get('/players/?search=John')
+        request.user = setup_test_data['requesting_player_limassol'].user
 
-        data = {"search": "John"}
+        data = {'search': 'John'}
         filter_instance = PlayersFilter(data, queryset=Player.objects.all())
         filter_instance.request = request
 
@@ -307,19 +306,19 @@ class TestPlayersFilter:
         countries = set(p.location.country for p in filtered_players)
 
         assert len(cities) == 2
-        assert "Limassol" in cities
-        assert "Nicosia" in cities
-        assert countries == {"Cyprus"}
+        assert 'Limassol' in cities
+        assert 'Nicosia' in cities
+        assert countries == {'Cyprus'}
 
     @pytest.mark.parametrize(
-        "requesting_city,search_term,expected_cities,expected_count",
+        'requesting_city,search_term,expected_cities,expected_count',
         [
-            ("Bangkok", "John", ["Bangkok"], 1),
-            ("Pattaya", "John", ["Pattaya"], 1),
-            ("Bangkok", "Jane", ["Bangkok"], 1),
-            ("Pattaya", "Jane", [], 0),
-            ("Limassol", "John", ["Limassol", "Nicosia"], 2),
-            ("Limassol", "Jane", ["Larnaca"], 1),
+            ('Bangkok', 'John', ['Bangkok'], 1),
+            ('Pattaya', 'John', ['Pattaya'], 1),
+            ('Bangkok', 'Jane', ['Bangkok'], 1),
+            ('Pattaya', 'Jane', [], 0),
+            ('Limassol', 'John', ['Limassol', 'Nicosia'], 2),
+            ('Limassol', 'Jane', ['Larnaca'], 1),
         ],
     )
     def test_location_filtering_parametrized(
@@ -330,23 +329,23 @@ class TestPlayersFilter:
         expected_cities,
         expected_count,
     ):
-        """Parametrized test for location filtering behavior."""
+        '''Parametrized test for location filtering behavior.'''
         factory = APIRequestFactory()
 
-        if requesting_city == "Bangkok":
-            requesting_user = setup_test_data["requesting_player_bangkok"].user
-        elif requesting_city == "Pattaya":
-            requesting_user = setup_test_data["requesting_player_pattaya"].user
-        elif requesting_city == "Limassol":
+        if requesting_city == 'Bangkok':
+            requesting_user = setup_test_data['requesting_player_bangkok'].user
+        elif requesting_city == 'Pattaya':
+            requesting_user = setup_test_data['requesting_player_pattaya'].user
+        elif requesting_city == 'Limassol':
             requesting_user = setup_test_data[
-                "requesting_player_limassol"
+                'requesting_player_limassol'
             ].user
 
-        request = factory.get(f"/players/?search={search_term}")
+        request = factory.get(f'/players/?search={search_term}')
         request.user = requesting_user
 
         filter_instance = PlayersFilter(
-            {"search": search_term}, queryset=Player.objects.all()
+            {'search': search_term}, queryset=Player.objects.all()
         )
         filter_instance.request = request
 
@@ -359,47 +358,47 @@ class TestPlayersFilter:
     def test_relevance_sorting_within_location_constraints(
         self, setup_test_data
     ):
-        """Test that relevance sorting works within location constraints."""
+        '''Test relevance sorting works within location constraints.'''
         factory = APIRequestFactory()
-        request = factory.get("/players/?search=J")
-        request.user = setup_test_data["requesting_player_bangkok"].user
+        request = factory.get('/players/?search=J')
+        request.user = setup_test_data['requesting_player_bangkok'].user
 
         johnny_user = User.objects.create_user(
-            username="johnny_bangkok",
-            first_name="Johnny",
-            last_name="Test",
-            email="johnny@example.com",
+            username='johnny_bangkok',
+            first_name='Johnny',
+            last_name='Test',
+            email='johnny@example.com',
         )
         Player.objects.create(
             user=johnny_user,
-            gender="MALE",
-            level="LIGHT",
-            location=setup_test_data["thailand_locations"][0],
+            gender='MALE',
+            level='LIGHT',
+            location=setup_test_data['thailand_locations'][0],
         )
 
-        data = {"search": "J"}
+        data = {'search': 'J'}
         filter_instance = PlayersFilter(data, queryset=Player.objects.all())
         filter_instance.request = request
 
         filtered_players = list(filter_instance.qs)
 
         bangkok_players = [
-            p for p in filtered_players if p.location.city == "Bangkok"
+            p for p in filtered_players if p.location.city == 'Bangkok'
         ]
         assert len(bangkok_players) == len(filtered_players)
 
         names = [p.user.first_name for p in filtered_players]
-        assert "John" in names
-        assert "Jane" in names
-        assert "Johnny" in names
+        assert 'John' in names
+        assert 'Jane' in names
+        assert 'Johnny' in names
 
     def test_empty_search_returns_all_players(self, setup_test_data):
-        """Test that empty search returns all players."""
+        '''Test that empty search returns all players.'''
         factory = APIRequestFactory()
-        request = factory.get("/players/?search=")
-        request.user = setup_test_data["requesting_player_bangkok"].user
+        request = factory.get('/players/?search=')
+        request.user = setup_test_data['requesting_player_bangkok'].user
 
-        data = {"search": ""}
+        data = {'search': ''}
         filter_instance = PlayersFilter(data, queryset=Player.objects.all())
         filter_instance.request = request
 
@@ -411,6 +410,6 @@ class TestPlayersFilter:
 
 @pytest.mark.django_db
 class TestPlayersFilterAPI:
-    """Class for API filter tests."""
+    '''Class for API filter tests.'''
 
     pass
