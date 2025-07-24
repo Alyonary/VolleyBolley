@@ -4,7 +4,7 @@ from django.urls import reverse
 from rest_framework.test import APIClient
 
 from apps.core.models import Contact, Tag
-from apps.courts.models import Court, Location
+from apps.courts.models import Court, CourtLocation
 from apps.players.models import Player, PlayerLocation
 
 User = get_user_model()
@@ -121,7 +121,7 @@ def location_for_court_data():
 
 @pytest.fixture
 def location_for_court(location_for_court_data):
-    return Location.objects.create(**location_for_court_data)
+    return CourtLocation.objects.create(**location_for_court_data)
 
 
 @pytest.fixture
