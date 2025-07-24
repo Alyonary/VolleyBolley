@@ -8,10 +8,6 @@ from apps.event.enums import EventFieldLength
 class EventMixin(m.Model):
     """Миксин события."""
 
-    title = m.CharField(
-        verbose_name=_('Название'),
-        max_length=EventFieldLength.TITLE.value,
-    )
     message = m.TextField(
         verbose_name=_('Описание'),
         validators=[MaxLengthValidator(EventFieldLength.MESSAGE.value)]
@@ -64,11 +60,6 @@ class EventMixin(m.Model):
     payment_value = m.CharField(
         verbose_name=_('Описание оплаты'),
         max_length=EventFieldLength.PAYMENT_VALUE.value,
-    )
-    tag_list = m.ManyToManyField(
-        'core.Tag',
-        verbose_name=_('Теги'),
-        blank=True,
     )
     is_private = m.BooleanField(
         verbose_name=_('Приватное событие'),

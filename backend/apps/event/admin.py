@@ -8,17 +8,16 @@ from .models import Game, Tourney
 class BaseEventAdmin(admin.ModelAdmin):
     list_display = (
         'id',
-        'title',
         'date',
         'court',
         'host',
         'is_active',
         'is_private',
     )
-    list_display_links = ('title',)
-    search_fields = ('title', 'message')
+    list_display_links = ('id',)
+    search_fields = ('message',)
     list_filter = ('court', 'is_active', 'is_private', 'date')
-    filter_horizontal = ('tag_list', 'player_levels', 'players')
+    filter_horizontal = ('player_levels', 'players')
     empty_value_display = _('Не задано',)
     autocomplete_fields = ('court', 'host', 'gender', 'payment_type')
     readonly_fields = ('created_at', 'updated_at')
