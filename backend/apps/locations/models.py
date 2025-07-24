@@ -8,7 +8,9 @@ class Country(models.Model):
     name = models.CharField(
         max_length=100,
         unique=True,
-        verbose_name=_('Country name')
+        verbose_name=_('Country name'),
+        default='',
+        help_text=_('Name of the country')
     )
 
     class Meta:
@@ -25,7 +27,9 @@ class City(models.Model):
 
     name = models.CharField(
         max_length=100,
-        verbose_name=_('City name')
+        verbose_name=_('City name'),
+        default='',
+        help_text=_('Name of the city')
     )
     country = models.ForeignKey(
         Country,

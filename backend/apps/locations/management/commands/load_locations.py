@@ -29,12 +29,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         '''Main command logic.'''
         file_path = options['file']
+        
+        if options['clear']:
+            self.clear_data()
+            return
 
         if not os.path.exists(file_path):
             raise CommandError(f'File "{file_path}" does not exist.')
 
-        if options['clear']:
-            self.clear_data()
 
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
