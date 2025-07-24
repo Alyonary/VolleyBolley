@@ -3,10 +3,10 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from .models import Court, Location
+from .models import Court, CourtLocation
 
 
-@admin.register(Location)
+@admin.register(CourtLocation)
 class LocationAdmin(admin.ModelAdmin):
     list_display = (
         'id',

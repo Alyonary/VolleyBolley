@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 from apps.core.serializers import ContactSerializer
 
-from .models import Court, Location
+from .models import Court, CourtLocation
 
 
 class LocationSerializer(serializers.ModelSerializer):
@@ -10,7 +10,7 @@ class LocationSerializer(serializers.ModelSerializer):
 
     class Meta:
         exclude = ('id',)
-        model = Location
+        model = CourtLocation
 
 
 class CourtSerializer(serializers.ModelSerializer):

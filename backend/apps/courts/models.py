@@ -6,7 +6,7 @@ from apps.core.models import Tag
 from apps.courts.enums import CourtEnums, LocationEnums
 
 
-class Location(models.Model):
+class CourtLocation(models.Model):
     '''Court location model.'''
 
     longitude = models.FloatField(
@@ -58,7 +58,7 @@ class Location(models.Model):
 class Court(models.Model):
     '''Court model.'''
     location = models.ForeignKey(
-        Location, on_delete=models.CASCADE
+        CourtLocation, on_delete=models.CASCADE
     )
     price_description = models.TextField(
         _('Price'),

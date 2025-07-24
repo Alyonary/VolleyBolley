@@ -5,14 +5,14 @@ from django.db import transaction
 from django.db.utils import IntegrityError
 
 from apps.core.models import Contact, Tag
-from apps.courts.models import Court, Location
+from apps.courts.models import Court, CourtLocation
 
 
 @pytest.mark.django_db
 class TestLocationTagModel:
 
     def test_create_location(self, location_for_court_data):
-        location = Location.objects.create(**location_for_court_data)
+        location = CourtLocation.objects.create(**location_for_court_data)
 
         assert location.longitude == location_for_court_data['longitude']
         assert location.latitude == location_for_court_data['latitude']
@@ -20,7 +20,7 @@ class TestLocationTagModel:
         assert location.location_name == location_for_court_data[
             'location_name'
         ]
-        assert Location.objects.all().count() == 1
+        assert CourtLocation.objects.all().count() == 1
 
     def test_create_tag(self, tag_data):
         tag = Tag.objects.create(**tag_data)
@@ -90,14 +90,15 @@ class TestCourtApiModel:
             api_client,
             court_list_url,
             location_for_court_data,
-            court_data
+            court_data,
+            court_obj
             ):
 
         location_for_court_data['court_name'] = 'Another court'
-        another_location = Location.objects.create(**location_for_court_data)
+        another_location = CourtLocation.objects.create(**location_for_court_data)
         court_data['location'] = another_location
         Court.objects.create(**court_data)
-        court_list_url += '?search_query=Another'
+        court_list_url += '?search=Another'
         response = api_client.get(court_list_url)
         assert response.data[0]['location']['court_name'] == 'Another court'
         assert len(response.data) == 1
