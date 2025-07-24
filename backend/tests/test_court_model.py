@@ -90,14 +90,15 @@ class TestCourtApiModel:
             api_client,
             court_list_url,
             location_for_court_data,
-            court_data
+            court_data,
+            court_obj
             ):
 
         location_for_court_data['court_name'] = 'Another court'
         another_location = Location.objects.create(**location_for_court_data)
         court_data['location'] = another_location
         Court.objects.create(**court_data)
-        court_list_url += '?search_query=Another'
+        court_list_url += '?search=Another'
         response = api_client.get(court_list_url)
         assert response.data[0]['location']['court_name'] == 'Another court'
         assert len(response.data) == 1
