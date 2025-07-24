@@ -6,6 +6,7 @@
 /.venv/
 /env/
 /.env/
+venv/
 
 # Кэш Python
 __pycache__/
