@@ -1,6 +1,7 @@
-from django.core.management import call_command
 import json
+
 import pytest
+from django.core.management import call_command
 
 from apps.locations.models import City, Country
 
