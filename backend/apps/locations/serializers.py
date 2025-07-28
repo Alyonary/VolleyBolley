@@ -24,3 +24,49 @@ class CountrySerializer(serializers.ModelSerializer):
     class Meta:
         model = Country
         fields = ['country_id', 'country_name', 'cities']
+
+
+class CountryCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Country
+        fields = ['name']
+
+    def validate_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Country name is required.')
+        return value
+
+class CityCreateSerializer(serializers.ModelSerializer):
+    country = serializers.CharField()
+
+    class Meta:
+        model = City
+        fields = ['name', 'country']
+
+    def validate_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('City name is required.')
+        return value
+
+    def validate_country(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Country is required for city.')
+        try:
+            return Country.objects.get(name=value)
+        except Country.DoesNotExist as e:
+            raise serializers.ValidationError(
+                f'Country "{value}" does not exist.'
+            ) from e
+
+    def validate(self, attrs):
+        name = attrs.get('name')
+        country = attrs.get('country')
+        if name and country:
+            if City.objects.filter(name=name, country=country).exists():
+                raise serializers.ValidationError(
+                        'City with this name and country already exists.'
+                )
+        return attrs

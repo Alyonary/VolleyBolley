@@ -9,7 +9,8 @@ class Country(models.Model):
         max_length=100,
         unique=True,
         verbose_name=_('Country name'),
-        default='',
+        null=False,
+        blank=False,
         help_text=_('Name of the country')
     )
 
@@ -28,14 +29,15 @@ class City(models.Model):
     name = models.CharField(
         max_length=100,
         verbose_name=_('City name'),
-        default='',
-        help_text=_('Name of the city')
+        help_text=_('Name of the city'),
+        null=False,
     )
     country = models.ForeignKey(
         Country,
         on_delete=models.CASCADE,
         related_name='cities',
-        verbose_name=_('Country')
+        verbose_name=_('Country'),
+        null=False
     )
 
     class Meta:

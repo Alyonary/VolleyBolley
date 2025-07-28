@@ -5,6 +5,10 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.locations.models import City, Country
+from apps.locations.serializers import (
+    CityCreateSerializer,
+    CountryCreateSerializer,
+)
 
 
 class Command(BaseCommand):
@@ -37,7 +41,6 @@ class Command(BaseCommand):
         if not os.path.exists(file_path):
             raise CommandError(f'File "{file_path}" does not exist.')
 
-
         try:
             with open(file_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
@@ -65,57 +68,63 @@ class Command(BaseCommand):
         '''Load countries and cities from JSON data.'''
         countries_created = 0
         for country_data in data.get('countries', []):
-            country, created = Country.objects.get_or_create(
-                name=country_data['name']
-            )
-            if created:
-                countries_created += 1
-                self.stdout.write(
-                    f'Created country: {country.name}',
-                    style_func=self.style.SUCCESS,
+            serializer = CountryCreateSerializer(data=country_data)
+            if serializer.is_valid():
+                country, created = Country.objects.get_or_create(
+                    name=serializer.validated_data['name']
                 )
+                if created:
+                    countries_created += 1
+                    self.stdout.write(
+                        f'Created country: {country.name}',
+                        style_func=self.style.SUCCESS,
+                    )
+                else:
+                    self.stdout.write(
+                        f'Country exists: {country.name}',
+                        style_func=self.style.NOTICE,
+                    )
             else:
                 self.stdout.write(
-                    f'Country exists: {country.name}',
-                    style_func=self.style.NOTICE,
+                    self.style.ERROR(
+                        f'Country not created: {country_data} — '
+                        f'{serializer.errors}'
+                    )
                 )
 
         self.stdout.write(f'Countries processed: {countries_created} created')
 
         cities_created = 0
-        cities_updated = 0
+        cities_skipped = 0
 
         for city_data in data.get('cities', []):
-            try:
-                country = Country.objects.get(name=city_data['country'])
-            except Country.DoesNotExist:
+            serializer = CityCreateSerializer(data=city_data)
+            if serializer.is_valid():
+                validated_data = serializer.validated_data
+                city, created = City.objects.get_or_create(
+                    name=validated_data['name'],
+                    country=validated_data['country'],
+                )
+                if created:
+                    cities_created += 1
+                    self.stdout.write(
+                        f'Created city: {city.name}, {city.country.name}',
+                        style_func=self.style.SUCCESS,
+                    )
+                else:
+                    self.stdout.write(
+                        f'City exists: {city.name}, {city.country.name}',
+                        style_func=self.style.NOTICE,
+                    )
+            else:
+                cities_skipped += 1
                 self.stdout.write(
                     self.style.ERROR(
-                        f'Country "{city_data["country"]}" not found '
-                        f'for city "{city_data["name"]}"'
+                        f'City not created: {city_data} — {serializer.errors}'
                     )
-                )
-                continue
-
-            city, created = City.objects.get_or_create(
-                name=city_data['name'],
-                country=country,
-            )
-
-            if created:
-                cities_created += 1
-                self.stdout.write(
-                    f'Created city: {city.name}, {city.country.name}',
-                    style_func=self.style.SUCCESS,
-                )
-            else:
-                cities_updated += 1
-                self.stdout.write(
-                    f'City exists: {city.name}',
-                    style_func=self.style.NOTICE,
                 )
 
         self.stdout.write(
             f'Cities processed: {cities_created} created, '
-            f'{cities_updated} updated'
+            f'{cities_skipped} skipped'
         )

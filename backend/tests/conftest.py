@@ -119,3 +119,26 @@ def countries_cities():
     City.objects.create(name='Nicosia', country=cyprus)
     
     return {'thailand': thailand, 'cyprus': cyprus}
+
+@pytest.fixture
+def countries_cities_data(countries_cities):
+    return {
+        'countries': [
+            {
+                'name': 'Thailand'
+            },
+            {
+                'name': 'Cyprus'
+            }
+        ],
+        'cities': [
+            {
+                'name': 'Bangkok',
+                'country': 'Thailand'
+            },
+            {
+                'name': 'Paphos',
+                'country': 'Cyprus'
+            }
+        ]
+    }
