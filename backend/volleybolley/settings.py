@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
     'phonenumber_field',
     'django_filters',
+    'drf_yasg',
 ]
 
 CSRF_USE_SESSIONS = False
