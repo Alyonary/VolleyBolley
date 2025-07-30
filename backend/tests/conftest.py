@@ -8,7 +8,6 @@ from apps.courts.models import Court, CourtLocation
 from apps.locations.models import City, Country
 from apps.players.models import Player, PlayerLocation
 
-
 User = get_user_model()
 
 
