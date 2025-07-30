@@ -1,12 +1,15 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from apps.locations.constants import LocationsEnums
+
+
 
 class Country(models.Model):
     '''Country model.'''
 
     name = models.CharField(
-        max_length=100,
+        max_length=LocationsEnums.MAX_LENGTH.value,
         unique=True,
         verbose_name=_('Country name'),
         null=False,
