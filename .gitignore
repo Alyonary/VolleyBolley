@@ -6,8 +6,7 @@
 /.venv/
 /env/
 /.env/
-venv/
-
+venv
 # Кэш Python
 __pycache__/
 *.py[cod]

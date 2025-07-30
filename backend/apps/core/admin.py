@@ -36,9 +36,9 @@ class BaseChoicesAdmin(admin.ModelAdmin):
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
-    list_display = ('id', 'value')
-    search_fields = ('value',)
-    ordering = ('value',)
+    list_display = ('id', 'contact_type', 'contact')
+    search_fields = ('contact', 'contact_type')
+    ordering = ('contact',)
     empty_value_display = _('Не задано')
     list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
 

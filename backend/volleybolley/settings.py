@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
     'phonenumber_field',
     'apps.locations.apps.LocationsConfig',
+    'django_filters',
 ]
 
 CSRF_USE_SESSIONS = False
@@ -134,6 +135,8 @@ REST_FRAMEWORK = {
     'TEST_REQUEST_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend']
 }
 
 SIMPLE_JWT = {
