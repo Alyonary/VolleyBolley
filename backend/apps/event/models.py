@@ -3,6 +3,7 @@ from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.mixins.created_updated import CreatedUpdatedMixin
+from apps.event.enums import EventFieldLength
 from apps.event.mixins import EventMixin
 
 
@@ -20,7 +21,17 @@ class Game(EventMixin, CreatedUpdatedMixin):
         settings.AUTH_USER_MODEL,
         verbose_name=_('Игроки'),
         related_name='games_players',
+        null=True,
+        blank=True
     )
+    
+    def __str__(self):
+        name = (
+            f'{self.court.location.court_name}, '
+            f'time: {self.start_time}'
+            f'host: {self.host}, '
+        )
+        return name[:EventFieldLength.STR_MAX_LEN.value]
 
     class Meta:
         verbose_name = _('Игра')

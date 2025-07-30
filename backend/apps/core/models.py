@@ -68,6 +68,10 @@ class Payment(m.Model):
 
     is_preferred = m.BooleanField(default=False)
 
+    def __str__(self):
+        return (f'Payment type: {self.get_payment_type_display()}, '
+                f'for user: {self.owner}')
+
     class Meta:
         verbose_name = _('Тип оплаты')
         verbose_name_plural = _('Типы оплаты')

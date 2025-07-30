@@ -8,7 +8,6 @@ from .models import Game, Tourney
 class BaseEventAdmin(admin.ModelAdmin):
     list_display = (
         'id',
-        'date',
         'court',
         'host',
         'is_active',
@@ -16,7 +15,7 @@ class BaseEventAdmin(admin.ModelAdmin):
     )
     list_display_links = ('id',)
     search_fields = ('message',)
-    list_filter = ('court', 'is_active', 'is_private', 'date')
+    list_filter = ('court', 'is_active', 'is_private')
     filter_horizontal = ('player_levels', 'players')
     empty_value_display = _('Не задано',)
     autocomplete_fields = ('court', 'host', 'gender', 'payment_type')

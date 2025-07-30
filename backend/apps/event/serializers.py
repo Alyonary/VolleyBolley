@@ -7,7 +7,7 @@ class GameSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Game
-        exclude = ('is_active',)
+        exclude = ('is_active', 'created_at', 'updated_at')
 
 
 class TourneySerializer(serializers.ModelSerializer):

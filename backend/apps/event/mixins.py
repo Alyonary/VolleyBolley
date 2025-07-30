@@ -12,14 +12,11 @@ class EventMixin(m.Model):
         verbose_name=_('Описание'),
         validators=[MaxLengthValidator(EventFieldLength.MESSAGE.value)]
     )
-    date = m.DateTimeField(
-        verbose_name=_('Дата и время')
+    start_time = m.DateTimeField(
+        verbose_name=_('Дата и время начала')
     )
-    start_time = m.TimeField(
-        verbose_name=_('Время начала')
-    )
-    end_time = m.TimeField(
-        verbose_name=_('Время окончания')
+    end_time = m.DateTimeField(
+        verbose_name=_('Дата и время окончания')
     )
     court = m.ForeignKey(
         'courts.Court',
@@ -72,9 +69,6 @@ class EventMixin(m.Model):
         verbose_name=_('Активно'),
         default=True,
     )
-
-    def __str__(self):
-        return self.title[:EventFieldLength.STR_MAX_LEN.value]
 
     class Meta:
         abstract = True
