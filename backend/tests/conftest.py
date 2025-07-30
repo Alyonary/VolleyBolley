@@ -146,7 +146,7 @@ def countries_cities_data(countries_cities):
         ]
     }
 
-
+@pytest.fixture
 def location_for_court_data():
     return {
         'longitude': 12.345,
