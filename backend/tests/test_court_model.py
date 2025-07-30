@@ -95,7 +95,8 @@ class TestCourtApiModel:
             ):
 
         location_for_court_data['court_name'] = 'Another court'
-        another_location = CourtLocation.objects.create(**location_for_court_data)
+        another_location = CourtLocation.objects.create(
+            **location_for_court_data)
         court_data['location'] = another_location
         Court.objects.create(**court_data)
         court_list_url += '?search=Another'
