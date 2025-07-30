@@ -172,7 +172,8 @@ def court_list_url():
 
 @pytest.fixture
 def court_obj_with_tag(court_obj, tag_obj):
-    return court_obj.tag_list.add(tag_obj)
+    court_obj.tag_list.add(tag_obj)
+    return court_obj
 
 
 @pytest.fixture

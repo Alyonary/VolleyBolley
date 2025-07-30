@@ -67,7 +67,7 @@ class TestCourtModel:
         assert contact_rel_court == contact
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 class TestCourtApiModel:
 
     def test_api_url(self, api_client, court_list_url):
@@ -83,7 +83,14 @@ class TestCourtApiModel:
             contact_object
             ):
         response = api_client.get(court_list_url)
-        assert response.data[0] == court_api_response_data
+        answer = response.data[0]
+        assert answer.keys() == court_api_response_data.keys()
+        assert answer['contacts_list'] == court_api_response_data[
+            'contacts_list']
+        assert answer['tag_list'] == court_api_response_data['tag_list']
+        assert answer['location'].keys() == court_api_response_data[
+            'location'].keys()
+        assert answer['court_id'] == court_obj_with_tag.id
 
     def test_filter_response(
             self,

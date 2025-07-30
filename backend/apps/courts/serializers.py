@@ -39,8 +39,3 @@ class CourtSerializer(serializers.ModelSerializer):
             'tag_list',
             'location'
         )
-
-    def to_representation(self, instance):
-        repr = super().to_representation(instance)
-        repr['court_id'] = instance.pk
-        return repr
