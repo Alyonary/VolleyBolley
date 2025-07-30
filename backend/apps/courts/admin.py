@@ -50,7 +50,8 @@ class CourtAdmin(admin.ModelAdmin):
     loc_court_name.short_description = _('Location name')
 
     def link_to_location(self, obj):
-        link = reverse("admin:courts_location_change", args=[obj.location.id])
+        link = reverse(
+            'admin:courts_courtlocation_change', args=[obj.location.id])
         return format_html(
             f'<a href="{link}">Edit {obj.location.location_name}</a>')
     link_to_location.short_description = 'Edit location'
