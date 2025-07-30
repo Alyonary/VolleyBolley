@@ -1,29 +1,36 @@
 from rest_framework import serializers
 
-from apps.core.serializers import ContactSerializer, TagSerializer
+from apps.core.serializers import ContactSerializer
 
-from .models import Court, Location
+from .models import Court, CourtLocation
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    """Сериализатор всех полей модели Location."""
+    '''Location serializer for all fileds exclude id.'''
 
     class Meta:
         exclude = ('id',)
-        model = Location
+        model = CourtLocation
 
 
 class CourtSerializer(serializers.ModelSerializer):
-    tag_list = TagSerializer(many=True, read_only=True)
+    '''Court model serializer.'''
 
-    contacts_list = ContactSerializer(many=True, read_only=True)
+    court_id = serializers.IntegerField(source='pk', read_only=True)
+
+    tag_list = serializers.StringRelatedField(many=True, read_only=True)
+
+    contacts_list = ContactSerializer(
+        many=True,
+        source='contacts',
+        read_only=True
+    )
 
     location = LocationSerializer(read_only=True)
 
     class Meta:
         model = Court
         fields = (
-            'id',
             'price_description',
             'description',
             'contacts_list',
@@ -31,3 +38,8 @@ class CourtSerializer(serializers.ModelSerializer):
             'tag_list',
             'location'
         )
+
+    def to_representation(self, instance):
+        repr = super().to_representation(instance)
+        repr['court_id'] = instance.pk
+        return repr

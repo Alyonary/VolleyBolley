@@ -15,5 +15,5 @@ class ContactSerializer(serializers.ModelSerializer):
     """Сериализатор всех полей модели Contact."""
 
     class Meta:
-        exclude = ('id',)
+        exclude = ('id', 'court')
         model = Contact
