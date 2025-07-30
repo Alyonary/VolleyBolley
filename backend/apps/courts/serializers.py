@@ -31,6 +31,7 @@ class CourtSerializer(serializers.ModelSerializer):
     class Meta:
         model = Court
         fields = (
+            'court_id',
             'price_description',
             'description',
             'contacts_list',
@@ -38,8 +39,3 @@ class CourtSerializer(serializers.ModelSerializer):
             'tag_list',
             'location'
         )
-
-    def to_representation(self, instance):
-        repr = super().to_representation(instance)
-        repr['court_id'] = instance.pk
-        return repr
