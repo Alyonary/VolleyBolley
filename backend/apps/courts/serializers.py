@@ -31,6 +31,7 @@ class CourtSerializer(serializers.ModelSerializer):
     class Meta:
         model = Court
         fields = (
+            'court_id',
             'price_description',
             'description',
             'contacts_list',
