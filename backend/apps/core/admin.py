@@ -8,7 +8,7 @@ from .models import (
     Gender,
     InfoPage,
     InfoSection,
-    PaymentType,
+    Payment,
     Tag,
 )
 
@@ -48,9 +48,13 @@ class TagAdmin(BaseNameAdmin):
     pass
 
 
-@admin.register(PaymentType)
-class PaymentTypeAdmin(BaseNameAdmin):
-    pass
+@admin.register(Payment)
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'owner', 'payment_type', 'payment_account')
+    search_fields = ('owner', 'payment_type')
+    ordering = ('owner',)
+    empty_value_display = _('Not defined')
+    list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
 
 
 @admin.register(Gender)

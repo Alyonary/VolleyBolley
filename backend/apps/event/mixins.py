@@ -50,8 +50,11 @@ class EventMixin(m.Model):
         null=False,
         blank=True,
     )
+    # ##### Надо подумать как тут сделать.
+    # У нас модель Payment содержит это поле.
+    # В каком виде ее сюда тянуть?
     payment_type = m.ForeignKey(
-        'core.PaymentType',
+        'core.Payment',
         verbose_name=_('Тип оплаты'),
         on_delete=m.SET_NULL,
         null=True,

@@ -1,8 +1,12 @@
 from django.db import models as m
+from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.enums import CoreFieldLength
 from apps.core.mixins.name_title import NameMixin, TitleMixin
+
+
+User = get_user_model()
 
 
 class Tag(NameMixin):
@@ -36,13 +40,38 @@ class Contact(m.Model):
         return f'{self.contact_type} {self.contact}'
 
 
-class PaymentType(NameMixin):
-    """Модель типа оплаты."""
+class Payment(m.Model):
+    """Модель типов оплаты пользователя."""
+
+    class PaymentTypeChoices(m.TextChoices):
+        REVOLUT = 'REVOLUT', _('Revoult')
+        THAIBANK = 'THAIBANK', _('Thai bank')
+        CASH = 'CASH', _('Cash')
+
+    owner = m.ForeignKey(
+        User,
+        on_delete=m.CASCADE
+    )
+
+    payment_type = m.CharField(
+        verbose_name=_('Payment type'),
+        max_length=CoreFieldLength.NAME.value,
+        choices=PaymentTypeChoices.choices
+    )
+
+    payment_account = m.CharField(
+        _('Payment account'),
+        max_length=CoreFieldLength.NAME.value,
+        blank=True,
+        null=True
+    )
+
+    is_preferred = m.BooleanField(default=False)
 
     class Meta:
         verbose_name = _('Тип оплаты')
         verbose_name_plural = _('Типы оплаты')
-        default_related_name = 'payment_types'
+        default_related_name = 'payments'
 
 
 class Gender(m.Model):

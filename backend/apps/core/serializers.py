@@ -1,6 +1,7 @@
+from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
-from apps.core.models import Contact, Tag
+from apps.core.models import Contact, Tag, Payment
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -17,3 +18,22 @@ class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         exclude = ('id', 'court')
         model = Contact
+
+
+class PaymentSerializer(serializers.ModelSerializer):
+
+    owner = serializers.HiddenField(
+        write_only=True,
+        default=serializers.CurrentUserDefault()
+    )
+
+    class Meta:
+        model = Payment
+        exclude = ('id',)
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=Payment.objects.all(),
+                fields=('owner', 'payment_type'),
+                message=_('This payment type already exists.'),
+            )
+        ]
