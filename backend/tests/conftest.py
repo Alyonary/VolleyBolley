@@ -5,7 +5,9 @@ from rest_framework.test import APIClient
 
 from apps.core.models import Contact, Tag
 from apps.courts.models import Court, CourtLocation
+from apps.locations.models import City, Country
 from apps.players.models import Player, PlayerLocation
+
 
 User = get_user_model()
 
@@ -110,6 +112,42 @@ def player_male_light(player_data):
 
 
 @pytest.fixture
+def countries_cities():
+    '''Create test cities and countries data.'''
+    thailand = Country.objects.create(name='Thailand')
+    cyprus = Country.objects.create(name='Cyprus')
+    
+    City.objects.create(name='Bangkok', country=thailand)
+    City.objects.create(name='Pattaya', country=thailand)
+    City.objects.create(name='Limassol', country=cyprus)
+    City.objects.create(name='Nicosia', country=cyprus)
+    
+    return {'thailand': thailand, 'cyprus': cyprus}
+
+@pytest.fixture
+def countries_cities_data(countries_cities):
+    return {
+        'countries': [
+            {
+                'name': 'Thailand'
+            },
+            {
+                'name': 'Cyprus'
+            }
+        ],
+        'cities': [
+            {
+                'name': 'Bangkok',
+                'country': 'Thailand'
+            },
+            {
+                'name': 'Paphos',
+                'country': 'Cyprus'
+            }
+        ]
+    }
+
+
 def location_for_court_data():
     return {
         'longitude': 12.345,
