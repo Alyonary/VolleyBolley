@@ -4,7 +4,6 @@ from django.utils.translation import gettext_lazy as _
 from apps.locations.constants import LocationsEnums
 
 
-
 class Country(models.Model):
     '''Country model.'''
 
