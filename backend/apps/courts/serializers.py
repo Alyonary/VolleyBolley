@@ -16,6 +16,8 @@ class LocationSerializer(serializers.ModelSerializer):
 class CourtSerializer(serializers.ModelSerializer):
     '''Court model serializer.'''
 
+    court_id = serializers.IntegerField(source='pk', read_only=True)
+
     tag_list = serializers.StringRelatedField(many=True, read_only=True)
 
     contacts_list = ContactSerializer(

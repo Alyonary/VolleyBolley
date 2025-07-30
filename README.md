@@ -1,8 +1,30 @@
 ### Развертывание проекта на удаленном сервере:  
-1. На сервере установить python версии 3.11, docker.  
-2. На сервере создать директорию volleybolley.  
-3. Скопировать на сервер в директорию volleybolley файл docker-compose.production.yml.  
-4. Создать в директории volleybolley файл .env по образцу в файле infra/.env.example для production.  
+
+1. Подключиться к серверу через SSH:  
+  `ssh -i <путь до id_rsa ключа на локальном устройстве>/id_rsa <username на сервере>@<ip-адрес сервера>`  
+  Ввести `<passphrase>` для подключения к серверу при наличии.  
+2. На сервере создать директорию VolleyBolley.  
+3. Скопировать на сервер в директорию VolleyBolley файл .env по образцу в файле infra/.env.example для production.  
+4. Установить docker на сервере:
+  ```
+  sudo apt update  
+  sudo apt install curl  
+  curl -fSL https://get.docker.com -o get-docker.sh  
+  sudo sh ./get-docker.sh  
+  sudo apt install docker-compose-plugin  
+  sudo usermod -aG docker <username>  
+  newgrp docker  
+  sudo systemctl restart docker  
+  ```
+5. Обновить secrets в настройках репозитория при необходимости:  
+  - SECRET_KEY  
+  - ALLOWED_HOSTS  
+  - HOST  
+  - USER  
+  - SSH_KEY  
+  - TELEGRAM_TO  
+  - TELEGRAM_TOKEN  
+6. Сделать push в ветку main.  
   
 ### Запуск проекта локально:  
 1. Клонировать репозиторий.  

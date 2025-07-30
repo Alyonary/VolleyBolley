@@ -12,6 +12,17 @@ jobs:
 
   tests:
     runs-on: ubuntu-latest
+    env:
+      DB_HOST: localhost
+      DB_PORT: 5432
+      POSTGRES_DB: django_db
+      POSTGRES_USER: django_user
+      POSTGRES_PASSWORD: django_password
+      DATABASE_URL: postgresql://django_user:django_password@localhost:5432/django_db
+      SECRET_KEY: ${{ secrets.SECRET_KEY }}
+      DEBUG: False
+      ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
+
     services:
       postgres:
         image: postgres:17.5-alpine
@@ -22,33 +33,35 @@ jobs:
         ports:
           - 5432:5432
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    defaults:
+      run:
+        working-directory: ./backend
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
       - name: Set up Python ${{ env.PYTHON_VERSION }}
         uses: actions/setup-python@v4
         with:
           python-version: ${{ env.PYTHON_VERSION }}
+
       - name: Install dependencies
         run: |
-          cd backend
           python -m pip install --upgrade pip 
           pip install poetry
           poetry install --no-root --no-interaction
-      - name: Run lint and tests
-        env:
-          POSTGRES_USER: django_user
-          POSTGRES_PASSWORD: django_password
-          POSTGRES_DB: django_db
-          DB_HOST: 127.0.0.1
-          DB_PORT: 5432
-          SECRET_KEY: ${{ secrets.SECRET_KEY }}
-          DEBUG: False
-          ALLOWED_HOSTS: ${{ secrets.ALLOWED_HOSTS }}
+
+      - name: Apply migrations
         run: |
-          cd backend/
-          ruff check
-          pytest tests/ --cov=apps --cov-report=xml
+          poetry run python manage.py makemigrations
+          poetry run python manage.py migrate
+
+      - name: Run lint and tests
+        run: |
+          poetry run ruff check
+          poetry run pytest tests/ --cov=apps --cov-report=xml
 
   build_and_push_to_docker_hub:
     if: github.ref_name == 'main'
@@ -68,7 +81,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
       - name: Push to DockerHub
         uses: docker/build-push-action@v4
         with:
@@ -113,15 +125,27 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v3
 
-    - name: Copy docker-compose.yml via ssh
+    - name: Test connection and create workdir
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.HOST }}
+        username: ${{ secrets.USER }}
+        key: ${{ secrets.SSH_KEY }}
+        script: |
+          sudo mkdir -p '/home/${{ secrets.USER }}/VolleyBolley'
+          sudo chmod 775 '/home/${{ secrets.USER }}/VolleyBolley'
+          sudo chown -R '${{ secrets.USER }}:' '/home/${{ secrets.USER }}/VolleyBolley'
+
+    - name: Copy docker-compose.production.yml via ssh
       uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
-        source: "docker-compose.production.yml"
-        target: "volleybolley"
+        source: "infra/docker-compose.production.yml"
+        target: "/home/${{ secrets.USER }}/VolleyBolley"
+        strip_components: 1
+        overwrite: true
 
     - name: Executing remote ssh commands to deploy
       uses: appleboy/ssh-action@master
@@ -129,13 +153,11 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
-          mkdir -p volleybolley
-          cd volleybolley
-          sudo docker compose -f docker-compose.production.yml pull
-          sudo docker compose -f docker-compose.production.yml down
-          sudo docker compose -f docker-compose.production.yml up -d
+          cd /home/${{ secrets.USER }}/VolleyBolley/
+          docker compose -f docker-compose.production.yml pull
+          docker compose -f docker-compose.production.yml down
+          docker compose -f docker-compose.production.yml up -d
 
     - name: Cleanup old images
       uses: appleboy/ssh-action@master
@@ -143,7 +165,6 @@ jobs:
         host: ${{ secrets.HOST }}
         username: ${{ secrets.USER }}
         key: ${{ secrets.SSH_KEY }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
           docker image prune -f
           docker network prune -f
