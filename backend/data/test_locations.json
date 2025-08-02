@@ -1,0 +1,36 @@
+{
+  "countries": [
+    {
+      "name": "Thailand"
+    },
+    {
+      "name": "Cyprus"
+    }
+  ],
+  "cities": [
+    {
+      "name": "Bangkok",
+      "country": "Thailand"
+    },
+    {
+      "name": "Pattaya",
+      "country": "Thailand"
+    },
+    {
+      "name": "Limassol",
+      "country": "Cyprus"
+    },
+    {
+      "name": "Nicosia",
+      "country": "Cyprus"
+    },
+    {
+      "name": "Larnaca",
+      "country": "Cyprus"
+    },
+    {
+      "name": "Paphos",
+      "country": "Cyprus"
+    }
+  ]
+}
