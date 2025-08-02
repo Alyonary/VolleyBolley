@@ -4,19 +4,6 @@ from apps.locations.models import City, Country
 
 
 @pytest.fixture
-def countries_cities():
-    '''Create test cities and countries data.'''
-    thailand = Country.objects.create(name='Thailand')
-    cyprus = Country.objects.create(name='Cyprus')
-    
-    City.objects.create(name='Bangkok', country=thailand)
-    City.objects.create(name='Pattaya', country=thailand)
-    City.objects.create(name='Limassol', country=cyprus)
-    City.objects.create(name='Nicosia', country=cyprus)
-    
-    return {'thailand': thailand, 'cyprus': cyprus}
-
-@pytest.fixture
 def countries_cities_data():
     return {
         'countries': [
@@ -38,3 +25,19 @@ def countries_cities_data():
             }
         ]
     }
+
+@pytest.fixture
+def countries_cities(countries_cities_data):
+    '''Create test cities and countries data.'''
+
+    countries = {}
+    for country_info in countries_cities_data['countries']:
+        country = Country.objects.create(name=country_info['name'])
+        countries[country_info['name']] = country
+
+    for city_info in countries_cities_data['cities']:
+        country = countries.get(city_info['country'])
+        if country:
+            City.objects.create(name=city_info['name'], country=country)
+
+    return countries
