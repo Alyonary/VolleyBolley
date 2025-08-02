@@ -1,4 +1,5 @@
 import pytest
+
 from apps.locations.models import City, Country
 
 

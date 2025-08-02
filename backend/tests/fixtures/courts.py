@@ -1,5 +1,5 @@
-from django.urls import reverse
 import pytest
+from django.urls import reverse
 
 from apps.core.models import Contact, Tag
 from apps.courts.models import Court, CourtLocation

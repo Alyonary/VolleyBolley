@@ -1,4 +1,5 @@
 import pytest
+
 from apps.players.models import Player, PlayerLocation
 
 
