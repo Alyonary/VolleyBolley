@@ -16,6 +16,7 @@ class User(AbstractUser):
         unique=True,
         blank=True,
         null=True,
+        default=None,
         verbose_name=_('Phone number'),
     )
     username = models.CharField(
