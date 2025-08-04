@@ -1,8 +1,8 @@
 class NotificationTypes:
     '''Notification types constants.'''
-    in_game: str = 'joinGame'
-    rate: str = 'rate'
-    removed: str = 'removed'
+    IN_GAME: str = 'joinGame'
+    RATE: str = 'rate'
+    REMOVED: str = 'removed'
 
 class Notification:
     '''
@@ -19,20 +19,21 @@ class Notification:
 
     @staticmethod
     def _get_params(notification_type):
+        '''Get notification parameters based on the type.'''
         templates = {
-            NotificationTypes.in_game: {
+            NotificationTypes.IN_GAME: {
                 'title': 'Game Invitation',
                 'body': 'You are invited to a game!',
                 'screen': 'inGame',
             },
-            NotificationTypes.rate: {
+            NotificationTypes.RATE: {
                 'title': 'Rate the game',
                 'body': 'Please rate the game!',
                 'screen': 'rate',
             },
-            NotificationTypes.removed: {
+            NotificationTypes.REMOVED: {
                 'title': 'You have been removed from the game',
-                'body': 'See details in the app',
+                'body': 'See details in the app.',
                 'screen': 'removed',
             },
         }

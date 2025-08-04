@@ -5,11 +5,12 @@ from apps.event.models import Game
 from apps.players.models import Player
 
 
-class DeviceQuerySet(models.QuerySet):
-    '''Custom queryset for Device model.'''
+class DeviceManager(models.Manager):
+    '''Custom manager for Device model.'''
+
     def active(self):
         '''Return only active devices.'''
-        return self.filter(is_active=True)
+        return self.get_queryset().filter(is_active=True)
 
     def in_game(self, game_id):
         '''Return devices associated with players in a specific game.'''
@@ -20,20 +21,11 @@ class DeviceQuerySet(models.QuerySet):
         ).values_list('id', flat=True)
         return self.active().filter(player_id__in=player_ids)
 
-class DeviceManager(models.Manager):
-    '''Custom manager for Device model.'''
+    def by_player(self, player_id):
+        '''Return devices associated with a specific player.'''
+        return self.active(
+            ).filter(player_id=player_id).values_list('token', flat=True)
 
-    def get_queryset(self):
-        '''Return the custom queryset for Device.'''
-        return DeviceQuerySet(self.model, using=self._db)
-
-    def active(self):
-        '''Return only active devices.'''
-        return self.get_queryset().active()
-
-    def in_game(self, game_id):
-        '''Return devices associated with players in a specific game.'''
-        return self.get_queryset().in_game(game_id)
 
 class DeviceType(models.TextChoices):
     IOS = 'ios', 'ios'
