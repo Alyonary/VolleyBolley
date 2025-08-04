@@ -40,8 +40,9 @@ INSTALLED_APPS = [
     'apps.courts.apps.CourtsConfig',
     'apps.event.apps.EventConfig',
     'apps.core.apps.CoreConfig',
-    'phonenumber_field',
     'apps.locations.apps.LocationsConfig',
+    'apps.notofications.apps.NotificationsConfig'
+    'phonenumber_field',
     'django_filters',
 ]
 
@@ -213,3 +214,5 @@ LOGGING = {
         },
     },
 }
+
+FCM_API_KEY = os.getenv('FCM_API_KEY', '')
