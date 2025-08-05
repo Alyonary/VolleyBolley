@@ -18,7 +18,7 @@ class BaseEventAdmin(admin.ModelAdmin):
     list_filter = ('court', 'is_active', 'is_private')
     filter_horizontal = ('player_levels', 'players')
     empty_value_display = _('Не задано',)
-    autocomplete_fields = ('court', 'host', 'gender', 'payment_type')
+    autocomplete_fields = ('court', 'host', 'gender')
     readonly_fields = ('created_at', 'updated_at')
     list_per_page = EventFieldLength.ADMIN_LIST_PER_PAGE.value
 

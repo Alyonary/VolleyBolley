@@ -21,9 +21,9 @@ class EventMixin(m.Model):
     court = m.ForeignKey(
         'courts.Court',
         verbose_name=_('Площадка'),
-        on_delete=m.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=m.CASCADE,
+        null=False,
+        blank=False,
     )
     gender = m.ForeignKey(
         'core.Gender',
@@ -47,19 +47,24 @@ class EventMixin(m.Model):
         null=False,
         blank=True,
     )
-    # ##### Надо подумать как тут сделать.
-    # У нас модель Payment содержит это поле.
-    # В каком виде ее сюда тянуть?
-    payment_type = m.ForeignKey(
-        'core.Payment',
+    payment_type = m.CharField(
         verbose_name=_('Тип оплаты'),
-        on_delete=m.SET_NULL,
+        max_length=EventFieldLength.PAYMENT_VALUE.value,
         null=True,
         blank=True,
     )
-    payment_value = m.CharField(
-        verbose_name=_('Описание оплаты'),
+    payment_account = m.CharField(
+        verbose_name=_('Реквизиты счета'),
         max_length=EventFieldLength.PAYMENT_VALUE.value,
+        null=True,
+        blank=True
+    )
+    currency_type = m.ForeignKey(
+        'core.CurrencyType',
+        verbose_name=_('Тип валюты'),
+        on_delete=m.SET_NULL,
+        null=True,
+        blank=True,
     )
     is_private = m.BooleanField(
         verbose_name=_('Приватное событие'),

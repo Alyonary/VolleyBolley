@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 from .enums import CoreFieldLength
 from .models import (
     Contact,
+    CurrencyType,
     GameLevel,
     Gender,
     InfoPage,
@@ -85,10 +86,10 @@ class InfoSectionAdmin(admin.ModelAdmin):
                 + '...'
             )
             if obj.content
-               and (
-                   len(obj.content)
-                   > CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value
-                   )
+                and (
+                    len(obj.content)
+                    > CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value
+                )
             else obj.content
         )
 
@@ -100,5 +101,14 @@ class InfoPageAdmin(admin.ModelAdmin):
     list_filter = ('tag',)
     search_fields = ('title',)
     ordering = ('title',)
+    empty_value_display = _('Не задано')
+    list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
+
+
+@admin.register(CurrencyType)
+class CurrencyTypeAdmin(admin.ModelAdmin):
+    list_display = ('id', 'currency_type', 'currency_name')
+    search_fields = ('currency_type', 'currency_name')
+    ordering = ('currency_type',)
     empty_value_display = _('Не задано')
     list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value

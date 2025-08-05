@@ -1,10 +1,9 @@
-from django.db import models as m
 from django.contrib.auth import get_user_model
+from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.enums import CoreFieldLength
 from apps.core.mixins.name_title import NameMixin, TitleMixin
-
 
 User = get_user_model()
 
@@ -69,7 +68,7 @@ class Payment(m.Model):
     is_preferred = m.BooleanField(default=False)
 
     def __str__(self):
-        return (f'Payment type: {self.get_payment_type_display()}, '
+        return (f'Payment type: {self.payment_type}, '
                 f'for user: {self.owner}')
 
     class Meta:
@@ -82,9 +81,9 @@ class Gender(m.Model):
     """Модель гендера."""
 
     class GenderChoices(m.TextChoices):
-        MIX = 'mix', _('Смешанный')
-        MEN = 'men', _('Мужской')
-        WOMEN = 'women', _('Женский')
+        MIX = 'MIX', _('Смешанный')
+        MEN = 'MEN', _('Мужской')
+        WOMEN = 'WOMEN', _('Женский')
 
     name = m.CharField(
         verbose_name=_('Пол'),
@@ -107,10 +106,10 @@ class GameLevel(m.Model):
     """Модель игрового уровня."""
 
     class GameLevelChoices(m.TextChoices):
-        LIGHT = 'light', _('Новичок')
-        MEDIUM = 'medium', _('Средний')
-        HARD = 'hard', _('Продвинутый')
-        PRO = 'pro', _('Профессионал')
+        LIGHT = 'LIGHT', _('Новичок')
+        MEDIUM = 'MEDIUM', _('Средний')
+        HARD = 'HARD', _('Продвинутый')
+        PRO = 'PRO', _('Профессионал')
 
     name = m.CharField(
         verbose_name=_('Уровень'),
@@ -165,3 +164,37 @@ class InfoSection(TitleMixin):
         verbose_name_plural = _('Разделы информационных страниц')
         default_related_name = 'sections'
         ordering = ('page', 'order')
+
+
+class CurrencyType(m.Model):
+    '''Currency type model.'''
+
+    class CurrencyTypeChoices(m.TextChoices):
+        EUR = 'EUR', _('Euro')
+        THB = 'THB', _('THB')
+
+    class CurrencyNameChoices(m.TextChoices):
+        EUR = '€', _('Euro')
+        THB = '฿', _('THB')
+
+    currency_type = m.CharField(
+        verbose_name=_('Currency type'),
+        max_length=CoreFieldLength.NAME.value,
+        choices=CurrencyTypeChoices.choices,
+        unique=True,
+    )
+
+    currency_name = m.CharField(
+        verbose_name=_('Currency label'),
+        max_length=CoreFieldLength.NAME.value,
+        choices=CurrencyNameChoices.choices,
+        unique=True,
+    )
+
+    def __str__(self):
+        return self.currency_type
+
+    class Meta:
+        verbose_name = _('Currency type')
+        verbose_name_plural = _('Currency types')
+        default_related_name = 'currency_types'
