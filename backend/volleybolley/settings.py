@@ -41,7 +41,7 @@ INSTALLED_APPS = [
     'apps.event.apps.EventConfig',
     'apps.core.apps.CoreConfig',
     'apps.locations.apps.LocationsConfig',
-    'apps.notofications.apps.NotificationsConfig'
+    'apps.notifications.apps.NotificationsConfig',
     'phonenumber_field',
     'django_filters',
 ]
@@ -215,4 +215,4 @@ LOGGING = {
     },
 }
 
-FCM_API_KEY = os.getenv('FCM_API_KEY', '')
+FCM_FILE_PATH = BASE_DIR_OUT / 'infra' / 'fcm_service_account.json'

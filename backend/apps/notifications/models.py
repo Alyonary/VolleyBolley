@@ -1,3 +1,4 @@
+from backend.apps.notifications.constants import DEVICE_MAX_LENGTH
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -24,7 +25,7 @@ class DeviceManager(models.Manager):
     def by_player(self, player_id):
         '''Return devices associated with a specific player.'''
         return self.active(
-            ).filter(player_id=player_id).values_list('token', flat=True)
+            ).filter(player_id=player_id)
 
 
 class DeviceType(models.TextChoices):
@@ -35,7 +36,7 @@ class DeviceType(models.TextChoices):
 
 class Device(models.Model):
     '''Model for storing device information for push notifications.'''
-    token = models.CharField(max_length=255, unique=True)
+    token = models.CharField(max_length=DEVICE_MAX_LENGTH, unique=True)
     # device_type = models.CharField(
     #     max_length=10,
     #     choices=DeviceType.choices,
@@ -57,4 +58,4 @@ class Device(models.Model):
         verbose_name_plural = _('Devices')
 
     def __str__(self):
-        return f'{self.player.user.username} - {self.device_type}'
+        return f'{self.player.user.username} - device {self.id}'

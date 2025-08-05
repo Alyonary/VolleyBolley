@@ -42,16 +42,6 @@ class Notification:
         params = templates[notification_type].copy()
         return params
 
-class FCMTokenAction:
-    '''FCM token actions constants.'''
-    UPDATE: str = 'update'
-    SET: str = 'set'
-    DEACTIVATE: str = 'deactivate'
-    CHOICES: list[tuple[str]] = [
-        (UPDATE, 'update'),
-        (SET, 'set'),
-        (DEACTIVATE, 'deactivate'),
-    ]
 
 class DeviceType:
     '''Device type choices constants.'''

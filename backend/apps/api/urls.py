@@ -1,3 +1,4 @@
+from backend.apps.notifications.views import FCMTokenView
 from django.urls import include, path, re_path
 from rest_framework.routers import DefaultRouter
 
@@ -12,6 +13,7 @@ api_v1.register('courts', CourtViewSet, basename='courts')
 
 urlpatterns = [
     path('', include(api_v1.urls)),
+    path('fcm-token/', FCMTokenView.as_view(), name='fcm_token'),
     path('countries/', CountryListView.as_view(), name='countries'), 
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     re_path(r'^auth/', include('djoser.urls')),
