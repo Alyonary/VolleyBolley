@@ -5,7 +5,6 @@ from apps.api.views import LogoutView
 from apps.core.views import PaymentViewSet
 from apps.courts.views import CourtViewSet
 from apps.event.views import GameViewSet
-from apps.api.views import LogoutView
 from apps.locations.views import CountryListView
 
 app_name = 'api'
