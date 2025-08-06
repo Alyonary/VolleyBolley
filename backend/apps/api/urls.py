@@ -16,7 +16,7 @@ api_v1.register('payments', PaymentViewSet, basename='payments')
 
 urlpatterns = [
     path('', include(api_v1.urls)),
-    path('countries/', CountryListView.as_view(), name='countries'), 
+    path('countries/', CountryListView.as_view(), name='countries'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     re_path(r'^auth/', include('djoser.urls')),
     re_path(r'^auth/', include('djoser.urls.jwt')),

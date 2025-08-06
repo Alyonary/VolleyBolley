@@ -4,6 +4,8 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.enums import CoreFieldLength
 from apps.core.mixins.name_title import NameMixin, TitleMixin
+from apps.locations.models import Country
+# from apps.event.models import Game
 
 User = get_user_model()
 
@@ -43,7 +45,7 @@ class Payment(m.Model):
     """Модель типов оплаты пользователя."""
 
     class PaymentTypeChoices(m.TextChoices):
-        REVOLUT = 'REVOLUT', _('Revoult')
+        REVOLUT = 'REVOLUT', _('Revolut')
         THAIBANK = 'THAIBANK', _('Thai bank')
         CASH = 'CASH', _('Cash')
 
@@ -190,6 +192,11 @@ class CurrencyType(m.Model):
         choices=CurrencyNameChoices.choices,
         unique=True,
     )
+    country = m.ForeignKey(
+        Country,
+        on_delete=m.SET_NULL,
+        null=True,
+        blank=True)
 
     def __str__(self):
         return self.currency_type
@@ -198,3 +205,22 @@ class CurrencyType(m.Model):
         verbose_name = _('Currency type')
         verbose_name_plural = _('Currency types')
         default_related_name = 'currency_types'
+
+
+class GameInvitation(m.Model):
+
+    host = m.ForeignKey(User, on_delete=m.CASCADE, related_name='host')
+
+    invited = m.ForeignKey(User, on_delete=m.CASCADE, related_name='invited')
+
+    game = m.ForeignKey('event.Game', on_delete=m.CASCADE)
+
+    class Meta:
+        verbose_name = _('Подписка')
+        verbose_name_plural = _('Подписки')
+        constraints = [
+            m.UniqueConstraint(
+                fields=['host', 'invited'],
+                name='unique following'
+            )
+        ]

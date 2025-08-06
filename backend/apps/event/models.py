@@ -21,7 +21,6 @@ class Game(EventMixin, CreatedUpdatedMixin):
         settings.AUTH_USER_MODEL,
         verbose_name=_('Игроки'),
         related_name='games_players',
-        null=True,
         blank=True
     )
 
