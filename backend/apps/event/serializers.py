@@ -1,15 +1,19 @@
 from datetime import datetime
+
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
-from apps.event.models import Game
 from apps.core.models import (
-    CurrencyType, GameLevel, Gender, Payment, GameInvitation
+    CurrencyType,
+    GameInvitation,
+    GameLevel,
+    Gender,
+    Payment,
 )
 from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
-
+from apps.event.models import Game
 
 User = get_user_model()
 
@@ -127,7 +131,6 @@ class GameSerializer(BaseGameSerializer):
             raise serializers.ValidationError(
                 'Игроки не должны повторяться')
         return value
-    
 
     @staticmethod
     def create_invitations(game, sender=None, players=None):
