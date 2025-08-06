@@ -1,19 +1,15 @@
 from datetime import datetime
-
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
+from apps.event.models import Game
 from apps.core.models import (
-    CurrencyType,
-    GameInvitation,
-    GameLevel,
-    Gender,
-    Payment,
+    CurrencyType, GameLevel, Gender, Payment, GameInvitation
 )
 from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
-from apps.event.models import Game
+
 
 User = get_user_model()
 
@@ -42,9 +38,13 @@ class BaseGameSerializer(serializers.ModelSerializer):
         queryset=Gender.objects.all()
     )
 
-    currency_type = serializers.SerializerMethodField(read_only=True)
+    currency_type = serializers.CharField(
+        required=False
+    )
 
-    payment_account = serializers.SerializerMethodField(read_only=True)
+    payment_account = serializers.CharField(
+        required=False
+    )
 
     maximum_players = serializers.IntegerField(
         source='max_players'
@@ -68,8 +68,17 @@ class BaseGameSerializer(serializers.ModelSerializer):
             'payment_account',
         ]
 
-    def get_currency_type(self, obj):
-        value = CurrencyType.objects.first()
+    def validate(self, value):
+        request = self.context.get('request', None)
+        payment = Payment.objects.get(
+            owner=request.user,
+            payment_type=value.get('payment_type')
+        )
+        if not payment or payment.payment_account is None:
+            raise serializers.ValidationError(
+                'No payment account found for this payment type')
+        value['payment_account'] = payment.payment_account
+
         '''
         Пока пользователи не настроены, отдаем так.
         Должно быть что-то вроде:
@@ -77,15 +86,9 @@ class BaseGameSerializer(serializers.ModelSerializer):
         currency_types = CurrencyType.objects.filter(
                             country=player.location.country)
         '''
-        return f'{value.currency_type}'
-
-    def get_payment_account(self, obj):
-        request = self.context.get('request', None)
-        payment = Payment.objects.get(
-            owner=request.user,
-            payment_type=obj.payment_type
-        )
-        return payment.payment_account
+        currency_type = CurrencyType.objects.first()
+        value['currency_type'] = currency_type
+        return value
 
 
 class GameSerializer(BaseGameSerializer):
@@ -107,12 +110,12 @@ class GameSerializer(BaseGameSerializer):
         ]
 
     def create(self, validated_data):
+        print(validated_data)
         players = validated_data.pop('players')
         levels = validated_data.pop('player_levels')
         game = Game.objects.create(**validated_data)
         game.player_levels.set(levels)
         self.create_invitations(game=game, sender=game.host, players=players)
-
         return game
 
     def validate_players(self, value):
@@ -124,6 +127,7 @@ class GameSerializer(BaseGameSerializer):
             raise serializers.ValidationError(
                 'Игроки не должны повторяться')
         return value
+    
 
     @staticmethod
     def create_invitations(game, sender=None, players=None):

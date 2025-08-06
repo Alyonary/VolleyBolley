@@ -55,16 +55,12 @@ class EventMixin(m.Model):
     )
     payment_account = m.CharField(
         verbose_name=_('Реквизиты счета'),
-        max_length=EventFieldLength.PAYMENT_VALUE.value,
-        null=True,
-        blank=True
+        max_length=EventFieldLength.PAYMENT_VALUE.value
     )
     currency_type = m.ForeignKey(
         'core.CurrencyType',
         verbose_name=_('Тип валюты'),
-        on_delete=m.SET_NULL,
-        null=True,
-        blank=True,
+        on_delete=m.CASCADE
     )
     is_private = m.BooleanField(
         verbose_name=_('Приватное событие'),
