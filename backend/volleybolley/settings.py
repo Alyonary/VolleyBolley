@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'apps.event.apps.EventConfig',
     'apps.core.apps.CoreConfig',
     'phonenumber_field',
+    'apps.locations.apps.LocationsConfig',
     'django_filters',
     'drf_yasg',
 ]
@@ -135,6 +136,8 @@ REST_FRAMEWORK = {
     'TEST_REQUEST_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend']
 }
 
 SIMPLE_JWT = {
