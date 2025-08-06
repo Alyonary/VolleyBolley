@@ -2,7 +2,7 @@ from rest_framework.viewsets import ModelViewSet
 
 from .models import Game
 from .permissions import IsHostOrReadOnly
-from .serializers import GameSerializer, GameDetailSerializer
+from .serializers import GameDetailSerializer, GameSerializer
 
 
 class GameViewSet(ModelViewSet):

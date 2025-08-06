@@ -5,6 +5,7 @@ from django.utils.translation import gettext_lazy as _
 from apps.core.enums import CoreFieldLength
 from apps.core.mixins.name_title import NameMixin, TitleMixin
 from apps.locations.models import Country
+
 # from apps.event.models import Game
 
 User = get_user_model()
@@ -209,18 +210,24 @@ class CurrencyType(m.Model):
 
 class GameInvitation(m.Model):
 
+    class StatusTypeChoices(m.TextChoices):
+        ACCEPTED = 'ACCEPTED', _('Accepted')
+        REJECTED = 'REJECTED', _('Rejected')
+        NOT_DECIDED = 'NOT_DECIDED', _('Not decided')
+
     host = m.ForeignKey(User, on_delete=m.CASCADE, related_name='host')
 
     invited = m.ForeignKey(User, on_delete=m.CASCADE, related_name='invited')
 
     game = m.ForeignKey('event.Game', on_delete=m.CASCADE)
 
+    status = m.CharField(
+        verbose_name=_('Invitation status'),
+        max_length=CoreFieldLength.NAME_STR.value,
+        choices=StatusTypeChoices.choices,
+        default=StatusTypeChoices.NOT_DECIDED
+    )
+
     class Meta:
-        verbose_name = _('Подписка')
-        verbose_name_plural = _('Подписки')
-        constraints = [
-            m.UniqueConstraint(
-                fields=['host', 'invited'],
-                name='unique following'
-            )
-        ]
+        verbose_name = _('Game invitation')
+        verbose_name_plural = _('Game invitations')

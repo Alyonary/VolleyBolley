@@ -1,15 +1,19 @@
 from datetime import datetime
+
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
-from apps.event.models import Game
 from apps.core.models import (
-    CurrencyType, GameLevel, Gender, Payment, GameInvitation
+    CurrencyType,
+    GameInvitation,
+    GameLevel,
+    Gender,
+    Payment,
 )
 from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
-
+from apps.event.models import Game
 
 User = get_user_model()
 
@@ -101,6 +105,49 @@ class GameSerializer(BaseGameSerializer):
             'court_id',
             'players'
         ]
+
+    def create(self, validated_data):
+        players = validated_data.pop('players')
+        levels = validated_data.pop('player_levels')
+        game = Game.objects.create(**validated_data)
+        game.player_levels.set(levels)
+        self.create_invitations(game=game, sender=game.host, players=players)
+
+        return game
+
+    def validate_players(self, value):
+        host = self.context['request'].user
+        if host in value:
+            raise serializers.ValidationError(
+                'Нельзя отправить приглашение на игру себе.')
+        if len(value) != len(set(value)):
+            raise serializers.ValidationError(
+                'Игроки не должны повторяться')
+        return value
+
+    @staticmethod
+    def create_invitations(game, sender=None, players=None):
+        '''Создает приглашения на игру.
+
+        Принимает на вход объект игры, список игроков для создания приглашений
+        и отправителя. Если отправитель является организатором игры,
+        то отправителя можно не указывать.
+        '''
+
+        bulk_list = []
+        if not sender:
+            sender = game.host
+        for player in players:
+            if GameInvitation.objects.filter(
+                    host=sender, invited=player, game=game).exists():
+                raise serializers.ValidationError(
+                    f'Приглашение на игру {game} игроку'
+                    f'{player} от {sender} уже существует!'
+                )
+            invitation = GameInvitation(
+                host=sender, invited=player, game=game)
+            bulk_list.append(invitation)
+        GameInvitation.objects.bulk_create(bulk_list)
 
 
 class GameDetailSerializer(BaseGameSerializer):
