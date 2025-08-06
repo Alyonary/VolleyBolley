@@ -1,7 +1,9 @@
 from django.core.validators import MaxLengthValidator
 from django.db import models as m
 from django.utils.translation import gettext_lazy as _
+from rest_framework import serializers
 
+from apps.core.models import GameLevel
 from apps.event.enums import EventFieldLength
 
 
@@ -85,3 +87,27 @@ class EventMixin(m.Model):
     class Meta:
         abstract = True
         ordering = ('date',)
+
+
+class GameFieldMapMixin(serializers.ModelSerializer):
+    """Общий набор полей + маппинг имён модели."""
+
+    levels = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=GameLevel.objects.all(),
+        source='player_levels',
+        many=True
+    )
+    maximum_players = serializers.IntegerField(source='max_players')
+    payment_account = serializers.CharField(source='payment_value')
+    currency_type = serializers.SerializerMethodField(read_only=True)
+
+    def get_currency_type(self, obj):
+        return (
+            obj.court.country.currency_type
+            if obj.court and obj.court.country else 'EUR'
+        )
+
+    class Meta:
+        model = None
+        fields = ()

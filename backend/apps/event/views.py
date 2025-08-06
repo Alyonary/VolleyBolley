@@ -1,61 +1,50 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import viewsets
+from rest_framework import viewsets, status
+from rest_framework.response import Response
 
 from .models import Game
-from .serializers import GameCreateSerializer, GameDetailSerializer
+from .serializers import GameCreateSerializer, GameResponseSerializer
 
 
 class GameViewSet(viewsets.ModelViewSet):
+    """CRUD для игр."""
     queryset = Game.objects.all()
 
     # permission_classes = [permissions.IsAuthenticated]
 
     def get_serializer_class(self):
-        serializer_action_classes = {
-            'create': GameCreateSerializer,
-            'list': GameDetailSerializer,
-            'retrieve': GameDetailSerializer,
-        }
-        return serializer_action_classes.get(self.action, GameDetailSerializer)
+        return (
+            GameCreateSerializer
+            if self.action == 'create' else GameResponseSerializer
+        )
 
     @swagger_auto_schema(
         operation_description='Создать новую игру',
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             required=[
-                'title', 'message', 'date', 'start_time', 'end_time',
-                'court', 'gender', 'player_levels', 'max_players',
-                'price_per_person', 'payment_type', 'payment_value',
-                'is_private', 'players'
+                'message', 'start_time', 'end_time', 'court', 'gender',
+                'levels', 'maximum_players', 'price_per_person',
+                'payment_type', 'payment_account', 'is_private'
             ],
             properties={
-                'title': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description='Название игры',
-                    example='Вечерний матч'
-                ),
                 'message': openapi.Schema(
                     type=openapi.TYPE_STRING,
                     description='Описание/сообщение',
                     example='Играем в 20:00. Все приходим заранее!'
                 ),
-                'date': openapi.Schema(
-                    type=openapi.TYPE_STRING, format='date-time',
-                    description='Дата и время (ISO 8601)',
-                    example='2025-07-28T19:45:00Z'
-                ),
                 'start_time': openapi.Schema(
                     type=openapi.TYPE_STRING,
-                    format='time',
-                    description='Время начала (HH:MM)',
-                    example='19:45:00'
+                    format='date-time',
+                    description='Дата-время начала (ISO 8601)',
+                    example='2025-07-28T19:45:00Z'
                 ),
                 'end_time': openapi.Schema(
                     type=openapi.TYPE_STRING,
-                    format='time',
-                    description='Время окончания (HH:MM)',
-                    example='21:00:00'
+                    format='date-time',
+                    description='Дата-время окончания (ISO 8601)',
+                    example='2025-07-28T21:00:00Z'
                 ),
                 'court': openapi.Schema(
                     type=openapi.TYPE_INTEGER,
@@ -63,17 +52,17 @@ class GameViewSet(viewsets.ModelViewSet):
                     example=1
                 ),
                 'gender': openapi.Schema(
-                    type=openapi.TYPE_INTEGER,
-                    description='ID пола участников',
-                    example=1
+                    type=openapi.TYPE_STRING,
+                    description='Пол участников (MEN/WOMEN/MIXED)',
+                    example='MEN'
                 ),
-                'player_levels': openapi.Schema(
+                'levels': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
-                    items=openapi.Items(type=openapi.TYPE_INTEGER),
-                    description='Список ID уровней (справочник)',
-                    example=[1, 2]
+                    items=openapi.Items(type=openapi.TYPE_STRING),
+                    description='Список уровней (slug-и, например PRO)',
+                    example=['PRO']
                 ),
-                'max_players': openapi.Schema(
+                'maximum_players': openapi.Schema(
                     type=openapi.TYPE_INTEGER,
                     description='Максимальное число игроков',
                     example=8
@@ -82,22 +71,17 @@ class GameViewSet(viewsets.ModelViewSet):
                     type=openapi.TYPE_NUMBER,
                     format='decimal',
                     description='Стоимость с человека',
-                    example=3.0
+                    example=5.0
                 ),
                 'payment_type': openapi.Schema(
-                    type=openapi.TYPE_INTEGER,
-                    description='ID типа оплаты',
-                    example=1),
-                'payment_value': openapi.Schema(
                     type=openapi.TYPE_STRING,
-                    description='Комментарий к оплате',
-                    example='Наличными'
+                    description='Тип оплаты (например REVOLUT, CASH)',
+                    example='REVOLUT'
                 ),
-                'tag_list': openapi.Schema(
-                    type=openapi.TYPE_ARRAY,
-                    items=openapi.Items(type=openapi.TYPE_INTEGER),
-                    description='Список ID тегов',
-                    example=[1, 2]
+                'payment_account': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Реквизиты/комментарий к оплате',
+                    example='1234?'
                 ),
                 'is_private': openapi.Schema(
                     type=openapi.TYPE_BOOLEAN,
@@ -107,12 +91,25 @@ class GameViewSet(viewsets.ModelViewSet):
                 'players': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
                     items=openapi.Items(type=openapi.TYPE_INTEGER),
-                    description='ID игроков, которые участвуют в игре',
+                    description='ID игроков, которые сразу участвуют',
                     example=[2, 3]
                 ),
             }
-        )
+        ),
+        responses={201: GameResponseSerializer}
     )
     def create(self, request, *args, **kwargs):
-        """Создать новую игру."""
-        return super().create(request, *args, **kwargs)
+        """Создаёт игру и сразу возвращает JSON."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        game = serializer.save()
+        resp_data = GameResponseSerializer(
+            game,
+            context={'request': request},
+        ).data
+        headers = self.get_success_headers(resp_data)
+        return Response(
+            resp_data,
+            status=status.HTTP_201_CREATED,
+            headers=headers
+        )
