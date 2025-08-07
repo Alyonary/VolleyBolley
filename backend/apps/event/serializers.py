@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
@@ -96,6 +97,7 @@ class BaseGameSerializer(serializers.ModelSerializer):
 
 
 class GameSerializer(BaseGameSerializer):
+    '''Game serializer uses for create, list requests.'''
 
     players = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
@@ -114,12 +116,21 @@ class GameSerializer(BaseGameSerializer):
         ]
 
     def create(self, validated_data):
-        print(validated_data)
         players = validated_data.pop('players')
         levels = validated_data.pop('player_levels')
         game = Game.objects.create(**validated_data)
         game.player_levels.set(levels)
-        self.create_invitations(game=game, sender=game.host, players=players)
+        for player in players:
+            serializer = GameInviteSerializer(
+                    data={
+                        'host': game.host.id,
+                        'invited': player.id,
+                        'game': game.id
+                    },
+                    context=self.context
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
         return game
 
     def validate_players(self, value):
@@ -132,32 +143,9 @@ class GameSerializer(BaseGameSerializer):
                 'Игроки не должны повторяться')
         return value
 
-    @staticmethod
-    def create_invitations(game, sender=None, players=None):
-        '''Создает приглашения на игру.
-
-        Принимает на вход объект игры, список игроков для создания приглашений
-        и отправителя. Если отправитель является организатором игры,
-        то отправителя можно не указывать.
-        '''
-
-        bulk_list = []
-        if not sender:
-            sender = game.host
-        for player in players:
-            if GameInvitation.objects.filter(
-                    host=sender, invited=player, game=game).exists():
-                raise serializers.ValidationError(
-                    f'Приглашение на игру {game} игроку'
-                    f'{player} от {sender} уже существует!'
-                )
-            invitation = GameInvitation(
-                host=sender, invited=player, game=game)
-            bulk_list.append(invitation)
-        GameInvitation.objects.bulk_create(bulk_list)
-
 
 class GameDetailSerializer(BaseGameSerializer):
+    '''Game serializer uses for retrieve requests.'''
 
     host = UserSerializer()
 
@@ -176,22 +164,47 @@ class GameDetailSerializer(BaseGameSerializer):
         ]
 
     def get_game_type(self, obj):
-        """Хардкод фу-фу-фу.
-        Возвращаемые значения:
+        '''Assigns a type to the game.
+        Returning values:
         MY, UPCOMING, ARCHIVE, INVITES, ACTIVE
-        """
+        '''
         request = self.context.get('request', None)
         if obj.host == request.user:
             return 'MY'
         elif GameInvitation.objects.filter(
                 invited=request.user, game=obj).exists():
-            return 'INVITE'
+            return 'INVITES'
         elif obj.end_time < datetime.now().strftime('%Y-%m-%d %H:%M'):
             return 'ARCHIVE'
         elif obj.start_time > datetime.now().strftime('%Y-%m-%d %H:%M'):
             return 'UPCOMING'
         else:
             return 'ACTIVE'
+
+
+class GameInviteSerializer(serializers.ModelSerializer):
+
+    invited = serializers.PrimaryKeyRelatedField(
+        write_only=True, queryset=User.objects.all())
+
+    class Meta:
+        model = GameInvitation
+        fields = ('host', 'invited', 'game')
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=GameInvitation.objects.all(),
+                fields=('host', 'invited', 'game'),
+                message=_('Такое приглашение уже существует!'),
+            )
+        ]
+
+    def validate(self, attrs):
+        host = attrs.get('host')
+        invited = attrs.get('invited')
+        if host == invited:
+            raise serializers.ValidationError(
+                'Нельзя отправить приглашение на игру себе.')
+        return attrs
 
 
 class TourneySerializer(serializers.ModelSerializer):

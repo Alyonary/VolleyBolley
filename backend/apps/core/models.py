@@ -231,3 +231,8 @@ class GameInvitation(m.Model):
     class Meta:
         verbose_name = _('Game invitation')
         verbose_name_plural = _('Game invitations')
+
+    def __str__(self):
+        discription = str(_(
+            f'Invitation in {self.game} for {self.invited}: {self.status}'))
+        return discription

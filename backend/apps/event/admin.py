@@ -20,6 +20,7 @@ class BaseEventAdmin(admin.ModelAdmin):
     empty_value_display = _('Не задано',)
     autocomplete_fields = ('court', 'host', 'gender')
     readonly_fields = ('created_at', 'updated_at')
+    ordering = ('id',)
     list_per_page = EventFieldLength.ADMIN_LIST_PER_PAGE.value
 
 
