@@ -1,7 +1,8 @@
-from backend.apps.notifications.exceptions import FCMFileNotFoundError
 from pyfcm import FCMNotification
+from pyfcm.errors import FCMError
 
 from apps.notifications.constants import Notification, NotificationTypes
+from apps.notifications.exceptions import FCMFileNotFoundError
 from apps.notifications.models import Device
 from volleybolley.settings import FCM_FILE_PATH
 
@@ -84,16 +85,22 @@ def send_push_notification(
     '''
     try:
         check_fcm_file()
+        #Перенести логику проверки fcm файла в воркфлоу?? (перед запуском бэка)
         data_message = {'screen': notification.screen}
         if game_id:
             data_message['gameId'] = game_id
         for token in tokens:
-            push_service.notify(
-            fcm_token=token,
-            notification_title=notification.title,
-            notification_body=notification.body,
-            data_payload=data_message
-            )
+            try:
+                push_service.notify(
+                fcm_token=token,
+                notification_title=notification.title,
+                notification_body=notification.body,
+                data_payload=data_message
+                )
+            except FCMError:
+                continue
+             # логировать ошибку, если нужно. переход к след. токену
+        return True
     except FileNotFoundError as e:
         raise FCMFileNotFoundError() from e
-    return 
+    

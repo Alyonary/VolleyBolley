@@ -1,8 +1,8 @@
-from backend.apps.notifications.constants import DEVICE_MAX_LENGTH
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.event.models import Game
+from apps.notifications.constants import DEVICE_MAX_LENGTH
 from apps.players.models import Player
 
 
@@ -27,6 +27,26 @@ class DeviceManager(models.Manager):
         return self.active(
             ).filter(player_id=player_id)
 
+    def update_or_create_token(self, token, player, is_active=True):
+        '''
+        Update or create a device with the given token and player.
+        If a device with the token already exists, it updates the player
+        and active status. If it doesn't exist, it creates a new device.
+        Returns the device and a boolean indicating if it was created.
+        '''
+        try:
+            device = self.get(token=token)
+            device.player = player
+            device.is_active = is_active
+            device.save()
+            return device, False
+        except self.model.DoesNotExist:
+            device = self.create(
+                token=token,
+                player=player,
+                is_active=is_active
+            )
+            return device, True
 
 class DeviceType(models.TextChoices):
     IOS = 'ios', 'ios'
