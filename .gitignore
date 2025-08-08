@@ -23,6 +23,9 @@ backend/apps/*/migrations/0*
 /staticfiles/
 /mediafiles/
 
+# Медиафайлы
+*/media/
+
 # Environments
 .env
 .env.local
