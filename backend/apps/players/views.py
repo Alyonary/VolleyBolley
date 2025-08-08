@@ -4,12 +4,13 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
-from apps.core.permissions import IsPlayer
+from apps.core.permissions import IsNotRegisteredPlayer, IsRegisteredPlayer
 from apps.players.models import Favorite, Payment, Player
 from apps.players.serializers import (
     AvatarSerializer,
     FavoriteSerializer,
     PaymentSerializer,
+    PaymentsSerializer,
     PlayerBaseSerializer,
     PlayerListSerializer,
     PlayerRegisterSerializer,
@@ -23,7 +24,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     queryset = Player.objects.all()
     serializer_class = PlayerBaseSerializer
     http_method_names = ['get', 'post', 'patch', 'put', 'delete']
-    permission_classes = [IsPlayer]
+    permission_classes = [IsRegisteredPlayer]
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "me":
@@ -33,6 +34,8 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         elif self.action == 'register':
             return PlayerRegisterSerializer
         elif self.action == 'get_put_payments':
+            if self.request.method == 'GET':
+                return PaymentsSerializer
             return PaymentSerializer
         elif self.action == 'list':
             return PlayerListSerializer
@@ -43,16 +46,21 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     def get_serializer_context(self):
         context = super().get_serializer_context()
         context.update({
-            'player': self.queryset.filter(user=self.request.user),
+            'player': self.queryset.get(user=self.request.user),
             'current_user': self.request.user
         })
         return context
 
     def get_queryset(self):
         queryset = self.queryset
+        if self.action != 'register':
+            queryset = queryset.exclude(is_registered=False)
         if self.action == 'get_put_payments':
-            return Payment.objects.filter(player=self.request.user.player)
-        elif self.action == 'list':
+            player = self.request.user.player
+            if player.is_registered:
+                return Payment.objects.filter(player=self.request.user.player)
+            return None
+        if self.action == 'list':
             queryset = queryset.exclude(user=self.request.user)
         return queryset
 
@@ -68,7 +76,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @action(['GET', 'PATCH', 'DELETE'], detail=False)
     def me(self, request):
         """Get, patch or delete current player."""
-        instance = self.retrieve(request)
+        instance = self.get_object()
         if self.request.method == 'DELETE':
             user = User.objects.filter(player=instance)
             if user:
@@ -88,18 +96,21 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             return Response(
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
-        return instance
+        serializer=self.get_serializer(instance)
+        return Response(
+            status=status.HTTP_200_OK, data=serializer.data
+        )
 
     @action(
         detail=False, methods=['PUT'], url_path='me/avatar',
-        url_name='me/avatar'
+        url_name='me-avatar'
     )
     def put_delete_avatar(self, request):
         """Update avatar.
         
         To delete avatar set its value to null.
         """
-        instance = self.retrieve(request)
+        instance = self.get_object()
         serializer = self.get_serializer(
             instance, data=request.data
         )
@@ -110,18 +121,22 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     @action(
         detail=False, methods=['PUT', 'GET'], url_path='me/avatar/payments',
-        url_name='me/avatar/payments'
+        url_name='me-avatar-payments'
     )
     def get_put_payments(self, request):
         """Get or put payment data of player."""
         if self.request.method == 'GET':
-            return self.list(self, request)
+            payments = {
+                'payments': self.get_queryset()
+            }
+            serializer = self.get_serializer(payments)
+            return Response(data=serializer.data, status=status.HTTP_200_OK)
 
         payments_data = request.data.get('payments', [])
         if check_payments_data(payments_data):
             try:
                 errors = make_transaction(
-                    payments_data, queryset=self.queryset
+                    payments_data, queryset=self.get_queryset()
                 )
                 if errors:
                     return Response(
@@ -141,10 +156,10 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @action(
         detail=True, methods=['POST', 'DELETE']
     )
-    def favorite(self, request, id=None):
+    def favorite(self, request, pk=None):
         """Add or delete player from favorite list."""
         player = self.get_object()
-        favorite = get_object_or_404(Player, id=id)
+        favorite = get_object_or_404(Player, id=pk)
         serializer = FavoriteSerializer(
             data=request.data,
             context={
@@ -164,15 +179,15 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
-        detail=False, methods=['POST']
+        detail=False,
+        methods=['POST'],
+        permission_classes=[IsNotRegisteredPlayer],
     )
     def register(self, request):
         """Register new player."""
-        instance = self.retrieve(request)
-        data=request.data
-        data['is_registered'] = True
+        instance = self.get_object()
         serializer = self.get_serializer(
-            instance=instance, data=data
+            instance=instance, data=request.data
         )
         if serializer.is_valid():
             serializer.save()

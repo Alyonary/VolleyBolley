@@ -3,7 +3,7 @@ import base64
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 
-from .models import Favorite, Payment, Player, PlayerLocation
+from .models import Favorite, Payment, Player
 
 
 class Base64ImageField(serializers.ImageField):
@@ -18,14 +18,6 @@ class Base64ImageField(serializers.ImageField):
             )
 
         return super().to_internal_value(data)
-
-
-class PlayerLocationSerializer(serializers.ModelSerializer):
-    """Serialize data for player location."""
-
-    class Meta:
-        model = PlayerLocation
-        fields = ['country', 'city']
 
 
 class PaymentSerializer(serializers.ModelSerializer):
@@ -56,16 +48,6 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         max_length=150,
         required=False
     )
-    country = serializers.CharField(
-        source='location.country',
-        max_length=150,
-        required=False
-    )
-    city = serializers.CharField(
-        source='location.city',
-        max_length=150,
-        required=False
-    )
     avatar = Base64ImageField(read_only=True)
     
     class Meta:
@@ -82,20 +64,16 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         )
 
     def update(self, instance, validated_data):
-
         user_data = validated_data.pop('user', {})
         for attr, value in user_data.items():
             setattr(instance.user, attr, value)
-        
-        location_data = validated_data.pop('location', {})
-        for attr, value in location_data.items():
-            setattr(instance.location, attr, value)
-        
+            
+        instance.user.save()
+
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+        instance.is_registered = True
         
-        instance.user.save()
-        instance.location.save()
         instance.save()
         
         return instance
@@ -159,19 +137,7 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
         max_length=150,
         required=True
     )
-    #TODO Переделать под новую модель
-    country = serializers.CharField(
-        source='location.country',
-        max_length=150,
-        required=True
-    )
-    #TODO переделать под новую модель
-    city = serializers.CharField(
-        source='location.city',
-        max_length=150,
-        required=True
-    )
-    
+
     class Meta:
         model = Player
         fields = (
@@ -183,11 +149,13 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
             'country',
             'city',
         )
-        extra_kwargs = {
-            'date_of_birth': {'required': True},
-            'level': {'required': True},
-            'gender': {'required': True},
-        }
+        # extra_kwargs = {
+        #     'date_of_birth': {'required': True},
+        #     'level': {'required': True},
+        #     'gender': {'required': True},
+        #     'country': {'required': True},
+        #     'city': {'required': True},
+        # }
 
 
 class PlayerListSerializer(PlayerBaseSerializer):
@@ -219,11 +187,11 @@ class PlayerListSerializer(PlayerBaseSerializer):
             'is_favorite'
         )
 
-    def get_is_favorite(self):
+    def get_is_favorite(self, obj):
         """Retrieve if player is in favorite list."""
         return Favorite.objects.filter(
             player=self.context.get('player'),
-            favorite=self.player_id
+            favorite=self.context.get('favorite')
         ).exists()
 
 

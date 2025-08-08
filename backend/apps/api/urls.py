@@ -19,7 +19,7 @@ urlpatterns = [
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/google/login/', GoogleLogin.as_view(), name='google-login'),
     path(
-        'auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'
+        'auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'
     ),
-    path('auth/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('auth/token/verify/', TokenVerifyView.as_view(), name='token-verify'),
 ]

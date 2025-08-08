@@ -3,7 +3,8 @@ name = "backend"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Киприн Вячеслав",email = "kiprinvs@gmail.com"}
+    {name = "Киприн Вячеслав",email = "kiprinvs@gmail.com"},
+    {name = "Дорофеев Ярослав",email = "dorof.rik@gmail.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,6 +21,7 @@ dependencies = [
     "django-filter (>=25.1,<26.0)",
     "social-auth-app-django (>=5.5.1,<6.0.0)",
     "python-jose[cryptography] (>=3.5.0,<4.0.0)",
+    "google-auth (>=2.40.3,<3.0.0)",
 ]
 
 
@@ -35,3 +37,4 @@ pytest-django = "^4.11.1"
 ruff = "^0.12.1"
 psycopg2 = "^2.9.10"
 pytest-cov = "^6.2.1"
+responses = "^0.25.7"

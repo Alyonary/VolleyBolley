@@ -1,8 +1,13 @@
+from datetime import date
+
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.enums import Levels
+from apps.locations.models import City, Country
 from apps.players.constants import (
     Genders,
     Payments,
@@ -13,22 +18,9 @@ from apps.players.constants import (
 User = get_user_model()
 
 
-class PlayerLocation(models.Model):
-    """Players location model."""
-
-    country = models.CharField(
-        _('Country'), max_length=PlayerIntEnums.LOCATION_MAX_LENGTH.value
-    )
-    city = models.CharField(
-        _('City'), max_length=PlayerIntEnums.LOCATION_MAX_LENGTH.value
-    )
-
-    class Meta:
-        verbose_name = _('Location')
-        verbose_name_plural = _('Locations')
-
-    def __str__(self):
-        return f"{self.city}, {self.country}"
+def validate_birthday(value):
+    if value > timezone.now().date():
+        raise ValidationError(_('Date of birth cannot be in the future.'))
 
 
 class Player(models.Model):
@@ -47,13 +39,13 @@ class Player(models.Model):
         max_length=PlayerIntEnums.GENDER_MAX_LENGTH.value,
         choices=Genders.choices,
         blank=False,
-        default=Genders.MALE.value
+        default=PlayerStrEnums.DEFAULT_GENDER.value
     )
     level = models.CharField(
         verbose_name=_('Level of player'),
         max_length=PlayerIntEnums.LEVEL_MAX_LENGTH.value,
         choices=Levels.choices,
-        default=Levels.LIGHT.value,
+        default=PlayerStrEnums.DEFAULT_LEVEL.value,
     )
     avatar = models.ImageField(
         verbose_name=_('Avatar'),
@@ -62,19 +54,29 @@ class Player(models.Model):
         blank=True,
         default=None,
     )
-    location = models.ForeignKey(
-        PlayerLocation,
-        related_name='players',
-        on_delete=models.SET_NULL,
-        null=True,
-        verbose_name=_('Location of player'),
-    )
     rating = models.PositiveIntegerField(
         default=PlayerIntEnums.DEFAULT_RATING.value,
         verbose_name=_('Rating of player'),
     )
     date_of_birth = models.DateField(
-        default=PlayerStrEnums.DEFAULT_BIRTHDAY.value
+        default=PlayerStrEnums.DEFAULT_BIRTHDAY.value,
+        validators=[validate_birthday],
+    )
+    country = models.ForeignKey(
+        Country,
+        related_name='players',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_('Country of player')
+    )
+    city = models.ForeignKey(
+        City,
+        related_name='players',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name=_('City of player')
     )
     is_registered = models.BooleanField(
         verbose_name=_('Status of player registration in app'),
@@ -88,6 +90,18 @@ class Player(models.Model):
 
     def __str__(self):
         return f"Player {self.user.first_name} {self.user.last_name}"
+
+    def clean(self):
+        super().clean()
+        if self.date_of_birth:
+            if not isinstance(self.date_of_birth, date):
+                raise ValidationError(
+                    {'date_of_birth': _('Invalid date format.')}
+                )                
+            if self.date_of_birth > timezone.now().date():
+                raise ValidationError(
+                    {'date_of_birth': _('Birthday cannot be in the future')}
+                )
 
 
 class Payment(models.Model):
@@ -112,6 +126,8 @@ class Payment(models.Model):
         verbose_name=_('Payment account of player'),
         max_length=PlayerIntEnums.PAYMENT_MAX_LENGTH.value,
         default=None,
+        null=True,
+        blank=True
     )
     is_preferred = models.BooleanField(
         verbose_name=_('Players preferable payment type'),

@@ -24,7 +24,7 @@ def make_transaction(
         errors = []
         for payment_data in payments_data:
             try:
-                payment = queryset.filter(
+                payment = queryset.get(
                     payment_type=payment_data['payment_type']
                 )
                 serializer = PaymentSerializer(payment, data=payment_data)

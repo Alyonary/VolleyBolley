@@ -31,16 +31,17 @@ class PlayersFilter(django_filters.FilterSet):
 
         request = getattr(self, "request", None)
         current_user_player = Player.objects.get(user=request.user)
-        current_location = current_user_player.location
+        current_country = current_user_player.country
+        current_city = current_user_player.city
         queryset = queryset.exclude(user=request.user)
-        if current_location.country == "Thailand":
+        if current_country.name == "Thailand":
             filtered_queryset = (
                 queryset.filter(
                     (
                         Q(user__first_name__icontains=value)
                         | Q(user__last_name__icontains=value)
                     )
-                    & Q(location__city=current_location.city)
+                    & Q(city=current_city)
                 )
                 .annotate(relevance=relevance_sort)
                 .order_by("relevance", "user__first_name")
@@ -52,7 +53,7 @@ class PlayersFilter(django_filters.FilterSet):
                         Q(user__first_name__icontains=value)
                         | Q(user__last_name__icontains=value)
                     )
-                    & Q(location__country=current_location.country)
+                    & Q(country=current_country)
                 )
                 .annotate(relevance=relevance_sort)
                 .order_by("relevance", "user__first_name")
