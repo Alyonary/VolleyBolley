@@ -26,10 +26,10 @@ def countries_cities_data():
         ]
     }
 
+
 @pytest.fixture
 def countries_cities(countries_cities_data):
     '''Create test cities and countries data.'''
-
     countries = {}
     for country_info in countries_cities_data['countries']:
         country = Country.objects.create(name=country_info['name'])
