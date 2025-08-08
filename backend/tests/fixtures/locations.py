@@ -41,4 +41,3 @@ def countries_cities(countries_cities_data):
             City.objects.create(name=city_info['name'], country=country)
 
     return countries
-
