@@ -44,6 +44,7 @@ CSRF_USE_SESSIONS = False
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'apps.api.middlewares.OAuthResponseMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -135,18 +136,11 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
-# Google OAuth2 settings
-SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', '')
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', '')
-SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
-    'https://www.googleapis.com/auth/userinfo.email',
-    'https://www.googleapis.com/auth/userinfo.profile',
-    'openid'
-]
-SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
-# Критически важные параметры
-SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'access_type': 'online'}
+SOCIAL_AUTH_URL_NAMESPACE = 'api:social'
 SOCIAL_AUTH_RAISE_EXCEPTIONS = True  # Для дебага
+SOCIAL_AUTH_LOG_REDIRECTS = True
+SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
+SOCIAL_AUTH_CLEAN_USERNAMES = False
 
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
@@ -158,11 +152,20 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.associate_user',
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',
-    'apps.players.pipeline.create_player'
+    'apps.players.pipeline.create_player',
+    'apps.api.pipeline.generate_json_response',
+    'apps.api.pipeline.raise_oauth_success',
 )
 
-SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
-SOCIAL_AUTH_CLEAN_USERNAMES = False
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', '')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', '')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+    'openid'
+]
+SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
+SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'access_type': 'online'}
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')
@@ -182,6 +185,10 @@ LOGGING = {
             'format': '{levelname} {asctime} {module} {message}',
             'style': '{',
         },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
     },
     'handlers': {
         'console': {
@@ -192,28 +199,58 @@ LOGGING = {
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
             'formatter': 'verbose',
+            'encoding': 'utf-8',
+        },
+        'error_file': {
+            'class': 'logging.FileHandler',
+            'filename': 'errors.log',
+            'formatter': 'verbose',
+            'level': 'ERROR',
+            'encoding': 'utf-8',
         },
     },
     'loggers': {
+        'django': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
         'django.request': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'file', 'error_file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'django.security': {
-            'handlers': ['console', 'file'],
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
             'level': 'DEBUG',
         },
         'rest_framework': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
         },
-        'rest_framework.authentication': {
-            'handlers': ['console'],
+        'social_core': {
+            'handlers': ['console', 'file'],
             'level': 'DEBUG',
         },
-        'rest_framework.permissions': {
-            'handlers': ['console'],
+        'allauth': {
+            'handlers': ['console', 'file'],
             'level': 'DEBUG',
+        },
+        'oauthlib': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        'requests_oauthlib': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        '': {
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
         },
     },
 }

@@ -15,7 +15,6 @@ from apps.players.serializers import (
     PlayerListSerializer,
     PlayerRegisterSerializer,
 )
-from apps.players.utils import check_payments_data, make_transaction
 from apps.users.models import User
 
 
@@ -55,13 +54,17 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         queryset = self.queryset
         if self.action != 'register':
             queryset = queryset.exclude(is_registered=False)
+
         if self.action == 'get_put_payments':
             player = self.request.user.player
             if player.is_registered:
                 return Payment.objects.filter(player=self.request.user.player)
+
             return None
+
         if self.action == 'list':
             queryset = queryset.exclude(user=self.request.user)
+
         return queryset
 
     def get_object(self):
@@ -70,7 +73,9 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                 self.queryset.filter(user=self.request.user)
             )
             self.check_object_permissions(self.request, obj)
+
             return obj
+
         return super().get_object()
 
     @action(['GET', 'PATCH', 'DELETE'], detail=False)
@@ -83,20 +88,27 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                 # After that corresponding player object will be deleted
                 # automatically
                 user.delete()
+
                 return Response(status=status.HTTP_204_NO_CONTENT)
+
             else:
                 raise Response(status=status.HTTP_404_NOT_FOUND)
+
         elif self.request.method == 'PATCH':
             serializer = self.get_serializer(
                 instance, data=request.data, partial=True
             )
             if serializer.is_valid(raise_exception=True):
                 serializer.save()
+
                 return Response(status=status.HTTP_200_OK)
+
             return Response(
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
+
         serializer=self.get_serializer(instance)
+
         return Response(
             status=status.HTTP_200_OK, data=serializer.data
         )
@@ -116,12 +128,14 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         )
         if serializer.is_valid(raise_exception=True):
             serializer.save()
+
             return Response(status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(
-        detail=False, methods=['PUT', 'GET'], url_path='me/avatar/payments',
-        url_name='me-avatar-payments'
+        detail=False, methods=['PUT', 'GET'], url_path='me/payments',
+        url_name='me-payments'
     )
     def get_put_payments(self, request):
         """Get or put payment data of player."""
@@ -130,28 +144,14 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                 'payments': self.get_queryset()
             }
             serializer = self.get_serializer(payments)
+
             return Response(data=serializer.data, status=status.HTTP_200_OK)
 
-        payments_data = request.data.get('payments', [])
-        if check_payments_data(payments_data):
-            try:
-                errors = make_transaction(
-                    payments_data, queryset=self.get_queryset()
-                )
-                if errors:
-                    return Response(
-                        {"errors": errors},
-                        status=status.HTTP_400_BAD_REQUEST
-                    )
+        serializer = PaymentsSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.update_or_create_payments(request.user.player)
 
-                return Response(status=status.HTTP_200_OK)
-
-            except Exception as e:
-                return Response(
-                    {"error": str(e)},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
-        return Response(status=status.HTTP_400_BAD_REQUEST)
+        return Response(status=status.HTTP_200_OK)
 
     @action(
         detail=True, methods=['POST', 'DELETE']
@@ -171,11 +171,14 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         serializer.is_valid(raise_exception=True)
         if request.method == 'POST':
             Favorite.objects.create(player=player, favorite=favorite)
+
             return Response(serializer.data, status=status.HTTP_201_CREATED)
+
         instance = get_object_or_404(
             Favorite, player=player, favorite=favorite
         )
         instance.delete()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
@@ -191,5 +194,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         )
         if serializer.is_valid():
             serializer.save()
+
             return Response(status=status.HTTP_200_OK)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

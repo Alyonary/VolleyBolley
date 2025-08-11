@@ -15,6 +15,7 @@ api_v1.register(r'players', PlayerViewSet, basename='players')
 
 urlpatterns = [
     path('', include(api_v1.urls)),
+    path('social-auth/', include('social_django.urls', namespace='social')),
     path('countries/', CountryListView.as_view(), name='countries'), 
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/google/login/', GoogleLogin.as_view(), name='google-login'),

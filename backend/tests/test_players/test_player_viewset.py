@@ -195,7 +195,7 @@ class TestPlayerViewSet:
         self, request, client_fixture_name, expected_status
     ):
         client = request.getfixturevalue(client_fixture_name)
-        url = reverse('api:players-me-avatar-payments')
+        url = reverse('api:players-me-payments')
         
         response = client.get(url)
         assert response.status_code == expected_status
@@ -229,7 +229,7 @@ class TestPlayerViewSet:
         user_generated_after_login
     ):
         client = request.getfixturevalue(client_fixture_name)
-        url = reverse('api:players-me-avatar-payments')
+        url = reverse('api:players-me-payments')
         payment_data = {
             'payments': [
                 {
@@ -275,7 +275,7 @@ class TestPlayerViewSet:
         self, request, client_fixture_name, expected_status,
     ):
         client = request.getfixturevalue(client_fixture_name)
-        url = reverse('api:players-me-avatar-payments')
+        url = reverse('api:players-me-payments')
         invalid_payment_data = {
             'payments': [
                 {

@@ -1,9 +1,11 @@
 import base64
 
 from django.core.files.base import ContentFile
+from django.db import transaction
 from rest_framework import serializers
 
-from .models import Favorite, Payment, Player
+from apps.players.constants import PlayerIntEnums
+from apps.players.models import Favorite, Payment, Player
 
 
 class Base64ImageField(serializers.ImageField):
@@ -21,16 +23,62 @@ class Base64ImageField(serializers.ImageField):
 
 
 class PaymentSerializer(serializers.ModelSerializer):
-    """Serialize payments data of player."""
+    """Serialize payment data of player."""
 
     class Meta:
         model = Payment
         fields = ['payment_type', 'payment_account', 'is_preferred']
+        extra_kwargs = {
+            'payment_type': {'required': True},
+            'payment_account': {'required': True},
+            'is_preferred': {'required': True}
+        }
 
 
 class PaymentsSerializer(serializers.Serializer):
-    
+    """Serialize all payment data of player."""
+
     payments = PaymentSerializer(many=True)
+
+    def validate_payments(self, payments):
+        """Validate that exactly one payment is preferred."""
+        preferred_count = sum(
+            1 for p in payments if p.get('is_preferred', False)
+        )
+        if preferred_count != 1:
+            raise serializers.ValidationError(
+                "Exactly one payment must be preferred."
+            )
+
+        return payments
+
+    def update_or_create_payments(self, player):
+        """Create or update payments for player."""
+        errors = []
+        updated_payments = []
+        
+        with transaction.atomic():
+            for payment_data in self.validated_data['payments']:
+                try:
+                    payment, created = Payment.objects.update_or_create(
+                        player=player,
+                        payment_type=payment_data['payment_type'],
+                        defaults=payment_data
+                    )
+                    updated_payments.append(payment)
+
+                except Exception as e:
+                    errors.append({
+                        'payment_type': payment_data['payment_type'],
+                        'error': str(e)
+                    })
+        
+        if errors:
+            raise serializers.ValidationError(
+                {'errors': errors}
+            )
+            
+        return updated_payments
 
 
 class PlayerBaseSerializer(serializers.ModelSerializer):
@@ -40,12 +88,12 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
     """
     first_name = serializers.CharField(
         source='user.first_name',
-        max_length=150,
+        max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
         required=False
     )
     last_name = serializers.CharField(
         source='user.last_name',
-        max_length=150,
+        max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
         required=False
     )
     avatar = Base64ImageField(read_only=True)
@@ -129,12 +177,12 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
 
     first_name = serializers.CharField(
         source='user.first_name',
-        max_length=150,
+        max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
         required=True
     )
     last_name = serializers.CharField(
         source='user.last_name',
-        max_length=150,
+        max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
         required=True
     )
 
@@ -149,13 +197,6 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
             'country',
             'city',
         )
-        # extra_kwargs = {
-        #     'date_of_birth': {'required': True},
-        #     'level': {'required': True},
-        #     'gender': {'required': True},
-        #     'country': {'required': True},
-        #     'city': {'required': True},
-        # }
 
 
 class PlayerListSerializer(PlayerBaseSerializer):
