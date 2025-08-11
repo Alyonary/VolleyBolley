@@ -75,3 +75,13 @@ class GameViewSet(ModelViewSet):
         return Response(
                 data={'upcoming_game_time': upcoming_game_time,
                       'invites': invites}, status=status.HTTP_200_OK)
+
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='my-games',
+    )
+    def my_games(self, request, *args, **kwargs):
+        '''Retrieves the list of games created by the user.'''
+        user = request.user
+        my_games = Game.objects.filter(host=user)

@@ -209,3 +209,33 @@ class GameInviteSerializer(serializers.ModelSerializer):
 
 class TourneySerializer(serializers.ModelSerializer):
     pass
+
+
+class ShortGameSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Game
+        '''
+        "game_id": 0,
+        "host": {
+            "player_id": 0,
+            "first_name": "Test",
+            "last_name": "Test",
+            "avatar": "url",
+            "level": "PRO"
+        },
+        "court_location": {
+            "longitude": 0.1,
+            "latitude": 0.1,
+            "court_name": "Karon",
+            "location_name": "Russia, Moscow"
+        },
+        "message": "Hey there!",
+        "start_time": "2025-07-01 14:30",
+        "end_time": "2025-07-01 14:30"
+    }
+    '''
+
+    def to_representation(self, instance):
+        '''Переопределить для выдачи с главным ключом "games".'''
+        return super().to_representation(instance)
