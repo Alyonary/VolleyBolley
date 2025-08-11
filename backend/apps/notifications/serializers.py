@@ -6,7 +6,7 @@ from apps.notifications.constants import DeviceType
 class FCMTokenSerializer(serializers.Serializer):
     ''''Serializer for handling FCM device tokens.'''
     token = serializers.CharField(required=True)
-    device_type = serializers.ChoiceField(
+    platform = serializers.ChoiceField(
         choices=DeviceType.CHOICES,
         required=False
     )

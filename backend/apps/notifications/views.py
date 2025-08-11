@@ -9,7 +9,7 @@ from apps.notifications.serializers import FCMTokenSerializer
 
 class FCMTokenView(APIView):
     permission_classes = [IsAuthenticated]
-    http_method_names = ['put']
+    http_method_names = ['put', 'get']
 
     def put(self, request):
         '''
@@ -28,6 +28,7 @@ class FCMTokenView(APIView):
                 player=current_player
             )
             if created:
+                
                 return Response(
                     {'message': 'New device token registered.'},
                     status=status.HTTP_201_CREATED
@@ -41,3 +42,8 @@ class FCMTokenView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
+    def get(self, request):
+        """return all active devices"""
+        devices = Device.objects.active()
+        serializer = FCMTokenSerializer(devices, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)

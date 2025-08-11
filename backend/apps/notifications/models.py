@@ -1,3 +1,5 @@
+from cryptography.fernet import Fernet
+from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
@@ -48,20 +50,51 @@ class DeviceManager(models.Manager):
             )
             return device, True
 
+
 class DeviceType(models.TextChoices):
     IOS = 'ios', 'ios'
     ANDROID = 'android', 'android'
     WEB = 'web', 'web'
 
 
+class EncryptedTokenField(models.CharField):
+    """
+    Field that automatically encrypts/decrypts device tokens.
+    """
+    
+    def __init__(self, *args, **kwargs):
+        kwargs['max_length'] = DEVICE_MAX_LENGTH * 2
+        super().__init__(*args, **kwargs)
+    
+    def get_prep_value(self, value):
+        """Encrypts value before saving to DB."""
+        if value is None:
+            return value
+            
+        cipher_suite = Fernet(settings.ENCRYPTION_KEY.encode())
+        encrypted_token = cipher_suite.encrypt(value.encode('utf-8'))
+        return encrypted_token.decode('utf-8')
+    
+    def from_db_value(self, value, expression, connection):
+        """Decrypts value when retrieved from DB."""
+        if value is None:
+            return value
+        cipher_suite = Fernet(settings.ENCRYPTION_KEY.encode())
+        try:
+            decrypted_token = cipher_suite.decrypt(value.encode('utf-8'))
+            return decrypted_token.decode('utf-8')
+        except Exception:
+            return value
+
+
 class Device(models.Model):
     '''Model for storing device information for push notifications.'''
-    token = models.CharField(max_length=DEVICE_MAX_LENGTH, unique=True)
-    # device_type = models.CharField(
-    #     max_length=10,
-    #     choices=DeviceType.choices,
-    #     default=DeviceType.ANDROID
-    # )
+    token = EncryptedTokenField(unique=True)
+    platform = models.CharField(
+        max_length=10,
+        choices=DeviceType.choices,
+        default=DeviceType.ANDROID
+    )
     player = models.ForeignKey(
         'players.Player',
         related_name='devices',

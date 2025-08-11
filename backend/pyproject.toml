@@ -19,6 +19,7 @@ dependencies = [
     "gunicorn (>=23.0.0,<24.0.0)",
     "django-filter (>=25.1,<26.0)",
     "pyfcm (>=2.1.0,<3.0.0)",
+    "cryptography (>=45.0.6,<46.0.0)",
 ]
 
 
