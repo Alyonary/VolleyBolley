@@ -1,7 +1,7 @@
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.notifications.models import Device
+from apps.notifications.models import Device, DeviceType
 from apps.players.models import Player
 
 User = get_user_model()
@@ -34,7 +34,6 @@ def players(users):
     player1 = Player.objects.create(user=users['user1'])
     player2 = Player.objects.create(user=users['user2'])
     player3 = Player.objects.create(user=users['user3'])
-    
     return {'player1': player1, 'player2': player2, 'player3': player3}
 
 
@@ -81,3 +80,62 @@ def device_tokens(devices):
         'active_tokens': [d.token for d in devices['active_devices']],
         'all_tokens': [d.token for d in devices['all_devices']]
     }
+
+@pytest.fixture
+def fcm_token_data():
+    """Returns a sample token data for FCM API tests."""
+    return {
+            'token': 'fcm-test-token-123',
+            'platform': DeviceType.ANDROID
+        }
+
+@pytest.fixture
+def fcm_token_url():
+    """Returns the URL for FCM token API."""
+    return '/api/fcm-token/'
+
+
+@pytest.fixture
+def user_with_player():
+    """Create a user with player profile."""
+    user = User.objects.create_user(
+        username='testuser')
+    
+    player = Player.objects.create(
+        user=user,
+    )
+    return user, player
+
+@pytest.fixture
+def second_user_with_player():
+    """Create a second user with player profile."""
+    user = User.objects.create_user(
+        username='another',
+        email='another@example.com',
+        password='password123'
+    )
+    player = Player.objects.create(
+        user=user,
+    )
+    return user, player
+
+
+@pytest.fixture
+def existing_device(second_user_with_player):
+    """Create an existing device for the second user."""
+    _, player = second_user_with_player
+    token = 'existing-fcm-token'
+    device = Device.objects.create(
+        token=token,
+        player=player,
+        platform=DeviceType.IOS
+    )
+    return device
+
+@pytest.fixture
+def invalid_fcm_token_data():
+    """Returns invalid FCM token data for testing."""
+    return [
+        {'platform': DeviceType.ANDROID},
+        {'token': 'some-token', 'platform': 'invalid'}
+    ]

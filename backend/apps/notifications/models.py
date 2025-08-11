@@ -1,11 +1,16 @@
-from cryptography.fernet import Fernet
-from django.conf import settings
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.event.models import Game
-from apps.notifications.constants import DEVICE_MAX_LENGTH
+from apps.notifications.constants import DEVICE_TOKEN_MAX_LENGTH
 from apps.players.models import Player
+
+
+class DeviceType(models.TextChoices):
+    '''Device type choices for push notifications.'''
+    IOS = 'ios', 'ios'
+    ANDROID = 'android', 'android'
+    WEB = 'web', 'web'
 
 
 class DeviceManager(models.Manager):
@@ -29,16 +34,25 @@ class DeviceManager(models.Manager):
         return self.active(
             ).filter(player_id=player_id)
 
-    def update_or_create_token(self, token, player, is_active=True):
+    def update_or_create_token(
+        self,
+        token,
+        player,
+        platform=None,
+        is_active=True
+    ):
         '''
         Update or create a device with the given token and player.
         If a device with the token already exists, it updates the player
         and active status. If it doesn't exist, it creates a new device.
         Returns the device and a boolean indicating if it was created.
         '''
+        if not platform:
+            platform = DeviceType.ANDROID
         try:
             device = self.get(token=token)
             device.player = player
+            device.platform = platform
             device.is_active = is_active
             device.save()
             return device, False
@@ -46,50 +60,20 @@ class DeviceManager(models.Manager):
             device = self.create(
                 token=token,
                 player=player,
+                platform=platform,
                 is_active=is_active
             )
             return device, True
 
 
-class DeviceType(models.TextChoices):
-    IOS = 'ios', 'ios'
-    ANDROID = 'android', 'android'
-    WEB = 'web', 'web'
-
-
-class EncryptedTokenField(models.CharField):
-    """
-    Field that automatically encrypts/decrypts device tokens.
-    """
-    
-    def __init__(self, *args, **kwargs):
-        kwargs['max_length'] = DEVICE_MAX_LENGTH * 2
-        super().__init__(*args, **kwargs)
-    
-    def get_prep_value(self, value):
-        """Encrypts value before saving to DB."""
-        if value is None:
-            return value
-            
-        cipher_suite = Fernet(settings.ENCRYPTION_KEY.encode())
-        encrypted_token = cipher_suite.encrypt(value.encode('utf-8'))
-        return encrypted_token.decode('utf-8')
-    
-    def from_db_value(self, value, expression, connection):
-        """Decrypts value when retrieved from DB."""
-        if value is None:
-            return value
-        cipher_suite = Fernet(settings.ENCRYPTION_KEY.encode())
-        try:
-            decrypted_token = cipher_suite.decrypt(value.encode('utf-8'))
-            return decrypted_token.decode('utf-8')
-        except Exception:
-            return value
 
 
 class Device(models.Model):
     '''Model for storing device information for push notifications.'''
-    token = EncryptedTokenField(unique=True)
+    token = models.CharField(
+        max_length=DEVICE_TOKEN_MAX_LENGTH,
+        unique=True
+    )
     platform = models.CharField(
         max_length=10,
         choices=DeviceType.choices,
@@ -103,7 +87,6 @@ class Device(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
     objects = DeviceManager()
 
     class Meta:

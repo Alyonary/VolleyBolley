@@ -1,3 +1,6 @@
+
+
+
 class NotificationTypes:
     '''Notification types constants.'''
     IN_GAME: str = 'joinGame'
@@ -43,13 +46,13 @@ class Notification:
         return params
 
 
-class DeviceType:
-    '''Device type choices constants.'''
-    ANDROID = 'android'
-    IOS = 'ios'
-    CHOICES = [
-        (ANDROID, 'android'),
-        (IOS, 'ios'),
-    ]
+# class DeviceType:
+#     '''Device type choices constants.'''
+#     ANDROID = 'android'
+#     IOS = 'ios'
+#     CHOICES = [
+#         (ANDROID, 'android'),
+#         (IOS, 'ios'),
+#     ]
 
-DEVICE_MAX_LENGTH: int = 255
+DEVICE_TOKEN_MAX_LENGTH: int = 255

@@ -24,7 +24,7 @@ class TestPlayerModel:
 
     def test_player_user_relationship(self, active_user, player_male_light):
 
-        assert active_user.player.first() == player_male_light
+        assert active_user.player == player_male_light
 
     def test_player_location_relationship(
         self, sample_location, player_male_light
