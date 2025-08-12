@@ -1,7 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
-
+from cryptography.fernet import Fernet
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
@@ -40,8 +40,9 @@ INSTALLED_APPS = [
     'apps.courts.apps.CourtsConfig',
     'apps.event.apps.EventConfig',
     'apps.core.apps.CoreConfig',
-    'phonenumber_field',
     'apps.locations.apps.LocationsConfig',
+    'apps.notifications.apps.NotificationsConfig',
+    'phonenumber_field',
     'django_filters',
 ]
 
@@ -213,3 +214,10 @@ LOGGING = {
         },
     },
 }
+
+FCM_FILE_PATH = BASE_DIR_OUT / 'infra' / 'fcm_service_account.json'
+ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', None)
+if not ENCRYPTION_KEY:
+    ENCRYPTION_KEY = Fernet.generate_key()
+    print(f"Generated new encryption key: {ENCRYPTION_KEY.decode()}")
+    print("Save this key in your environment variables!")

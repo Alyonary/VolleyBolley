@@ -28,6 +28,9 @@ backend/apps/*/migrations/000*
 .env.local
 .env.*.local
 
+# Fcm Service Account
+fcm_service_account.json
+
 # ========================
 # IDE и редакторы
 # ========================
