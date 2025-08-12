@@ -1,5 +1,7 @@
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
+from rest_framework import status
+from rest_framework.response import Response
 
 from apps.notifications.constants import Notification, NotificationTypes
 from apps.notifications.exceptions import FCMFileNotFoundError
@@ -24,7 +26,7 @@ def proccess_notifications_by_type(
     type: str,
     player_id: int | None = None,
     game_id: int | None = None
-) -> None:
+) -> bool | None:
     '''
     Sends a notification to multiple devices using FCM.
 
@@ -33,47 +35,53 @@ def proccess_notifications_by_type(
         type (str): Type of notification to send.
         game_id (int, optional): Game ID to include in the notification data.
     '''
-    check_fcm_file()
     notification = Notification(type)
-    if type == NotificationTypes.in_game:
+    if type == NotificationTypes.IN_GAME:
         tokens = Device.objects.active(
             ).in_game(game_id).values_list('token', flat=True)
         if not tokens:
-            return
-        send_push_notification(
+            return Response(
+                {'message': 'No active devices found for the game.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        return send_push_notification(
             tokens,
             notification,
             game_id=game_id
         )
-        return
-    elif type == NotificationTypes.rate:
+    elif type == NotificationTypes.RATE:
         tokens = Device.objects.active(
             ).in_game(game_id).values_list('token', flat=True)
         if not tokens:
-            return
-        send_push_notification(
+            return Response(
+                {'message': 'No active devices found for the game.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        return send_push_notification(
             tokens,
             notification,
             game_id=game_id
         )
-        return
-    elif type == NotificationTypes.removed:
+    elif type == NotificationTypes.REMOVED:
         tokens = Device.objects.active(
             ).by_player(player_id).values_list('token', flat=True)
         if not tokens:
-            return
-        send_push_notification(
+            return Response(
+                {'message': 'No active devices found for the player.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        return send_push_notification(
             tokens,
             notification,
         )
-        return
+
 
 def send_push_notification(
     tokens: list[int],
     notification: Notification,
     game_id: int | None = None,
     push_service: FCMNotification = push_service
-) -> None:
+) -> bool | None:
     '''
     Sends a push notification to multiple devices.
 
@@ -99,7 +107,6 @@ def send_push_notification(
                 )
             except FCMError:
                 continue
-             # логировать ошибку, если нужно. переход к след. токену
         return True
     except FileNotFoundError as e:
         raise FCMFileNotFoundError() from e

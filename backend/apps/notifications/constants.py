@@ -6,6 +6,11 @@ class NotificationTypes:
     IN_GAME: str = 'joinGame'
     RATE: str = 'rate'
     REMOVED: str = 'removed'
+    CHOICES = (
+        (IN_GAME, IN_GAME),
+        (RATE, RATE),
+        (REMOVED, REMOVED),
+    )
 
 class Notification:
     '''
@@ -45,14 +50,5 @@ class Notification:
         params = templates[notification_type].copy()
         return params
 
-
-# class DeviceType:
-#     '''Device type choices constants.'''
-#     ANDROID = 'android'
-#     IOS = 'ios'
-#     CHOICES = [
-#         (ANDROID, 'android'),
-#         (IOS, 'ios'),
-#     ]
 
 DEVICE_TOKEN_MAX_LENGTH: int = 255
