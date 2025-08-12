@@ -1,16 +1,30 @@
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
-from rest_framework import status
-from rest_framework.response import Response
 
 from apps.notifications.constants import Notification, NotificationTypes
-from apps.notifications.exceptions import FCMFileNotFoundError
+from apps.notifications.exceptions import FCMFileNotFoundError, FCMServiceError
 from apps.notifications.models import Device
 from volleybolley.settings import FCM_FILE_PATH
 
-push_service = FCMNotification(
-    service_account_file=FCM_FILE_PATH,
-)
+
+def initialize_push_service():
+    """
+    Initialize the FCM service with the service account file.
+    """
+    #Перенести логику проверки fcm файла в воркфлоу?? (перед запуском бэка)
+    try:
+        check_fcm_file()
+        fcm_file_path = FCM_FILE_PATH
+        push_service = FCMNotification(
+            service_account_file=fcm_file_path
+        )
+        return push_service
+    except FCMError as e:
+        raise FCMServiceError(
+                "FCM service initialization failed. "
+                "Check the service account file."
+            ) from e
+
 
 def check_fcm_file():
     '''
@@ -21,6 +35,7 @@ def check_fcm_file():
             f"FCM service account file not found: {FCM_FILE_PATH}"
         )
     return True
+
 
 def proccess_notifications_by_type(
     type: str,
@@ -40,10 +55,7 @@ def proccess_notifications_by_type(
         tokens = Device.objects.active(
             ).in_game(game_id).values_list('token', flat=True)
         if not tokens:
-            return Response(
-                {'message': 'No active devices found for the game.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return 
         return send_push_notification(
             tokens,
             notification,
@@ -53,10 +65,7 @@ def proccess_notifications_by_type(
         tokens = Device.objects.active(
             ).in_game(game_id).values_list('token', flat=True)
         if not tokens:
-            return Response(
-                {'message': 'No active devices found for the game.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return
         return send_push_notification(
             tokens,
             notification,
@@ -66,14 +75,14 @@ def proccess_notifications_by_type(
         tokens = Device.objects.active(
             ).by_player(player_id).values_list('token', flat=True)
         if not tokens:
-            return Response(
-                {'message': 'No active devices found for the player.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
+            return
         return send_push_notification(
             tokens,
             notification,
         )
+
+
+push_service = initialize_push_service()
 
 
 def send_push_notification(
@@ -92,8 +101,6 @@ def send_push_notification(
         game_id (int, optional): Game ID to include in the notification data.
     '''
     try:
-        check_fcm_file()
-        #Перенести логику проверки fcm файла в воркфлоу?? (перед запуском бэка)
         data_message = {'screen': notification.screen}
         if game_id:
             data_message['gameId'] = game_id
