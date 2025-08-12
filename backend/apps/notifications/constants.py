@@ -1,4 +1,4 @@
-
+from django.db import models
 
 
 class NotificationTypes:
@@ -46,6 +46,11 @@ class Notification:
             raise ValueError('Unknown notification type')
         params = templates[notification_type].copy()
         return params
+
+class DeviceType(models.TextChoices):
+    '''Device type choices for push notifications.'''
+    IOS = 'ios', 'ios'
+    ANDROID = 'android', 'android'
 
 
 DEVICE_TOKEN_MAX_LENGTH: int = 255

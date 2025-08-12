@@ -2,15 +2,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.event.models import Game
-from apps.notifications.constants import DEVICE_TOKEN_MAX_LENGTH
+from apps.notifications.constants import DEVICE_TOKEN_MAX_LENGTH, DeviceType
 from apps.players.models import Player
-
-
-class DeviceType(models.TextChoices):
-    '''Device type choices for push notifications.'''
-    IOS = 'ios', 'ios'
-    ANDROID = 'android', 'android'
-    WEB = 'web', 'web'
 
 
 class DeviceManager(models.Manager):
@@ -64,8 +57,6 @@ class DeviceManager(models.Manager):
                 is_active=is_active
             )
             return device, True
-
-
 
 
 class Device(models.Model):
