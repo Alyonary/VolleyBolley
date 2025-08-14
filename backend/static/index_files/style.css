@@ -1,0 +1,50 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #53A8A1;
+  font-family: 'Actay', sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.logo {
+  max-width: 90%;
+  width: 400px;
+  height: auto;
+  margin-bottom: 32px;
+}
+
+.download-button {
+  background-color: #E6C953;
+  border: none;
+  border-radius: 16px;
+  padding: 16px 32px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.download-button:hover {
+  background-color: #d6b849;
+}
+
+.footer {
+  margin-top: auto;
+  padding: 24px;
+  color: white;
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  .download-button {
+    font-size: 16px;
+    padding: 12px 24px;
+  }
+}
