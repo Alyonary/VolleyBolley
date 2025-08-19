@@ -3,6 +3,24 @@
 # Выходим при первой ошибке
 set -e
 
+# Проверяем, существует ли файл сервисного аккаунта в монтированном томе
+if [ -f /fcm_credentials/fcm_service_account.json ]; then
+    echo "Found FCM service account file in volume."
+else
+    echo "FCM file not found in volume. Checking project root..."
+    # Проверяем наличие файла в корне проекта (для первого запуска)
+    if [ -f /app/fcm_service_account.json ]; then
+        echo "Found FCM file in project root. Copying to volume..."
+        # Убедимся, что директория тома существует
+        mkdir -p /fcm_credentials
+        cp /app/fcm_service_account.json /fcm_credentials/fcm_service_account.json
+        chmod 600 /fcm_credentials/fcm_service_account.json
+        echo "FCM file successfully copied to volume."
+    else
+        echo "WARNING: FCM service account file not found! Push notifications will not work."
+    fi
+fi
+
 # Определяем путь к статике (должен совпадать с STATIC_ROOT в settings.py)
 STATIC_DIR=/app/collected_static
 FRONT_STATIC_DIR=/app/static

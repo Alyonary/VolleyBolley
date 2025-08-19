@@ -1,7 +1,6 @@
 import os
 from datetime import timedelta
 from pathlib import Path
-
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
@@ -33,8 +32,9 @@ INSTALLED_APPS = [
     'apps.courts.apps.CourtsConfig',
     'apps.event.apps.EventConfig',
     'apps.core.apps.CoreConfig',
-    'phonenumber_field',
     'apps.locations.apps.LocationsConfig',
+    'apps.notifications.apps.NotificationsConfig',
+    'phonenumber_field',
     'django_filters',
 ]
 
@@ -213,7 +213,7 @@ LOGGING = {
         'django': {
             'handlers': ['console', 'file', 'error_file'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
         },
         'django.request': {
             'handlers': ['console', 'file', 'error_file'],
@@ -254,3 +254,6 @@ LOGGING = {
         },
     },
 }
+
+FCM_SERVICE_ACCOUNT_PATH = os.environ.get('FCM_SERVICE_ACCOUNT_PATH')
+FCM_FILE_PATH = BASE_DIR_OUT / FCM_SERVICE_ACCOUNT_PATH / 'fcm_service_account.json'

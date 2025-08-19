@@ -19,6 +19,8 @@ services:
     volumes:
       - static:/app/backend_static
       - media:/app/media
+      - ./fcm_service_account.json:/app/fcm_service_account.json:ro
+      - fcm_credentials:/app/firebase
     depends_on:
       db:
         condition: service_healthy
@@ -48,3 +50,4 @@ volumes:
   pg_data_volleybolley:
   static:
   media:
+  fcm_credentials:
