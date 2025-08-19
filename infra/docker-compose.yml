@@ -12,6 +12,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+  
   backend:
     container_name: volleybolley_backend
     build: ../backend
@@ -19,6 +20,8 @@ services:
     volumes:
       - static:/app/backend_static
       - media:/app/media
+      - ../fcm_service_account.json:/app/fcm_service_account.json:ro
+      - fcm_credentials:/app/firebase
     depends_on:
       db:
         condition: service_healthy
@@ -31,6 +34,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+  
   nginx:
     container_name: volleybolley-proxy
     build: ../infra
@@ -49,3 +53,4 @@ volumes:
   pg_data_volleybolley:
   static:
   media:
+  fcm_credentials:
