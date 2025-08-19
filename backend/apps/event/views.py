@@ -104,3 +104,22 @@ class GameViewSet(ModelViewSet):
         serializer = ShortGameSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
+
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='invites',
+    )
+    def invited_games(self, request, *args, **kwargs):
+        '''Retrieving upcoming games to which the player has been invited.'''
+        my_invitations = GameInvitation.objects.select_related(
+            'game').filter(invited=request.user)
+        current_time = now()
+        my_games = [
+            invitation.game
+            for invitation in my_invitations
+            if invitation.game.start_time > current_time
+        ]
+        serializer = ShortGameSerializer(my_games, many=True)
+        wrapped_data = {'games': serializer.data}
+        return Response(data=wrapped_data, status=status.HTTP_200_OK)
