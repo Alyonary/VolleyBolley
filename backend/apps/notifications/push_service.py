@@ -161,7 +161,7 @@ def send_push_notification(
             )
         except FCMError as e:
             logger.warning(f'FCM Error for token {masked_token}: {str(e)}')
-            # создать задание на повторную отправку посел интеграции Celery
+            # создать задание на повторную отправку после интеграции Celery
             continue
         except Exception as e:
             logger.error(
