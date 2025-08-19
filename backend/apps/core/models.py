@@ -19,13 +19,19 @@ class Contact(m.Model):
 
     contact_type = m.CharField(
         _('Contact type'),
-        max_length=CoreFieldLength.CONTACT_NAME.value
+        max_length=CoreFieldLength.CONTACT_NAME.value,
+        null=False,
+        blank=False,
+        default='PHONE'
     )
     contact = m.CharField(
         _('Contact value'),
-        max_length=CoreFieldLength.CONTACT_NAME.value
+        max_length=CoreFieldLength.CONTACT_NAME.value,
+        null=True,
+        blank=True,
+        default=None
     )
-    court = m.ForeignKey('courts.Court', on_delete=m.CASCADE, default=None)
+    court = m.ForeignKey('courts.Court', on_delete=m.CASCADE)
 
     class Meta:
         verbose_name = _('Contact')
