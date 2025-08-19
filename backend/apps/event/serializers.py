@@ -213,29 +213,19 @@ class TourneySerializer(serializers.ModelSerializer):
 
 class ShortGameSerializer(serializers.ModelSerializer):
 
+    game_id = serializers.IntegerField(source='pk', read_only=True)
+
+    host = UserSerializer()
+
+    court_location = LocationSerializer(source='court.location')
+
     class Meta:
         model = Game
-        '''
-        "game_id": 0,
-        "host": {
-            "player_id": 0,
-            "first_name": "Test",
-            "last_name": "Test",
-            "avatar": "url",
-            "level": "PRO"
-        },
-        "court_location": {
-            "longitude": 0.1,
-            "latitude": 0.1,
-            "court_name": "Karon",
-            "location_name": "Russia, Moscow"
-        },
-        "message": "Hey there!",
-        "start_time": "2025-07-01 14:30",
-        "end_time": "2025-07-01 14:30"
-    }
-    '''
-
-    def to_representation(self, instance):
-        '''Переопределить для выдачи с главным ключом "games".'''
-        return super().to_representation(instance)
+        fields = [
+            'game_id',
+            'host',
+            'court_location',
+            'message',
+            'start_time',
+            'end_time'
+        ]

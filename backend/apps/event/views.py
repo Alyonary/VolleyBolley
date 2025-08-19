@@ -14,6 +14,7 @@ from .serializers import (
     GameDetailSerializer,
     GameInviteSerializer,
     GameSerializer,
+    ShortGameSerializer
 )
 
 User = get_user_model()
@@ -38,7 +39,7 @@ class GameViewSet(ModelViewSet):
     @action(
         methods=['post'],
         detail=True,
-        url_path='invite_players',
+        url_path='invite-players',
     )
     def invite_players(self, request, *args, **kwargs):
         '''Создает приглашения на игру для игроков из списка.'''
@@ -85,3 +86,6 @@ class GameViewSet(ModelViewSet):
         '''Retrieves the list of games created by the user.'''
         user = request.user
         my_games = Game.objects.filter(host=user)
+        serializer = ShortGameSerializer(my_games, many=True)
+        wrapped_data = {'games': serializer.data}
+        return Response(data=wrapped_data, status=status.HTTP_200_OK)
