@@ -214,7 +214,7 @@ LOGGING = {
         'django': {
             'handlers': ['console', 'file', 'error_file'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
         },
         'django.request': {
             'handlers': ['console', 'file', 'error_file'],
@@ -255,9 +255,10 @@ LOGGING = {
         },
     },
 }
-
-FCM_FILE_PATH = BASE_DIR_OUT / 'infra' / 'fcm_service_account.json'
+FCM_SERVICE_ACCOUNT_PATH = os.environ.get('FCM_SERVICE_ACCOUNT_PATH')
+FCM_FILE_PATH = BASE_DIR_OUT / FCM_SERVICE_ACCOUNT_PATH / 'fcm_service_account.json'
 ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', None)
+print(f"Using FCM service account path: {FCM_FILE_PATH}")
 if not ENCRYPTION_KEY:
     ENCRYPTION_KEY = Fernet.generate_key()
     print(f"Generated new encryption key: {ENCRYPTION_KEY.decode()}")
