@@ -219,6 +219,10 @@ class ShortGameSerializer(serializers.ModelSerializer):
 
     court_location = LocationSerializer(source='court.location')
 
+    start_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
+
+    end_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
+
     class Meta:
         model = Game
         fields = [

@@ -84,8 +84,23 @@ class GameViewSet(ModelViewSet):
     )
     def my_games(self, request, *args, **kwargs):
         '''Retrieves the list of games created by the user.'''
-        user = request.user
-        my_games = Game.objects.filter(host=user)
+        current_time = now()
+        my_games = Game.objects.filter(
+            host=request.user).filter(
+                start_time__gt=current_time)
+        serializer = ShortGameSerializer(my_games, many=True)
+        wrapped_data = {'games': serializer.data}
+        return Response(data=wrapped_data, status=status.HTTP_200_OK)
+
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='archive',
+    )
+    def archive_games(self, request, *args, **kwargs):
+        '''Retrieves the list of archived games.'''
+        current_time = now()
+        my_games = Game.objects.filter(end_time__lt=current_time)
         serializer = ShortGameSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
