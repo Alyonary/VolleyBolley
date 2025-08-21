@@ -13,6 +13,7 @@ from apps.core.models import (
 )
 from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
+from apps.event.enums import NumberOfPlayers
 from apps.event.models import Game
 
 User = get_user_model()
@@ -71,6 +72,14 @@ class BaseGameSerializer(serializers.ModelSerializer):
             'payment_type',
             'payment_account',
         ]
+
+    def validate_maximum_players(self, value):
+        minimal = NumberOfPlayers.MIN_PLAYERS.value
+        maximal = NumberOfPlayers.MAX_PLAYERS.value
+        if not (minimal < value < maximal):
+            raise serializers.ValidationError(
+                f'Number of players must be between {minimal} and {maximal}!')
+        return value
 
     def validate(self, value):
         request = self.context.get('request', None)
