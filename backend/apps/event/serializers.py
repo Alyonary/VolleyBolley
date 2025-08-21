@@ -320,6 +320,3 @@ class GameJoinSerializer(serializers.ModelSerializer):
         currency_type = CurrencyType.objects.first()
         value['currency_type'] = currency_type
         return value
-
-
-
