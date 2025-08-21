@@ -1,6 +1,5 @@
-from datetime import datetime
-
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
@@ -75,10 +74,10 @@ class BaseGameSerializer(serializers.ModelSerializer):
 
     def validate(self, value):
         request = self.context.get('request', None)
-        payment = Payment.objects.get(
+        payment = Payment.objects.filter(
             owner=request.user,
             payment_type=value.get('payment_type')
-        )
+        ).first()
         if not payment or payment.payment_account is None:
             raise serializers.ValidationError(
                 'No payment account found for this payment type')
@@ -174,9 +173,9 @@ class GameDetailSerializer(BaseGameSerializer):
         elif GameInvitation.objects.filter(
                 invited=request.user, game=obj).exists():
             return 'INVITES'
-        elif obj.end_time < datetime.now().strftime('%Y-%m-%d %H:%M'):
+        elif obj.end_time < timezone.now():
             return 'ARCHIVE'
-        elif obj.start_time > datetime.now().strftime('%Y-%m-%d %H:%M'):
+        elif obj.start_time > timezone.now():
             return 'UPCOMING'
         else:
             return 'ACTIVE'
@@ -233,3 +232,94 @@ class ShortGameSerializer(serializers.ModelSerializer):
             'start_time',
             'end_time'
         ]
+
+
+class GameJoinSerializer(serializers.ModelSerializer):
+
+    game_id = serializers.IntegerField(source='pk')
+
+    start_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
+
+    end_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
+
+    levels = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=GameLevel.objects.all(),
+        source='player_levels',
+        many=True
+    )
+
+    gender = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=Gender.objects.all()
+    )
+
+    currency_type = serializers.CharField(
+        required=False
+    )
+
+    payment_account = serializers.CharField(
+        required=False
+    )
+
+    maximum_players = serializers.IntegerField(
+        source='max_players'
+    )
+
+    class Meta:
+        model = Game
+        fields = [
+            'game_id',
+            'is_joined',
+            'is_private',
+            'court_location',
+            'start_time',
+            'end_time',
+            'levels',
+            'gender',
+            'payment_type',
+            'payment_account',
+            'currency_type',
+            'price_per_person',
+            'maximum_players'
+        ]
+        read_only_fields = [
+            'game_id',
+            'is_joined',
+            'is_private',
+            'court_location',
+            'start_time',
+            'end_time',
+            'levels',
+            'gender',
+            'payment_type',
+            'payment_account',
+            'currency_type',
+            'price_per_person',
+            'maximum_players'
+        ]
+
+    def validate(self, value):
+        request = self.context.get('request', None)
+        payment = Payment.objects.get(
+            owner=request.user,
+            payment_type=value.get('payment_type')
+        )
+        if not payment or payment.payment_account is None:
+            raise serializers.ValidationError(
+                'No payment account found for this payment type')
+        value['payment_account'] = payment.payment_account
+
+        '''
+        Пока пользователи не настроены, отдаем так.
+        Должно быть что-то вроде:
+        player = request.user.player
+        currency_types = CurrencyType.objects.filter(
+                            country=player.location.country)
+        '''
+        currency_type = CurrencyType.objects.first()
+        value['currency_type'] = currency_type
+        return value
+
+
+

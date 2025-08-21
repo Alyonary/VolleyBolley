@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils.timezone import now
+from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
@@ -14,7 +16,7 @@ from .serializers import (
     GameDetailSerializer,
     GameInviteSerializer,
     GameSerializer,
-    ShortGameSerializer
+    ShortGameSerializer,
 )
 
 User = get_user_model()
@@ -87,7 +89,7 @@ class GameViewSet(ModelViewSet):
         current_time = now()
         my_games = Game.objects.filter(
             host=request.user).filter(
-                start_time__gt=current_time)
+                start_time__gt=current_time).select_related('host', 'court')
         serializer = ShortGameSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
@@ -98,9 +100,11 @@ class GameViewSet(ModelViewSet):
         url_path='archive',
     )
     def archive_games(self, request, *args, **kwargs):
-        '''Retrieves the list of archived games.'''
+        '''Retrieves the list of archived games related to user.'''
         current_time = now()
-        my_games = Game.objects.filter(end_time__lt=current_time)
+        my_games = Game.objects.filter(end_time__lt=current_time).filter(
+            Q(host=request.user) | Q(players=request.user)
+        ).select_related('host', 'court')
         serializer = ShortGameSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
@@ -123,3 +127,59 @@ class GameViewSet(ModelViewSet):
         serializer = ShortGameSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
+
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='upcoming',
+    )
+    def upcoming_games(self, request, *args, **kwargs):
+        '''Retrieving upcoming games to which the player has been invited.'''
+        current_time = now()
+        my_games = Game.objects.filter(start_time__gt=current_time).filter(
+            Q(host=request.user) | Q(players=request.user)
+        ).select_related('host', 'court')
+        serializer = ShortGameSerializer(my_games, many=True)
+        wrapped_data = {'games': serializer.data}
+        return Response(data=wrapped_data, status=status.HTTP_200_OK)
+
+    @action(
+        methods=['post'],
+        detail=True,
+        url_path='join-game',
+        permission_classes=[IsAuthenticated]
+    )
+    def joining_game(self, request, *args, **kwargs):
+        '''Adding a user to the game and removing the invitation.'''
+        game = self.get_object()
+        user = request.user
+        invitation = GameInvitation.objects.filter(
+            Q(game=game) & Q(invited=user)).first()
+        if invitation is not None and game.max_players > game.players.count():
+            is_joined = {'is_joined': True}
+            game.players.add(user)
+            invitation.delete()
+        else:
+            is_joined = {'is_joined': False}
+        serializer = GameDetailSerializer(game, context={'request': request})
+        data = serializer.data.copy()
+        data.update(is_joined)
+        return Response(data=data, status=status.HTTP_200_OK)
+
+    @action(
+        methods=['delete'],
+        detail=True,
+        url_path='invites',
+        permission_classes=[IsAuthenticated]
+    )
+    def delete_invitation(self, request, *args, **kwargs):
+        game = self.get_object()
+        user = request.user
+        delete_count, dt = GameInvitation.objects.filter(
+            Q(game=game) & Q(invited=user)).delete()
+        if not delete_count:
+            return Response(
+                data={'error': _('The invitation does not exist!')},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        return Response(status=status.HTTP_204_NO_CONTENT)
