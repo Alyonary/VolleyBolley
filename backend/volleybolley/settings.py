@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'social_django',
+    'django_celery_beat',
     'apps.users.apps.UsersConfig',
     'apps.api.apps.ApiConfig',
     'apps.players.apps.PlayersConfig',
@@ -259,5 +260,14 @@ FCM_SERVICE_ACCOUNT_PATH = os.environ.get('FCM_SERVICE_ACCOUNT_PATH')
 FCM_FILE_PATH = BASE_DIR_OUT / FCM_SERVICE_ACCOUNT_PATH / 'fcm_service_account.json'
 
 # Celery Configuration Options
-CELERY_TIMEZONE = 'UTC'
+CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 1800  # 30 minutes
+CELERY_TASK_SOFT_TIME_LIMIT = 1500  # 25 minutes
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
