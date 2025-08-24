@@ -257,3 +257,7 @@ LOGGING = {
 
 FCM_SERVICE_ACCOUNT_PATH = os.environ.get('FCM_SERVICE_ACCOUNT_PATH')
 FCM_FILE_PATH = BASE_DIR_OUT / FCM_SERVICE_ACCOUNT_PATH / 'fcm_service_account.json'
+
+# Celery Configuration Options
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_TRACK_STARTED = True

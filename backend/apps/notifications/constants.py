@@ -47,6 +47,7 @@ class Notification:
         params = templates[notification_type].copy()
         return params
 
+
 class DeviceType(models.TextChoices):
     '''Device type choices for push notifications.'''
     IOS = 'ios', 'ios'
@@ -54,3 +55,5 @@ class DeviceType(models.TextChoices):
 
 
 DEVICE_TOKEN_MAX_LENGTH: int = 255
+RETRY_PUSH_TIME: int = 60
+MAX_RETRIES: int = 3

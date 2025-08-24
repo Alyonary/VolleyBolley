@@ -1,18 +1,18 @@
 import time
 
-from backend.apps.notifications.constants import (
-    Notification,
-    NotificationTypes,
-)
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.notifications.constants import (
+    Notification,
+    NotificationTypes,
+)
 from apps.notifications.models import Device
-from apps.notifications.push_service import send_push_notification
 from apps.notifications.serializers import FCMTokenSerializer
+from apps.notifications.utils import get_push_service
 
 
 class FCMTokenView(APIView):
@@ -63,6 +63,7 @@ def test_notifications(request):
     Test view to send all notification types for game ID 1
     with a 1-second delay between notifications.
     """
+    push_service = get_push_service()
     all_tokens = list(
         Device.objects.filter(is_active=True).values_list('token', flat=True)
     )
@@ -76,13 +77,13 @@ def test_notifications(request):
         notification = Notification(notification_type=notification_type)
         try:
             if notification_type == NotificationTypes.IN_GAME:
-                result = send_push_notification(
+                result = push_service.send_push_notifications(
                     tokens=all_tokens,
                     notification=notification,
                     game_id=1
                 )
             else:
-                result = send_push_notification(
+                result = push_service.send_push_notifications(
                     tokens=all_tokens,
                     notification=notification,
                 )

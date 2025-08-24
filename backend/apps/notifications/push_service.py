@@ -1,156 +1,198 @@
 import logging
+from threading import Lock
 
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
 
 from apps.notifications.constants import Notification, NotificationTypes
-from apps.notifications.exceptions import FCMFileNotFoundError, FCMServiceError
 from apps.notifications.models import Device
 from volleybolley.settings import FCM_FILE_PATH
 
-# Настройка логгера
 logger = logging.getLogger('django.notifications')
 
 
-def initialize_push_service():
+class PushService:
     """
-    Initialize the FCM service with the service account file.
+    Singleton PushService class to handle FCM push notifications.
     """
-    #Перенести логику проверки fcm файла в воркфлоу?? (перед запуском бэка)
-    try:
-        check_fcm_file()
-        fcm_file_path = FCM_FILE_PATH
-        push_service = FCMNotification(
-            service_account_file=fcm_file_path
-        )
-        logger.info('FCM service connected successfully')
-        return push_service
-    except FCMError as e:
-        error_msg = f'FCM service initialization failed: {str(e)}'
-        logger.error(error_msg, exc_info=True)
-        raise FCMServiceError(
-                'FCM service initialization failed. '
-                'Check the service account file.'
-            ) from e
-    except FileNotFoundError as e:
-        error_msg = f'FCM service account file not found: {str(e)}'
-        logger.error(error_msg, exc_info=True)
-        raise FCMFileNotFoundError() from e
-    except Exception as e:
-        error_msg = f'Unexpected error initializing FCM service: {str(e)}'
-        logger.error(error_msg, exc_info=True)
-        raise FCMServiceError(f'Unexpected error: {str(e)}') from e
-
-
-def check_fcm_file():
-    '''
-    Check if the FCM service account file exists.
-    '''
-    if not FCM_FILE_PATH.exists():
-        error_msg = f'FCM service account file not found: {FCM_FILE_PATH}'
-        logger.error(error_msg)
-        raise FileNotFoundError(error_msg)
-    logger.debug(f'FCM file exists at {FCM_FILE_PATH}')
-    return True
-
-
-def proccess_notifications_by_type(
-    type: str,
-    player_id: int | None = None,
-    game_id: int | None = None
-) -> bool | None:
-    '''
-    Sends a notification to multiple devices using FCM.
-
-    Args:
-        tokens (list): List of device tokens to send the notification to.
-        type (str): Type of notification to send.
-        game_id (int, optional): Game ID to include in the notification data.
-    '''
-    try:
-        logger.info(f'Processing notification type: {type}')
-        notification = Notification(type)
-        
-        if type == NotificationTypes.IN_GAME:
-            tokens = Device.objects.active(
-                ).in_game(game_id).values_list('token', flat=True)
-            if not tokens:
-                logger.info(f'No active devices found for game_id={game_id}')
-                return 
-            return send_push_notification(
-                tokens,
-                notification,
-                game_id=game_id
+    _instance = None
+    _lock = Lock()
+    
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._initialized = False
+        return cls._instance
+    
+    def __init__(self):
+        if self._initialized:
+            return
+            
+        try:
+            self._check_fcm_file()
+            self.push_service = FCMNotification(
+                service_account_file=FCM_FILE_PATH
             )
-        elif type == NotificationTypes.RATE:
-            tokens = Device.objects.active(
-                ).in_game(game_id).values_list('token', flat=True)
-            if not tokens:
-                logger.info(f'No active devices found for game_id={game_id}')
-                return
-            return send_push_notification(
-                tokens,
-                notification,
-                game_id=game_id
+            self.enable = True
+            logger.info('FCM service connected successfully')
+        except FCMError as e:
+            self.enable = False
+            error_msg = f'FCM service initialization failed: {str(e)}'
+            logger.error(error_msg, exc_info=True)
+        except FileNotFoundError as e:
+            self.enable = False
+            error_msg = f'FCM service account file not found: {str(e)}'
+            logger.error(error_msg, exc_info=True)
+        except Exception as e:
+            self.enable = False
+            error_msg = f'Unexpected error initializing FCM service: {str(e)}'
+            logger.error(error_msg, exc_info=True)
+        finally:
+            self._initialized = True
+
+    def _check_fcm_file(self):
+        """
+        Check if the FCM service account file exists.
+        """
+        if not FCM_FILE_PATH.exists():
+            error_msg = (
+                f'FCM service account file not found: {FCM_FILE_PATH}'
             )
-        elif type == NotificationTypes.REMOVED:
-            tokens = Device.objects.active(
-                ).by_player(player_id).values_list('token', flat=True)
-            if not tokens:
-                logger.info(
-                    f'No active devices found for player_id={player_id}'
+            logger.error(error_msg)
+            raise FileNotFoundError(error_msg)
+        logger.debug(f'FCM file exists at {FCM_FILE_PATH}')
+        return True
+
+    def proccess_notifications_by_type(
+        self,
+        type: str,
+        player_id: int | None = None,
+        game_id: int | None = None,
+    ) -> bool | None:
+        """
+        Send notifications to multiple devices using FCM.
+
+        Args:
+            type (str): Type of notification to send.
+            player_id (int, optional): Player ID for player-specific 
+                notifications.
+            game_id (int, optional): Game ID to include in the 
+                notification data.
+        """
+        try:
+            if not self.enable:
+                logger.error(
+                    'Push service is not available, '
+                    'cannot send notifications'
                 )
-                return
-            return send_push_notification(
-                tokens,
-                notification,
-            )
-        else:
-            logger.warning(f'Unknown notification type: {type}')
+                return None
+            logger.info(f'Processing notification type: {type}')
+            notification = Notification(type)
+            
+            if type == NotificationTypes.IN_GAME:
+                tokens = Device.objects.active().in_game(
+                    game_id
+                ).values_list('token', flat=True)
+                if not tokens:
+                    logger.info(
+                        f'No active devices found for game_id={game_id}'
+                    )
+                    return None
+                return self.send_push_notification(
+                    tokens,
+                    notification,
+                    game_id=game_id
+                )
+            elif type == NotificationTypes.RATE:
+                tokens = Device.objects.active().in_game(
+                    game_id
+                ).values_list('token', flat=True)
+                if not tokens:
+                    logger.info(
+                        f'No active devices found for game_id={game_id}'
+                    )
+                    return None
+                return self.send_push_notification(
+                    tokens,
+                    notification,
+                    game_id=game_id
+                )
+            elif type == NotificationTypes.REMOVED:
+                tokens = Device.objects.active().by_player(
+                    player_id
+                ).values_list('token', flat=True)
+                if not tokens:
+                    logger.info(
+                        f'No active devices found for player_id={player_id}'
+                    )
+                    return None
+                return self.send_push_notification(
+                    tokens,
+                    notification,
+                )
+            else:
+                logger.warning(f'Unknown notification type: {type}')
+                return None
+        except Exception as e:
+            err_msg = f'Error processing notification type {type}: {str(e)}'
+            logger.error(err_msg, exc_info=True)
             return None
-    except Exception as e:
-        err_msg = f'Error processing notification type {type}: {str(e)}'
-        logger.error(err_msg, exc_info=True)
-        return None
 
+    def send_push_notifications(
+        self,
+        tokens: list[str],
+        notification: Notification,
+        game_id: int | None = None,
+    ) -> bool | None:
+        """
+        Send push notifications to multiple devices.
 
-try:
-    logger.info('Initializing push service')
-    push_service = initialize_push_service()
-except Exception as e:
-    error_msg = f'Failed to initialize push service: {str(e)}'
-    logger.critical(error_msg, exc_info=True)
-    push_service = None
+        Args:
+            tokens (list): List of device tokens to send the notification to.
+            notification (Notification): Notification object containing title,
+                body, and screen.
+            game_id (int, optional): Game ID to include in the 
+                notification data.
+        """
+        for token in tokens:
+            self.send_notification_by_token(
+                token=token,
+                notification=notification,
+                game_id=game_id
+            )
+        return True
 
+    def send_notification_by_token(
+        self,
+        token: str,
+        notification: Notification,
+        game_id: int | None = None,
+    ) -> bool | None:
+        """
+        Send push notification to a single device.
 
-def send_push_notification(
-    tokens: list[int],
-    notification: Notification,
-    game_id: int | None = None,
-    push_service: FCMNotification = push_service
-) -> bool | None:
-    '''
-    Sends a push notification to multiple devices.
-
-    Args:
-        tokens (list): List of device tokens to send the notification to.
-        notification (Notification): Notification object containing title,
-            body, and screen.
-        game_id (int, optional): Game ID to include in the notification data.
-    '''
-    if push_service is None:
-        logger.error(
-            'Push service is not initialized, cannot send notifications'
-        )
-        return None
-    data_message = {'screen': notification.screen}
-    if game_id:
-        data_message['gameId'] = game_id
-    for token in tokens:
+        Args:
+            token (str): Device token to send the notification to.
+            notification (Notification): Notification object containing title,
+                body, and screen.
+            game_id (int, optional): Game ID to include in the 
+                notification data.
+        """
+        if not self.enable:
+            logger.error(
+                'Push service is not available, cannot send notifications'
+            )
+            return False
+        data_message = {'screen': notification.screen}
+        if game_id:
+            data_message['gameId'] = game_id
+        error_occurred = False
         try:
             masked_token = token[:8] + '...' if len(token) > 8 else token
             logger.debug(f'Sending notification to device {masked_token}')
-            push_service.notify(
+            self.push_service.notify(
                 fcm_token=token,
                 notification_title=notification.title,
                 notification_body=notification.body,
@@ -159,13 +201,33 @@ def send_push_notification(
             logger.debug(
                 f'Notification sent successfully to device {masked_token}'
             )
+            return True
         except FCMError as e:
+            error_occurred = True
             logger.warning(f'FCM Error for token {masked_token}: {str(e)}')
-            # создать задание на повторную отправку после интеграции Celery
-            continue
+            return False
         except Exception as e:
+            error_occurred = True
             logger.error(
                 f'Unexpected error sending to {masked_token}: {str(e)}'
             )
-            continue
-    return True
+            return False
+        finally:
+            if error_occurred:
+                # Импорт внутри функции для избежания циклического импорта
+                from apps.notifications.tasks import retry_notification_task
+                retry_notification_task.apply_async(
+                    args=[token, notification.type, game_id],
+                    countdown=60
+                )
+                logger.info(
+                    f'Scheduled retry task for token {masked_token} '
+                    f'in 60 seconds'
+                )
+
+
+# Функция для получения экземпляра
+def get_push_service():
+    """Get PushService instance."""
+    return PushService()
+
