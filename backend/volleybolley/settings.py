@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'apps.locations.apps.LocationsConfig',
     'django_filters',
+    'drf_yasg',
 ]
 
 CSRF_COOKIE_HTTPONLY = True
