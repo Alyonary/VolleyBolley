@@ -12,10 +12,8 @@ class Game(EventMixin, CreatedUpdatedMixin):
     host = m.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name=_('Организатор'),
-        on_delete=m.SET_NULL,
-        null=True,
-        blank=True,
-        related_name='games_host',
+        on_delete=m.CASCADE,
+        related_name='games_host'
     )
     players = m.ManyToManyField(
         settings.AUTH_USER_MODEL,
@@ -26,6 +24,7 @@ class Game(EventMixin, CreatedUpdatedMixin):
 
     def __str__(self):
         name = (
+            f'{self.id}'
             f'{self.court.location.court_name}, '
             f'{self.message[:15]}, '
             f'time: {self.start_time}'

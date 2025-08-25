@@ -16,7 +16,7 @@ from .serializers import (
     GameDetailSerializer,
     GameInviteSerializer,
     GameSerializer,
-    ShortGameSerializer,
+    GameShortSerializer,
 )
 
 User = get_user_model()
@@ -25,7 +25,7 @@ User = get_user_model()
 class GameViewSet(ModelViewSet):
     '''Provides CRUD operations for the Game model.'''
     queryset = Game.objects.all()
-    permission_classes = (IsHostOrReadOnly,)
+    permission_classes = (IsHostOrReadOnly, IsAuthenticated)
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -62,7 +62,7 @@ class GameViewSet(ModelViewSet):
     @action(
         methods=['get'],
         detail=False,
-        url_path='preview',
+        url_path='preview'
     )
     def preview(self, request, *args, **kwargs):
         '''Returns the time of the next game and the number of invitations.'''
@@ -71,8 +71,11 @@ class GameViewSet(ModelViewSet):
         upcoming_game = Game.objects.filter(
             Q(host=user) | Q(players=user)
         ).filter(start_time__gt=current_time).order_by('start_time').first()
-        upcoming_game_time = upcoming_game.start_time.strftime(
-            '%Y-%m-%d %H:%M')
+        if upcoming_game is not None:
+            upcoming_game_time = upcoming_game.start_time.strftime(
+                '%Y-%m-%d %H:%M')
+        else:
+            upcoming_game_time = None
         invites = GameInvitation.objects.filter(
             invited=user).values('game').distinct().count()
         return Response(
@@ -82,7 +85,7 @@ class GameViewSet(ModelViewSet):
     @action(
         methods=['get'],
         detail=False,
-        url_path='my-games',
+        url_path='my-games'
     )
     def my_games(self, request, *args, **kwargs):
         '''Retrieves the list of games created by the user.'''
@@ -90,14 +93,14 @@ class GameViewSet(ModelViewSet):
         my_games = Game.objects.filter(
             host=request.user).filter(
                 start_time__gt=current_time).select_related('host', 'court')
-        serializer = ShortGameSerializer(my_games, many=True)
+        serializer = GameShortSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
     @action(
         methods=['get'],
         detail=False,
-        url_path='archive',
+        url_path='archive'
     )
     def archive_games(self, request, *args, **kwargs):
         '''Retrieves the list of archived games related to user.'''
@@ -105,14 +108,14 @@ class GameViewSet(ModelViewSet):
         my_games = Game.objects.filter(end_time__lt=current_time).filter(
             Q(host=request.user) | Q(players=request.user)
         ).select_related('host', 'court')
-        serializer = ShortGameSerializer(my_games, many=True)
+        serializer = GameShortSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
     @action(
         methods=['get'],
         detail=False,
-        url_path='invites',
+        url_path='invites'
     )
     def invited_games(self, request, *args, **kwargs):
         '''Retrieving upcoming games to which the player has been invited.'''
@@ -124,14 +127,14 @@ class GameViewSet(ModelViewSet):
             for invitation in my_invitations
             if invitation.game.start_time > current_time
         ]
-        serializer = ShortGameSerializer(my_games, many=True)
+        serializer = GameShortSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
     @action(
         methods=['get'],
         detail=False,
-        url_path='upcoming',
+        url_path='upcoming'
     )
     def upcoming_games(self, request, *args, **kwargs):
         '''Retrieving upcoming games to which the player has been invited.'''
@@ -139,7 +142,7 @@ class GameViewSet(ModelViewSet):
         my_games = Game.objects.filter(start_time__gt=current_time).filter(
             Q(host=request.user) | Q(players=request.user)
         ).select_related('host', 'court')
-        serializer = ShortGameSerializer(my_games, many=True)
+        serializer = GameShortSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 

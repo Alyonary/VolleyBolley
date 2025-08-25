@@ -9,6 +9,8 @@ pytest_plugins = [
     "tests.fixtures.locations",
     "tests.fixtures.players",
     "tests.fixtures.users",
+    "tests.fixtures.games",
+    "tests.fixtures.core"
 ]
 
 @pytest.fixture

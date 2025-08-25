@@ -15,6 +15,7 @@ from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
 from apps.event.enums import NumberOfPlayers
 from apps.event.models import Game
+from apps.locations.models import Country
 
 User = get_user_model()
 
@@ -91,25 +92,21 @@ class BaseGameSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'No payment account found for this payment type')
         value['payment_account'] = payment.payment_account
-
-        '''
-        Пока пользователи не настроены, отдаем так.
-        Должно быть что-то вроде:
-        player = request.user.player
-        currency_types = CurrencyType.objects.filter(
-                            country=player.location.country)
-        '''
-        currency_type = CurrencyType.objects.first()
+        player = request.user.player.first()
+        country = Country.objects.get(name=player.location.country)
+        currency_type = CurrencyType.objects.filter(
+                            country=country).first()
         value['currency_type'] = currency_type
         return value
 
 
 class GameSerializer(BaseGameSerializer):
-    '''Game serializer uses for create, list requests.'''
+    '''Uses for create, list requests.'''
 
     players = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
-        many=True
+        many=True,
+        required=False
     )
     court_id = serializers.PrimaryKeyRelatedField(
         source='court',
@@ -219,7 +216,7 @@ class TourneySerializer(serializers.ModelSerializer):
     pass
 
 
-class ShortGameSerializer(serializers.ModelSerializer):
+class GameShortSerializer(serializers.ModelSerializer):
 
     game_id = serializers.IntegerField(source='pk', read_only=True)
 
@@ -318,14 +315,8 @@ class GameJoinSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 'No payment account found for this payment type')
         value['payment_account'] = payment.payment_account
-
-        '''
-        Пока пользователи не настроены, отдаем так.
-        Должно быть что-то вроде:
-        player = request.user.player
-        currency_types = CurrencyType.objects.filter(
-                            country=player.location.country)
-        '''
-        currency_type = CurrencyType.objects.first()
+        currency_type = CurrencyType.objects.filter(
+                            country=request.user.player.location.country)
+        # currency_type = CurrencyType.objects.first()
         value['currency_type'] = currency_type
         return value
