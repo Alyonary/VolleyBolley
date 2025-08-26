@@ -2,12 +2,10 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.urls import reverse
-from rest_framework import status
 from pytest_lazy_fixtures import lf
+from rest_framework import status
 
 from apps.core.models import GameInvitation
-
-
 from apps.event.models import Game
 
 
@@ -79,20 +77,24 @@ class TestGameAPI:
             )
     )
     def test_urls_availability(
-            self, authored_APIClient, name, args, user_player):
+            self, authored_api_client, name, args, user_player):
         url = reverse(name, args=args)
-        response = authored_APIClient.get(url)
+        response = authored_api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
 
     def test_for_invite_creation(
-            self, game_without_players, authored_APIClient, bulk_create_users):
+            self,
+            game_without_players,
+            authored_api_client,
+            bulk_create_users
+    ):
         url = reverse(
             'api:games-invite-players',
             args=(game_without_players.id,)
         )
         user_ids = [user.id for user in bulk_create_users]
         data = {'players': user_ids}
-        response = authored_APIClient.post(url, data, format='json')
+        response = authored_api_client.post(url, data, format='json')
         assert response.status_code == status.HTTP_201_CREATED
         assert GameInvitation.objects.count() == len(user_ids)
         for user in user_ids:
@@ -146,9 +148,9 @@ class TestGameAPI:
             game_without_players,
             another_game_cyprus,
             user_player,
-            authored_APIClient,
+            authored_api_client,
     ):
         assert Game.objects.count() == 2
-        response = authored_APIClient.get(reverse('api:games-list'))
+        response = authored_api_client.get(reverse('api:games-list'))
         assert len(response.data) == 1
         assert response.data[0]['game_id'] == game_without_players.id

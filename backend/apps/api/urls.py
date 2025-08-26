@@ -2,8 +2,8 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
-from apps.core.views import PaymentViewSet
 from apps.api.views import GoogleLogin, LogoutView
+from apps.core.views import PaymentViewSet
 from apps.courts.views import CourtViewSet
 from apps.event.views import GameViewSet
 from apps.locations.views import CountryListView
