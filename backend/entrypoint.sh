@@ -5,6 +5,7 @@ set -e
 
 # Определяем путь к статике (должен совпадать с STATIC_ROOT в settings.py)
 STATIC_DIR=/app/collected_static
+FRONT_STATIC_DIR=/app/static
 
 # Собираем статику Django
 echo "Collecting static files..."
@@ -17,6 +18,7 @@ if [ -d "$VOLUME_STATIC_DIR" ]; then
     # Удаляем старое содержимое и копируем новое
     rm -rf $VOLUME_STATIC_DIR/*
     cp -r $STATIC_DIR/* $VOLUME_STATIC_DIR/
+    cp -r $FRONT_STATIC_DIR/* $VOLUME_STATIC_DIR/
 else
     echo "Warning: Volume directory $VOLUME_STATIC_DIR not found!"
 fi
