@@ -3,6 +3,7 @@ from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
 
 from apps.event.models import Game
+from apps.players.models import Player, PlayerLocation
 
 User = get_user_model()
 
@@ -18,7 +19,7 @@ def game_data(
 ):
     return {
         'court_id': court_obj_with_tag.id,
-        'message': 'Test game',
+        'message': 'Test game in Thailand',
         'start_time': '2025-08-21 15:30',
         'end_time': '2025-08-21 18:30',
         'gender': gender_men,
@@ -80,6 +81,39 @@ def another_user(user_data):
 
 
 @pytest.fixture
+def user_player(active_user):
+    thai = PlayerLocation.objects.create(country='Thailand', city='Pattaya')
+    return Player.objects.create(
+        user=active_user,
+        gender='MALE',
+        level='LIGHT',
+        location=thai
+    )
+
+
+@pytest.fixture
+def another_user_player(another_user):
+    cyprus = PlayerLocation.objects.create(country='Cyprus', city='Limassol')
+    return Player.objects.create(
+        user=another_user,
+        gender='MALE',
+        level='LIGHT',
+        location=cyprus
+    )
+
+
+@pytest.fixture
 def another_user_client(another_user, client):
     client.force_authenticate(another_user)
     return client
+
+
+@pytest.fixture
+def another_game_cyprus(another_user, game_data, another_court_obj):
+    game_data['court_id'] = another_court_obj.id
+    game_data['message'] = 'Test game in Cyprus'
+    game_data['host'] = another_user
+    # levels = game_data.pop('player_levels')
+    game = Game.objects.create(**game_data)
+    # game.player_levels.set(levels)
+    return game

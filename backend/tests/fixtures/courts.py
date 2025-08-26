@@ -13,11 +13,27 @@ def country_for_court_location():
 
 
 @pytest.fixture
+def country_for_another_court_location():
+    country = Country.objects.create(name='Cyprus')
+    return country
+
+
+@pytest.fixture
 def city_for_court_location(country_for_court_location):
 
     city = City.objects.create(
         name='Pattaya',
         country=country_for_court_location
+    )
+    return city
+
+
+@pytest.fixture
+def city_for_another_court_location(country_for_another_court_location):
+
+    city = City.objects.create(
+        name='Limassol',
+        country=country_for_another_court_location
     )
     return city
 
@@ -30,7 +46,7 @@ def location_for_court_data(
     return {
         'longitude': 12.345,
         'latitude': -54.321,
-        'court_name': 'Test court',
+        'court_name': 'Test court in Thailand',
         'country': country_for_court_location,
         'city': city_for_court_location
     }
@@ -42,6 +58,21 @@ def location_for_court(location_for_court_data):
 
 
 @pytest.fixture
+def location_for_another_court(
+    location_for_court_data,
+    city_for_another_court_location,
+    country_for_another_court_location
+):
+    another_country = {
+        'country': country_for_another_court_location,
+        'city': city_for_another_court_location,
+        'court_name': 'Test court in Cyprus'
+    }
+    location_for_court_data.update(another_country)
+    return CourtLocation.objects.create(**location_for_court_data)
+
+
+@pytest.fixture
 def court_data(location_for_court):
     return {
         'location': location_for_court,
@@ -49,6 +80,16 @@ def court_data(location_for_court):
         'description': 'Test court description',
         'working_hours': 'Test court working hours'
     }
+
+
+@pytest.fixture
+def another_court_obj(location_for_another_court):
+    return Court.objects.create(
+        location=location_for_another_court,
+        price_description='1$/hour',
+        description='Test court description',
+        working_hours='Test court working hours'
+    )
 
 
 @pytest.fixture

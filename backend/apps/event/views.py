@@ -1,4 +1,5 @@
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -9,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.core.models import GameInvitation
+from apps.locations.models import Country
 
 from .models import Game
 from .permissions import IsHostOrReadOnly
@@ -24,8 +26,20 @@ User = get_user_model()
 
 class GameViewSet(ModelViewSet):
     '''Provides CRUD operations for the Game model.'''
-    queryset = Game.objects.all()
     permission_classes = (IsHostOrReadOnly, IsAuthenticated)
+
+    def get_queryset(self):
+        if self.action in ('list', 'retrieve'):
+            user = self.request.user
+            player = user.player.first()
+            if player is None:
+                raise ValidationError('No player for this user finded.')
+            country = Country.objects.filter(
+                name=player.location.country).first()
+            return Game.objects.filter(
+                court__location__country=country, is_private=False)
+        else:
+            return Game.objects.all()
 
     def get_serializer_class(self):
         if self.action == 'retrieve':
@@ -44,7 +58,7 @@ class GameViewSet(ModelViewSet):
         url_path='invite-players',
     )
     def invite_players(self, request, *args, **kwargs):
-        '''Создает приглашения на игру для игроков из списка.'''
+        '''Creates invitations to the game for players on the list.'''
         game = self.get_object().id
         user = request.user.id
         for id in request.data['players']:

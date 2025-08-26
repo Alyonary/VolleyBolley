@@ -77,21 +77,24 @@ class BaseGameSerializer(serializers.ModelSerializer):
     def validate_maximum_players(self, value):
         minimal = NumberOfPlayers.MIN_PLAYERS.value
         maximal = NumberOfPlayers.MAX_PLAYERS.value
-        if not (minimal < value < maximal):
+        if not (minimal <= value <= maximal):
             raise serializers.ValidationError(
                 f'Number of players must be between {minimal} and {maximal}!')
         return value
 
     def validate(self, value):
         request = self.context.get('request', None)
-        payment = Payment.objects.filter(
-            owner=request.user,
-            payment_type=value.get('payment_type')
-        ).first()
-        if not payment or payment.payment_account is None:
-            raise serializers.ValidationError(
-                'No payment account found for this payment type')
-        value['payment_account'] = payment.payment_account
+        if value.get('payment_type') == 'CASH':
+            value['payment_account'] = 'Cash money'
+        else:
+            payment = Payment.objects.filter(
+                owner=request.user,
+                payment_type=value.get('payment_type')
+            ).first()
+            if not payment or payment.payment_account is None:
+                raise serializers.ValidationError(
+                    'No payment account found for this payment type')
+            value['payment_account'] = payment.payment_account
         player = request.user.player.first()
         country = Country.objects.get(name=player.location.country)
         currency_type = CurrencyType.objects.filter(
@@ -238,85 +241,3 @@ class GameShortSerializer(serializers.ModelSerializer):
             'start_time',
             'end_time'
         ]
-
-
-class GameJoinSerializer(serializers.ModelSerializer):
-
-    game_id = serializers.IntegerField(source='pk')
-
-    start_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
-
-    end_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
-
-    levels = serializers.SlugRelatedField(
-        slug_field='name',
-        queryset=GameLevel.objects.all(),
-        source='player_levels',
-        many=True
-    )
-
-    gender = serializers.SlugRelatedField(
-        slug_field='name',
-        queryset=Gender.objects.all()
-    )
-
-    currency_type = serializers.CharField(
-        required=False
-    )
-
-    payment_account = serializers.CharField(
-        required=False
-    )
-
-    maximum_players = serializers.IntegerField(
-        source='max_players'
-    )
-
-    class Meta:
-        model = Game
-        fields = [
-            'game_id',
-            'is_joined',
-            'is_private',
-            'court_location',
-            'start_time',
-            'end_time',
-            'levels',
-            'gender',
-            'payment_type',
-            'payment_account',
-            'currency_type',
-            'price_per_person',
-            'maximum_players'
-        ]
-        read_only_fields = [
-            'game_id',
-            'is_joined',
-            'is_private',
-            'court_location',
-            'start_time',
-            'end_time',
-            'levels',
-            'gender',
-            'payment_type',
-            'payment_account',
-            'currency_type',
-            'price_per_person',
-            'maximum_players'
-        ]
-
-    def validate(self, value):
-        request = self.context.get('request', None)
-        payment = Payment.objects.get(
-            owner=request.user,
-            payment_type=value.get('payment_type')
-        )
-        if not payment or payment.payment_account is None:
-            raise serializers.ValidationError(
-                'No payment account found for this payment type')
-        value['payment_account'] = payment.payment_account
-        currency_type = CurrencyType.objects.filter(
-                            country=request.user.player.location.country)
-        # currency_type = CurrencyType.objects.first()
-        value['currency_type'] = currency_type
-        return value

@@ -79,7 +79,7 @@ class TestGameAPI:
             )
     )
     def test_urls_availability(
-            self, authored_APIClient, name, args):
+            self, authored_APIClient, name, args, user_player):
         url = reverse(name, args=args)
         response = authored_APIClient.get(url)
         assert response.status_code == status.HTTP_200_OK
@@ -140,3 +140,15 @@ class TestGameAPI:
         assert another_user not in game_without_players.players.all()
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert GameInvitation.objects.first() is None
+
+    def test_filtering_queryset(
+            self,
+            game_without_players,
+            another_game_cyprus,
+            user_player,
+            authored_APIClient,
+    ):
+        assert Game.objects.count() == 2
+        response = authored_APIClient.get(reverse('api:games-list'))
+        assert len(response.data) == 1
+        assert response.data[0]['game_id'] == game_without_players.id
