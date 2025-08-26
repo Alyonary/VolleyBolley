@@ -3,15 +3,36 @@ from django.urls import reverse
 
 from apps.core.models import Contact, Tag
 from apps.courts.models import Court, CourtLocation
+from apps.locations.models import City, Country
 
 
 @pytest.fixture
-def location_for_court_data():
+def country_for_court_location():
+    country = Country.objects.create(name='Thailand')
+    return country
+
+
+@pytest.fixture
+def city_for_court_location(country_for_court_location):
+
+    city = City.objects.create(
+        name='Pattaya',
+        country=country_for_court_location
+    )
+    return city
+
+
+@pytest.fixture
+def location_for_court_data(
+    country_for_court_location,
+    city_for_court_location
+):
     return {
         'longitude': 12.345,
         'latitude': -54.321,
         'court_name': 'Test court',
-        'location_name': 'Test location'
+        'country': country_for_court_location,
+        'city': city_for_court_location
     }
 
 

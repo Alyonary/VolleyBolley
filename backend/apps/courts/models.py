@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import Tag
 from apps.courts.enums import CourtEnums, LocationEnums
+from apps.locations.models import Country, City
 
 
 class CourtLocation(models.Model):
@@ -40,16 +41,30 @@ class CourtLocation(models.Model):
         _('Court name'),
         max_length=LocationEnums.LOCATION_NAME_LENGTH.value
     )
-    location_name = models.CharField(
-        _('Location name'),
-        max_length=LocationEnums.LOCATION_NAME_LENGTH.value
+    country = models.ForeignKey(
+        Country,
+        verbose_name=_('Country'),
+        on_delete=models.SET_NULL,
+        null=True
+    )
+    city = models.ForeignKey(
+        City,
+        verbose_name=_('City'),
+        on_delete=models.SET_NULL,
+        null=True
     )
 
     class Meta:
         verbose_name = _('Location')
         verbose_name_plural = _('Locations')
         default_related_name = 'locations'
-        ordering = ('-location_name',)
+        ordering = ('-court_name',)
+
+    @property
+    def location_name(self):
+        if self.country and self.city.name:
+            return f'{self.country.name}, {self.city.name}'
+        return None
 
     def __str__(self):
         return self.court_name

@@ -26,6 +26,7 @@ def countries_cities_data():
         ]
     }
 
+
 @pytest.fixture
 def countries_cities(countries_cities_data):
     '''Create test cities and countries data.'''

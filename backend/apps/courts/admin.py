@@ -1,23 +1,35 @@
 from django.contrib import admin
+from django.forms import ModelForm
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
-from .models import Court, CourtLocation
+from apps.courts.models import Court, CourtLocation
+from django.core.exceptions import ValidationError
+
+
+class CustomLocationAdmin(ModelForm):
+    def clean(self):
+        super().clean()
+        if self.cleaned_data['country'] != self.cleaned_data['city'].country:
+            raise ValidationError(
+                _('The city and country of the courts must match.'))
 
 
 @admin.register(CourtLocation)
 class LocationAdmin(admin.ModelAdmin):
+    form = CustomLocationAdmin
     list_display = (
         'id',
         'longitude',
         'latitude',
         'court_name',
-        'location_name')
-    search_fields = ('court_name', 'location_name')
-    list_filter = ('location_name',)
+        'country',
+        'city')
+    search_fields = ('court_name', 'country', 'city')
+    list_filter = ('country',)
     empty_value_display = _('Not defined')
-    list_display_links = ('id', 'location_name')
+    list_display_links = ('id',)
 
 
 @admin.register(Court)

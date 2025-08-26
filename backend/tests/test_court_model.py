@@ -11,15 +11,22 @@ from apps.courts.models import Court, CourtLocation
 @pytest.mark.django_db
 class TestLocationTagModel:
 
-    def test_create_location(self, location_for_court_data):
+    def test_create_location(
+            self,
+            location_for_court_data,
+            country_for_court_location,
+            city_for_court_location
+    ):
         location = CourtLocation.objects.create(**location_for_court_data)
 
         assert location.longitude == location_for_court_data['longitude']
         assert location.latitude == location_for_court_data['latitude']
         assert location.court_name == location_for_court_data['court_name']
-        assert location.location_name == location_for_court_data[
-            'location_name'
-        ]
+        assert location.country == country_for_court_location
+        assert location.city == city_for_court_location
+        assert location.location_name == f'{
+            country_for_court_location.name}, {city_for_court_location.name}'
+
         assert CourtLocation.objects.all().count() == 1
 
     def test_create_tag(self, tag_data):

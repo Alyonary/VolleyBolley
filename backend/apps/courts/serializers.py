@@ -8,9 +8,14 @@ from .models import Court, CourtLocation
 class LocationSerializer(serializers.ModelSerializer):
     '''Location serializer for all fileds exclude id.'''
 
+    location_name = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
-        exclude = ('id',)
+        exclude = ('id', 'country', 'city')
         model = CourtLocation
+
+    def get_location_name(self, obj):
+        return obj.location_name
 
 
 class CourtSerializer(serializers.ModelSerializer):
