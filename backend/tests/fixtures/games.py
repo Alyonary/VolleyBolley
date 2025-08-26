@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
 from apps.event.models import Game
-from apps.players.models import Player, PlayerLocation
+from apps.locations.models import City, Country
+from apps.players.models import Player
 
 User = get_user_model()
 
@@ -82,23 +83,27 @@ def another_user(user_data):
 
 @pytest.fixture
 def user_player(active_user):
-    thai = PlayerLocation.objects.create(country='Thailand', city='Pattaya')
+    country, _ = Country.objects.get_or_create(name='Thailand')
+    city, _ = City.objects.get_or_create(country=country, name='Pattaya')
     return Player.objects.create(
         user=active_user,
         gender='MALE',
         level='LIGHT',
-        location=thai
+        country=country,
+        city=city
     )
 
 
 @pytest.fixture
 def another_user_player(another_user):
-    cyprus = PlayerLocation.objects.create(country='Cyprus', city='Limassol')
+    country, _ = Country.objects.get_or_create(name='Cyprus')
+    city, _ = City.objects.get_or_create(country=country, name='Limassol')
     return Player.objects.create(
         user=another_user,
         gender='MALE',
         level='LIGHT',
-        location=cyprus
+        country=country,
+        city=city
     )
 
 

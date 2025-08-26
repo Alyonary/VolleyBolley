@@ -1,5 +1,4 @@
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -10,11 +9,9 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
 from apps.core.models import GameInvitation
-from apps.locations.models import Country
-
-from .models import Game
-from .permissions import IsHostOrReadOnly
-from .serializers import (
+from apps.event.models import Game
+from apps.event.permissions import IsHostOrReadOnly
+from apps.event.serializers import (
     GameDetailSerializer,
     GameInviteSerializer,
     GameSerializer,
@@ -30,14 +27,11 @@ class GameViewSet(ModelViewSet):
 
     def get_queryset(self):
         if self.action in ('list', 'retrieve'):
-            user = self.request.user
-            player = user.player.first()
-            if player is None:
-                raise ValidationError('No player for this user finded.')
-            country = Country.objects.filter(
-                name=player.location.country).first()
+            player = getattr(self.request.user, 'player', None)
+            if player is None or player.country is None:
+                return Game.objects.all()
             return Game.objects.filter(
-                court__location__country=country, is_private=False)
+                court__location__country=player.country, is_private=False)
         else:
             return Game.objects.all()
 

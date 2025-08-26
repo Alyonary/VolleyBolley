@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from apps.players.models import Player, PlayerLocation
+from .models import Player
 
 
 @admin.register(Player)
@@ -30,13 +30,3 @@ class PlayerAdmin(admin.ModelAdmin):
     def get_last_name(self, obj):
         return obj.user.last_name
     get_last_name.short_description = _('Last name')
-
-
-@admin.register(PlayerLocation)
-class PlayerLocationAdmin(admin.ModelAdmin):
-
-    list_display = (
-        'id',
-        'country',
-        'city'
-    )

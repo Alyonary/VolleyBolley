@@ -16,6 +16,7 @@ class PlayerIntEnums(IntEnum):
     PAYMENT_MAX_LENGTH = 10
     PLAYER_DATA_MAX_LENGTH = 150
 
+
 class Genders(models.TextChoices):
     """Gender enums for player."""
 
@@ -24,7 +25,7 @@ class Genders(models.TextChoices):
 
 
 class PlayerStrEnums(Enum):
-    
+
     DEFAULT_BIRTHDAY = '2000-01-01'
     DEFAULT_GENDER = Genders.MALE.value
     DEFAULT_LEVEL = Levels.LIGHT.value
