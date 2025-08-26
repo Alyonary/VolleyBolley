@@ -2,8 +2,8 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
-from apps.core.views import PaymentViewSet
 from apps.api.views import GoogleLogin, LogoutView
+from apps.core.views import PaymentViewSet
 from apps.courts.views import CourtViewSet
 from apps.event.views import GameViewSet
 from apps.locations.views import CountryListView
@@ -14,13 +14,13 @@ app_name = 'api'
 api_v1 = DefaultRouter()
 api_v1.register(r'courts', CourtViewSet, basename='courts')
 api_v1.register(r'players', PlayerViewSet, basename='players')
-api_v1.register(r'payments', PaymentViewSet, basename='payments')
 api_v1.register(r'games', GameViewSet, basename='games')
+api_v1.register(r'payments', PaymentViewSet, basename='payments')
 
 urlpatterns = [
     path('', include(api_v1.urls)),
     path('social-auth/', include('social_django.urls', namespace='social')),
-    path('countries/', CountryListView.as_view(), name='countries'), 
+    path('countries/', CountryListView.as_view(), name='countries'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/google/login/', GoogleLogin.as_view(), name='google-login'),
     path(

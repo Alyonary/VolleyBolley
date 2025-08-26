@@ -1,6 +1,6 @@
 import pytest
-from rest_framework.test import APIClient
 from django.contrib.auth import get_user_model
+from rest_framework.test import APIClient
 
 from apps.event.models import Game
 from apps.players.models import Player, PlayerLocation
@@ -68,7 +68,7 @@ def client():
 
 
 @pytest.fixture
-def authored_APIClient(active_user, client):
+def authored_api_client(active_user, client):
     client.force_authenticate(active_user)
     return client
 
@@ -113,7 +113,5 @@ def another_game_cyprus(another_user, game_data, another_court_obj):
     game_data['court_id'] = another_court_obj.id
     game_data['message'] = 'Test game in Cyprus'
     game_data['host'] = another_user
-    # levels = game_data.pop('player_levels')
     game = Game.objects.create(**game_data)
-    # game.player_levels.set(levels)
     return game

@@ -4,7 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.models import Tag
 from apps.courts.enums import CourtEnums, LocationEnums
-from apps.locations.models import Country, City
+from apps.locations.models import City, Country
 
 
 class CourtLocation(models.Model):

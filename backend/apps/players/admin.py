@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from .models import Player, PlayerLocation
+from apps.players.models import Player, PlayerLocation
 
 
 @admin.register(Player)
