@@ -14,11 +14,12 @@ class PlayerAdmin(admin.ModelAdmin):
         'get_last_name',
         'gender',
         'level',
-        'location',
+        'country',
+        'city',
         'rating',
     )
     search_fields = ('user__first_name', 'user__last_name')
-    list_filter = ('gender', 'location', 'level')
+    list_filter = ('gender', 'country', 'city', 'level')
     empty_value_display = _('Not defined')
     list_display_links = ('id', 'user')
 
