@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 from django.core.management.utils import get_random_secret_key
@@ -9,6 +10,9 @@ BASE_DIR_OUT = Path(__file__).resolve().parents[2]
 ENV_FILE_PATH = BASE_DIR_OUT / 'infra' / '.env'
 
 load_dotenv(dotenv_path=ENV_FILE_PATH)
+
+# Определяем режим тестирования
+TESTING = 'pytest' in sys.modules
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
@@ -72,18 +76,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'volleybolley.wsgi.application'
 
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'volleybolley_db'),
-        'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', 5432)
+# Database Configuration - SQLite для тестов, PostgreSQL для остального
+if TESTING:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'test_db.sqlite3',
+        }
     }
-}
-
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'volleybolley_db'),
+            'USER': os.getenv('POSTGRES_USER', 'postgres'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+            'HOST': os.getenv('DB_HOST', 'localhost'),
+            'PORT': os.getenv('DB_PORT', 5432),
+            'OPTIONS': {
+                'client_encoding': 'UTF8',
+            },
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -178,90 +192,113 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
 
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '{levelname} {asctime} {module} {message}',
-            'style': '{',
+# Упрощенное логирование для тестов
+if TESTING:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'level': 'ERROR',
+            },
         },
-        'simple': {
-            'format': '{levelname} {message}',
-            'style': '{',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose',
-        },
-        'file': {
-            'class': 'logging.FileHandler',
-            'filename': 'debug.log',
-            'formatter': 'verbose',
-            'encoding': 'utf-8',
-        },
-        'error_file': {
-            'class': 'logging.FileHandler',
-            'filename': 'errors.log',
-            'formatter': 'verbose',
-            'level': 'ERROR',
-            'encoding': 'utf-8',
-        },
-    },
-    'loggers': {
-        'django': {
-            'handlers': ['console', 'file', 'error_file'],
-            'level': 'INFO',
-            'propagate': False,
-        },
-        'django.request': {
-            'handlers': ['console', 'file', 'error_file'],
-            'level': 'DEBUG',
-            'propagate': False,
-        },
-        'django.security': {
-            'handlers': ['console', 'file', 'error_file'],
-            'level': 'DEBUG',
-        },
-        'django.db.backends': {
+        'root': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'ERROR',
         },
-        'rest_framework': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+    }
+else:
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'formatters': {
+            'verbose': {
+                'format': '{levelname} {asctime} {module} {message}',
+                'style': '{',
+            },
+            'simple': {
+                'format': '{levelname} {message}',
+                'style': '{',
+            },
         },
-        'social_core': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'verbose',
+            },
+            'file': {
+                'class': 'logging.FileHandler',
+                'filename': 'debug.log',
+                'formatter': 'verbose',
+                'encoding': 'utf-8',
+            },
+            'error_file': {
+                'class': 'logging.FileHandler',
+                'filename': 'errors.log',
+                'formatter': 'verbose',
+                'level': 'ERROR',
+                'encoding': 'utf-8',
+            },
         },
-        'allauth': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
+        'loggers': {
+            'django': {
+                'handlers': ['console', 'file', 'error_file'],
+                'level': 'INFO',
+                'propagate': False,
+            },
+            'django.request': {
+                'handlers': ['console', 'file', 'error_file'],
+                'level': 'DEBUG',
+                'propagate': False,
+            },
+            'django.security': {
+                'handlers': ['console', 'file', 'error_file'],
+                'level': 'DEBUG',
+            },
+            'django.db.backends': {
+                'handlers': ['console'],
+                'level': 'DEBUG',
+            },
+            'rest_framework': {
+                'handlers': ['console', 'file'],
+                'level': 'DEBUG',
+            },
+            'social_core': {
+                'handlers': ['console', 'file'],
+                'level': 'DEBUG',
+            },
+            'allauth': {
+                'handlers': ['console', 'file'],
+                'level': 'DEBUG',
+            },
+            'oauthlib': {
+                'handlers': ['console', 'file'],
+                'level': 'DEBUG',
+            },
+            'requests_oauthlib': {
+                'handlers': ['console', 'file'],
+                'level': 'DEBUG',
+            },
+            '': {
+                'handlers': ['console', 'file'],
+                'level': 'WARNING',
+            },
         },
-        'oauthlib': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-        },
-        'requests_oauthlib': {
-            'handlers': ['console', 'file'],
-            'level': 'DEBUG',
-        },
-        '': {
-            'handlers': ['console', 'file'],
-            'level': 'WARNING',
-        },
-    },
-}
+    }
 
-FCM_SERVICE_ACCOUNT_PATH = os.environ.get('FCM_SERVICE_ACCOUNT_PATH')
-FCM_FILE_PATH = BASE_DIR_OUT / FCM_SERVICE_ACCOUNT_PATH / 'fcm_service_account.json'
+FCM_SERVICE_ACCOUNT_PATH = os.environ.get('FCM_SERVICE_ACCOUNT_PATH', 'firebase/')
+FCM_FILE_PATH = BASE_DIR / FCM_SERVICE_ACCOUNT_PATH / 'fcm_service_account.json'
+# Redis Configuration
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+REDIS_DB = os.environ.get('REDIS_DB', '0')
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', '')
+REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
 
 # Celery Configuration Options
-CELERY_BROKER_URL = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
-CELERY_RESULT_BACKEND = os.environ.get('REDIS_URL', 'redis://redis:6379/0')
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
@@ -271,3 +308,4 @@ CELERY_TASK_TIME_LIMIT = 1800  # 30 minutes
 CELERY_TASK_SOFT_TIME_LIMIT = 1500  # 25 minutes
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+

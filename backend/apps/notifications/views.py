@@ -11,8 +11,8 @@ from apps.notifications.constants import (
     NotificationTypes,
 )
 from apps.notifications.models import Device
+from apps.notifications.push_service import PushService
 from apps.notifications.serializers import FCMTokenSerializer
-from apps.notifications.utils import get_push_service
 
 
 class FCMTokenView(APIView):
@@ -63,7 +63,12 @@ def test_notifications(request):
     Test view to send all notification types for game ID 1
     with a 1-second delay between notifications.
     """
-    push_service = get_push_service()
+    push_service = PushService()
+    if not push_service:
+        return Response(
+            {'error': 'Push service not available.'},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
     all_tokens = list(
         Device.objects.filter(is_active=True).values_list('token', flat=True)
     )

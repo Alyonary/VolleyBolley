@@ -7,7 +7,7 @@ from apps.notifications.constants import (
     RETRY_PUSH_TIME,
     Notification,
 )
-from apps.notifications.utils import get_push_service
+from apps.notifications.push_service import PushService
 
 logger = logging.getLogger('django.notifications')
 
@@ -27,13 +27,13 @@ def send_push_notifications(
 
     """
     try:
-        push_service = get_push_service()
+        push_service = PushService()
         logger.info(
             f'Executing task: send_game_notification for game {game_id}, '
             f'type: {notification_type}'
         )
         
-        result = push_service.proccess_notifications_by_type(
+        result = push_service.process_notifications_by_type(
             type=notification_type,
             game_id=game_id,
         )
@@ -73,7 +73,7 @@ def retry_notification_task(
     try:
         logger.info(f'Retrying notification to token {token[:8]}...')
         notification = Notification(notification_type)
-        push_service = get_push_service()
+        push_service = PushService()
         result = push_service.send_notification_by_token(
             token=token,
             notification=notification,

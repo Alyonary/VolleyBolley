@@ -42,6 +42,10 @@ class PushService:
             return
         self._initialize_services()
 
+    def __bool__(self):
+        """Return True if notifications services are available."""
+        return all(self.get_status().values())
+
     def _initialize_services(self):
         """
         Initialize FCM and Celery services.
@@ -118,6 +122,7 @@ class PushService:
         """
         return {
             'notifications_enabled': getattr(self, 'enable', False),
+            'fcm_available': self._check_fcm_file(),
             'celery_available': getattr(self, 'celery_available', False),
             'initialized': getattr(self, '_initialized', False),
         }
