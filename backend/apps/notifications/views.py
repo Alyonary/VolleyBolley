@@ -1,4 +1,3 @@
-import time
 
 from rest_framework import status
 from rest_framework.decorators import api_view
@@ -106,7 +105,6 @@ def test_notifications(request):
                 'devices_count': len(all_tokens),
                 'status': f'Error: {str(e)}'
             })
-        time.sleep(1)
     return Response({
         'notifications_sent': len(results),
         'devices_count': len(all_tokens),

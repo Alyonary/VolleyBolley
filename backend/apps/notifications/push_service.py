@@ -1,4 +1,5 @@
 import logging
+from functools import wraps
 from threading import Lock
 
 from celery import current_app
@@ -13,7 +14,34 @@ from apps.notifications.notifications import (
 )
 from volleybolley.settings import FCM_FILE_PATH
 
-logger = logging.getLogger('django.notifications')
+logger = logging.getLogger(__name__)
+
+
+def service_required(func):
+    """
+    Decorator checks if push service is available before executing method.
+    If service is not available, attempts reconnection once.
+    Returns None if service remains unavailable.
+    """
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if not self.enable:
+            logger.info(
+                f'Service not available for {func.__name__}, '
+                f'attempting reconnection')
+            if not self.reconnect():
+                logger.warning(
+                    f'Service unavailable, skipping {func.__name__}'
+                )
+                return None
+        if not self.enable:
+            logger.error(
+                f'Service still unavailable after reconnection attempt'
+                f'for {func.__name__}'
+            )
+            return None
+        return func(self, *args, **kwargs)
+    return wrapper
 
 
 class PushService:
@@ -22,13 +50,7 @@ class PushService:
     Manages connection to FCM and Celery services.
     Uses double-checked locking to ensure thread-safe singleton instantiation.
     Provides methods to send notifications and check service status.
-    Attributes:
-        enable (bool): Indicates if notifications are enabled.
-        celery_available (bool): Indicates if Celery workers are available.
-        push_service (FCMNotification): Instance of FCMNotification for sending
-            push notifications.
-        _initialized (bool): Indicates if the service has been initialized.
-        _lock (Lock): Thread lock for singleton instantiation.
+    
     """
     _instance = None
     _lock = Lock()
@@ -51,9 +73,7 @@ class PushService:
         return all(self.get_status().values())
 
     def _initialize_services(self):
-        """
-        Initialize FCM and Celery services.
-        """
+        """Initialize FCM and Celery services."""
         self.enable = False
         self.celery_available = False
         error_msg: str | None = None
@@ -85,7 +105,7 @@ class PushService:
                 self.enable = False
                 self.celery_available = False
                 logger.error(
-                    'FCM and Celery workers are  not available. '
+                    'FCM and Celery workers are not available. '
                     'Notifications disabled.'
                 )
         except FCMError as e:
@@ -132,9 +152,7 @@ class PushService:
         }
 
     def _check_fcm_file(self) -> bool:
-        """
-        Check if the FCM service account file exists.
-        """
+        """Check if the FCM service account file exists."""
         if not FCM_FILE_PATH.exists():
             error_msg = (
                 f'FCM service account file not found: {FCM_FILE_PATH}'
@@ -166,6 +184,7 @@ class PushService:
             logger.warning(f'Cannot connect to Celery: {str(e)}')
             return False
 
+    @service_required
     def process_notifications_by_type(
         self,
         type: str,
@@ -182,12 +201,6 @@ class PushService:
             game_id (int, optional): Game ID to include in the 
                 notification data.
         """
-        if not self.enable:
-            logger.info(
-                'Notifications disabled, attempting reconnection'
-            )
-            if not self.reconnect():
-                return None
         try:
             logger.info(f'Processing notification type: {type}')
             notification = Notification(type)
@@ -240,6 +253,7 @@ class PushService:
             logger.error(err_msg, exc_info=True)
             return None
 
+    @service_required
     def send_push_notifications(
         self,
         tokens: list[str],
@@ -256,14 +270,21 @@ class PushService:
             game_id (int, optional): Game ID to include in the 
                 notification data.
         """
+        success_count = 0
         for token in tokens:
-            self.send_notification_by_token(
+            result = self._send_notification_by_token_internal(
                 token=token,
                 notification=notification,
                 game_id=game_id
             )
-        return True
+            if result:
+                success_count += 1
+        logger.info(
+            f'Sent notifications to {success_count}/{len(tokens)} devices'
+        )
+        return success_count > 0
 
+    @service_required
     def send_notification_by_token(
         self,
         token: str,
@@ -271,7 +292,7 @@ class PushService:
         game_id: int | None = None,
     ) -> bool | None:
         """
-        Send push notification to a single device.
+        Public method to send push notification to a single device.
 
         Args:
             token (str): Device token to send the notification to.
@@ -279,6 +300,23 @@ class PushService:
                 body, and screen.
             game_id (int, optional): Game ID to include in the 
                 notification data.
+        """
+        return self._send_notification_by_token_internal(
+            token,
+            notification,
+            game_id
+        )
+
+    def _send_notification_by_token_internal(
+        self,
+        token: str,
+        notification: NotificationsClass,
+        game_id: int | None = None,
+    ) -> bool | None:
+        """
+        Internal method to send push notification to a single device.
+        This method is NOT decorated with @service_required
+        to avoid double checking.
         """
         data_message = {'screen': notification.screen}
         if game_id:
