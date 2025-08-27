@@ -21,8 +21,8 @@ def game_data(
     return {
         'court_id': court_obj_with_tag.id,
         'message': 'Test game in Thailand',
-        'start_time': '2025-08-21 15:30',
-        'end_time': '2025-08-21 18:30',
+        'start_time': '2025-08-21T15:30:00Z',
+        'end_time': '2025-08-21T18:30:00Z',
         'gender': gender_men,
         'player_levels': [
             game_levels

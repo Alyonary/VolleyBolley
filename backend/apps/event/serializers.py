@@ -28,9 +28,9 @@ class BaseGameSerializer(serializers.ModelSerializer):
         write_only=True,
         default=serializers.CurrentUserDefault()
     )
-    start_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
+    start_time = serializers.DateTimeField(format='iso-8601')
 
-    end_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
+    end_time = serializers.DateTimeField(format='iso-8601')
 
     levels = serializers.SlugRelatedField(
         slug_field='name',
@@ -227,9 +227,9 @@ class GameShortSerializer(serializers.ModelSerializer):
 
     court_location = LocationSerializer(source='court.location')
 
-    start_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
+    start_time = serializers.DateTimeField(format='iso-8601')
 
-    end_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M')
+    end_time = serializers.DateTimeField(format='iso-8601')
 
     class Meta:
         model = Game
