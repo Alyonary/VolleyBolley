@@ -240,12 +240,23 @@ else:
                 'level': 'ERROR',
                 'encoding': 'utf-8',
             },
+            'notifications_file': {
+                'class': 'logging.FileHandler',
+                'filename': 'notifications.log',
+                'formatter': 'verbose',
+                'encoding': 'utf-8',
+            }
         },
         'loggers': {
             'django': {
                 'handlers': ['console', 'file', 'error_file'],
                 'level': 'INFO',
                 'propagate': False,
+            },
+            'apps.notifications': {
+            'handlers': ['console', 'notifications_file',],
+            'level': 'DEBUG',
+            'propagate': False,
             },
             'django.request': {
                 'handlers': ['console', 'file', 'error_file'],

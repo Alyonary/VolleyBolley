@@ -6,20 +6,20 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.notifications.constants import (
+from apps.notifications.models import Device
+from apps.notifications.notifications import (
     Notification,
     NotificationTypes,
 )
-from apps.notifications.models import Device
 from apps.notifications.push_service import PushService
 from apps.notifications.serializers import FCMTokenSerializer
 
 
 class FCMTokenView(APIView):
-    '''
+    """
     View for handling FCM device tokens.
     Allows users to register or update their device tokens.
-    '''
+    """
     permission_classes = [IsAuthenticated]
     http_method_names = ['put',]
 

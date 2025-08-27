@@ -5,8 +5,8 @@ from celery import shared_task
 from apps.notifications.constants import (
     MAX_RETRIES,
     RETRY_PUSH_TIME,
-    Notification,
 )
+from apps.notifications.notifications import Notification
 from apps.notifications.push_service import PushService
 
 logger = logging.getLogger('django.notifications')

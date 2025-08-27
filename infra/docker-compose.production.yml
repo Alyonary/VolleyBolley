@@ -19,8 +19,8 @@ services:
     volumes:
       - static:/app/backend_static
       - media:/app/media
-      - ./fcm_service_account.json:/app/fcm_service_account.json:ro
       - fcm_credentials:/app/firebase
+      - ./fcm_service_account.json:/app/fcm_service_account.json:ro
     depends_on:
       db:
         condition: service_healthy

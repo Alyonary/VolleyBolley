@@ -73,8 +73,8 @@ services:
     environment:
       - REDIS_HOST=redis
     volumes:
-      - ../fcm_service_account.json:/app/fcm_service_account.json:ro
       - fcm_credentials:/app/firebase
+      - ./fcm_service_account.json:/app/fcm_service_account.json:ro
       - media:/app/media
     depends_on:
       db:

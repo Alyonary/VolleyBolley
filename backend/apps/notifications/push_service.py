@@ -5,8 +5,12 @@ from celery import current_app
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
 
-from apps.notifications.constants import Notification, NotificationTypes
 from apps.notifications.models import Device
+from apps.notifications.notifications import (
+    Notification,
+    NotificationsClass,
+    NotificationTypes,
+)
 from volleybolley.settings import FCM_FILE_PATH
 
 logger = logging.getLogger('django.notifications')
@@ -239,7 +243,7 @@ class PushService:
     def send_push_notifications(
         self,
         tokens: list[str],
-        notification: Notification,
+        notification: NotificationsClass,
         game_id: int | None = None,
     ) -> bool | None:
         """
@@ -263,7 +267,7 @@ class PushService:
     def send_notification_by_token(
         self,
         token: str,
-        notification: Notification,
+        notification: NotificationsClass,
         game_id: int | None = None,
     ) -> bool | None:
         """

@@ -7,14 +7,14 @@ from apps.players.models import Player
 
 
 class DeviceManager(models.Manager):
-    '''Custom manager for Device model.'''
+    """Custom manager for Device model."""
 
     def active(self):
-        '''Return only active devices.'''
+        """Return only active devices."""
         return self.get_queryset().filter(is_active=True)
 
     def in_game(self, game_id):
-        '''Return devices associated with players in a specific game.'''
+        """Return devices associated with players in a specific game."""
         game = Game.objects.get(id=game_id)
         user_ids = game.players.values_list('id', flat=True)
         player_ids = Player.objects.filter(
@@ -23,7 +23,7 @@ class DeviceManager(models.Manager):
         return self.active().filter(player_id__in=player_ids)
 
     def by_player(self, player_id):
-        '''Return devices associated with a specific player.'''
+        """Return devices associated with a specific player."""
         return self.active(
             ).filter(player_id=player_id)
 
@@ -34,12 +34,12 @@ class DeviceManager(models.Manager):
         platform=None,
         is_active=True
     ):
-        '''
+        """
         Update or create a device with the given token and player.
         If a device with the token already exists, it updates the player
         and active status. If it doesn't exist, it creates a new device.
         Returns the device and a boolean indicating if it was created.
-        '''
+        """
         if not platform:
             platform = DeviceType.ANDROID
         try:
@@ -60,7 +60,7 @@ class DeviceManager(models.Manager):
 
 
 class Device(models.Model):
-    '''Model for storing device information for push notifications.'''
+    """Model for storing device information for push notifications."""
     token = models.CharField(
         max_length=DEVICE_TOKEN_MAX_LENGTH,
         unique=True
