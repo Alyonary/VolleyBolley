@@ -5,8 +5,7 @@ from django.urls import reverse
 from pytest_lazy_fixtures import lf
 from rest_framework import status
 
-from apps.core.models import GameInvitation
-from apps.event.models import Game
+from apps.event.models import Game, GameInvitation
 
 
 @pytest.mark.django_db

@@ -5,7 +5,6 @@ from .enums import CoreFieldLength
 from .models import (
     Contact,
     CurrencyType,
-    GameInvitation,
     GameLevel,
     Gender,
     InfoPage,
@@ -111,14 +110,5 @@ class CurrencyTypeAdmin(admin.ModelAdmin):
     list_display = ('id', 'currency_type', 'currency_name')
     search_fields = ('currency_type', 'currency_name')
     ordering = ('currency_type',)
-    empty_value_display = _('Не задано')
-    list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
-
-
-@admin.register(GameInvitation)
-class GameInvitationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'game', 'host', 'invited')
-    search_fields = ('game', 'host', 'invited')
-    ordering = ('game',)
     empty_value_display = _('Не задано')
     list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value

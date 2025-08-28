@@ -6,7 +6,6 @@ from apps.core.enums import CoreFieldLength
 from apps.core.mixins.name_title import NameMixin, TitleMixin
 from apps.locations.models import Country
 
-# from apps.event.models import Game
 
 User = get_user_model()
 
@@ -49,7 +48,7 @@ class Contact(m.Model):
 
 
 class Payment(m.Model):
-    """Модель типов оплаты пользователя."""
+    """Payment types model."""
 
     class PaymentTypeChoices(m.TextChoices):
         REVOLUT = 'REVOLUT', _('Revolut')
@@ -81,8 +80,8 @@ class Payment(m.Model):
                 f'for user: {self.owner}')
 
     class Meta:
-        verbose_name = _('Тип оплаты')
-        verbose_name_plural = _('Типы оплаты')
+        verbose_name = _('Payment type')
+        verbose_name_plural = _('Payment types')
         default_related_name = 'payments'
 
 
@@ -176,7 +175,7 @@ class InfoSection(TitleMixin):
 
 
 class CurrencyType(m.Model):
-    '''Currency type model.'''
+    """Currency type model."""
 
     class CurrencyTypeChoices(m.TextChoices):
         EUR = 'EUR', _('Euro')
@@ -212,33 +211,3 @@ class CurrencyType(m.Model):
         verbose_name = _('Currency type')
         verbose_name_plural = _('Currency types')
         default_related_name = 'currency_types'
-
-
-class GameInvitation(m.Model):
-
-    class StatusTypeChoices(m.TextChoices):
-        ACCEPTED = 'ACCEPTED', _('Accepted')
-        REJECTED = 'REJECTED', _('Rejected')
-        NOT_DECIDED = 'NOT_DECIDED', _('Not decided')
-
-    host = m.ForeignKey(User, on_delete=m.CASCADE, related_name='host')
-
-    invited = m.ForeignKey(User, on_delete=m.CASCADE, related_name='invited')
-
-    game = m.ForeignKey('event.Game', on_delete=m.CASCADE)
-
-    status = m.CharField(
-        verbose_name=_('Invitation status'),
-        max_length=CoreFieldLength.NAME_STR.value,
-        choices=StatusTypeChoices.choices,
-        default=StatusTypeChoices.NOT_DECIDED
-    )
-
-    class Meta:
-        verbose_name = _('Game invitation')
-        verbose_name_plural = _('Game invitations')
-
-    def __str__(self):
-        discription = str(_(
-            f'Invitation in {self.game} for {self.invited}: {self.status}'))
-        return discription

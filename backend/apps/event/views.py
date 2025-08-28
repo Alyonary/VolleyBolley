@@ -8,8 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from apps.core.models import GameInvitation
-from apps.event.models import Game
+from apps.event.models import Game, GameInvitation
 from apps.event.permissions import IsHostOrReadOnly
 from apps.event.serializers import (
     GameDetailSerializer,
@@ -22,7 +21,7 @@ User = get_user_model()
 
 
 class GameViewSet(ModelViewSet):
-    '''Provides CRUD operations for the Game model.'''
+    """Provides CRUD operations for the Game model."""
     permission_classes = (IsHostOrReadOnly, IsAuthenticated)
 
     def get_queryset(self):
@@ -52,7 +51,7 @@ class GameViewSet(ModelViewSet):
         url_path='invite-players',
     )
     def invite_players(self, request, *args, **kwargs):
-        '''Creates invitations to the game for players on the list.'''
+        """Creates invitations to the game for players on the list."""
         game = self.get_object().id
         user = request.user.id
         for id in request.data['players']:
@@ -73,7 +72,7 @@ class GameViewSet(ModelViewSet):
         url_path='preview'
     )
     def preview(self, request, *args, **kwargs):
-        '''Returns the time of the next game and the number of invitations.'''
+        """Returns the time of the next game and the number of invitations."""
         user = request.user
         current_time = now()
         upcoming_game = Game.objects.filter(
@@ -96,7 +95,7 @@ class GameViewSet(ModelViewSet):
         url_path='my-games'
     )
     def my_games(self, request, *args, **kwargs):
-        '''Retrieves the list of games created by the user.'''
+        """Retrieves the list of games created by the user."""
         current_time = now()
         my_games = Game.objects.filter(
             host=request.user).filter(
@@ -111,7 +110,7 @@ class GameViewSet(ModelViewSet):
         url_path='archive'
     )
     def archive_games(self, request, *args, **kwargs):
-        '''Retrieves the list of archived games related to user.'''
+        """Retrieves the list of archived games related to user."""
         current_time = now()
         my_games = Game.objects.filter(end_time__lt=current_time).filter(
             Q(host=request.user) | Q(players=request.user)
@@ -126,7 +125,7 @@ class GameViewSet(ModelViewSet):
         url_path='invites'
     )
     def invited_games(self, request, *args, **kwargs):
-        '''Retrieving upcoming games to which the player has been invited.'''
+        """Retrieving upcoming games to which the player has been invited."""
         my_invitations = GameInvitation.objects.select_related(
             'game').filter(invited=request.user)
         current_time = now()
@@ -145,7 +144,7 @@ class GameViewSet(ModelViewSet):
         url_path='upcoming'
     )
     def upcoming_games(self, request, *args, **kwargs):
-        '''Retrieving upcoming games to which the player has been invited.'''
+        """Retrieving upcoming games to which the player has been invited."""
         current_time = now()
         my_games = Game.objects.filter(start_time__gt=current_time).filter(
             Q(host=request.user) | Q(players=request.user)
@@ -161,7 +160,7 @@ class GameViewSet(ModelViewSet):
         permission_classes=[IsAuthenticated]
     )
     def joining_game(self, request, *args, **kwargs):
-        '''Adding a user to the game and removing the invitation.'''
+        """Adding a user to the game and removing the invitation."""
         game = self.get_object()
         user = request.user
         invitation = GameInvitation.objects.filter(

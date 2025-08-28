@@ -7,41 +7,41 @@ from apps.event.enums import EventFieldLength
 
 
 class EventMixin(m.Model):
-    """Миксин события."""
+    """Event mixin."""
 
     message = m.TextField(
-        verbose_name=_('Описание'),
+        verbose_name=_('Description'),
         validators=[MaxLengthValidator(EventFieldLength.MESSAGE.value)]
     )
     start_time = m.DateTimeField(
-        verbose_name=_('Дата и время начала')
+        verbose_name=_('Start date and time')
     )
     end_time = m.DateTimeField(
-        verbose_name=_('Дата и время окончания')
+        verbose_name=_('End date and time')
     )
     court = m.ForeignKey(
         'courts.Court',
-        verbose_name=_('Площадка'),
+        verbose_name=_('Court'),
         on_delete=m.CASCADE,
         null=False,
         blank=False,
     )
     gender = m.ForeignKey(
         'core.Gender',
-        verbose_name=_('Пол участников'),
+        verbose_name=_('Gender of players'),
         on_delete=m.SET_NULL,
         null=True,
         blank=True,
     )
     player_levels = m.ManyToManyField(
         'core.GameLevel',
-        verbose_name=_('Уровень игры участников'),
+        verbose_name=_('Game level'),
     )
     max_players = m.PositiveIntegerField(
-        verbose_name=_('Максимальное количество игроков'),
+        verbose_name=_('Maximum of players'),
     )
     price_per_person = m.DecimalField(
-        verbose_name=_('Стоимость с человека'),
+        verbose_name=_('Price per person'),
         max_digits=8,
         decimal_places=2,
         default=0,
@@ -54,20 +54,20 @@ class EventMixin(m.Model):
         choices=Payment.PaymentTypeChoices.choices
     )
     payment_account = m.CharField(
-        verbose_name=_('Реквизиты счета'),
+        verbose_name=_('Payment account'),
         max_length=EventFieldLength.PAYMENT_VALUE.value
     )
     currency_type = m.ForeignKey(
         'core.CurrencyType',
-        verbose_name=_('Тип валюты'),
+        verbose_name=_('Currency type'),
         on_delete=m.CASCADE
     )
     is_private = m.BooleanField(
-        verbose_name=_('Приватное событие'),
+        verbose_name=_('Private event'),
         default=False,
     )
     is_active = m.BooleanField(
-        verbose_name=_('Активно'),
+        verbose_name=_('Active'),
         default=True,
     )
 

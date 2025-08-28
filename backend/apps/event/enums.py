@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class EventFieldLength(int, Enum):
-    """Константы для приложения Event."""
+    """Event app constants."""
 
     TITLE = 150
     STR_MAX_LEN = 50

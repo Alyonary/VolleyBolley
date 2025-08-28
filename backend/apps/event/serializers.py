@@ -6,15 +6,14 @@ from rest_framework import serializers
 
 from apps.core.models import (
     CurrencyType,
-    GameInvitation,
     GameLevel,
     Gender,
-    Payment,
+    Payment
 )
 from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
 from apps.event.enums import NumberOfPlayers
-from apps.event.models import Game
+from apps.event.models import Game, GameInvitation
 from apps.locations.models import Country
 
 User = get_user_model()
@@ -104,7 +103,7 @@ class BaseGameSerializer(serializers.ModelSerializer):
 
 
 class GameSerializer(BaseGameSerializer):
-    '''Uses for create, list requests.'''
+    """Uses for create, list requests."""
 
     players = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
@@ -153,7 +152,7 @@ class GameSerializer(BaseGameSerializer):
 
 
 class GameDetailSerializer(BaseGameSerializer):
-    '''Game serializer uses for retrieve requests.'''
+    """Game serializer uses for retrieve requests."""
 
     host = UserSerializer()
 
@@ -172,10 +171,10 @@ class GameDetailSerializer(BaseGameSerializer):
         ]
 
     def get_game_type(self, obj):
-        '''Assigns a type to the game.
+        """Assigns a type to the game.
         Returning values:
-        MY, UPCOMING, ARCHIVE, INVITES, ACTIVE
-        '''
+        MY, UPCOMING, ARCHIVE, INVITES, ACTIVE.
+        """
         request = self.context.get('request', None)
         if obj.host == request.user:
             return 'MY'
@@ -202,7 +201,7 @@ class GameInviteSerializer(serializers.ModelSerializer):
             serializers.UniqueTogetherValidator(
                 queryset=GameInvitation.objects.all(),
                 fields=('host', 'invited', 'game'),
-                message=_('Такое приглашение уже существует!'),
+                message=_('This invitation already exists!'),
             )
         ]
 
@@ -211,7 +210,7 @@ class GameInviteSerializer(serializers.ModelSerializer):
         invited = attrs.get('invited')
         if host == invited:
             raise serializers.ValidationError(
-                'Нельзя отправить приглашение на игру себе.')
+                'You can not invite yourself.')
         return attrs
 
 
