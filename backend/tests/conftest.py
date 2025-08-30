@@ -13,6 +13,7 @@ pytest_plugins = [
     'tests.fixtures.users',
     'tests.fixtures.notifications',
     'tests.fixtures.auth',
+    'tests.fixtures.push_service',
 ]
 
 

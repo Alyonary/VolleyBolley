@@ -1,4 +1,10 @@
+from random import choice
+
 import pytest
+from backend.apps.notifications.notifications import (
+    Notification,
+    NotificationTypes,
+)
 from django.contrib.auth import get_user_model
 
 from apps.notifications.models import Device, DeviceType
@@ -9,7 +15,7 @@ User = get_user_model()
 
 @pytest.fixture
 def users():
-    '''Creates test users.'''
+    """Creates test users."""
     user1 = User.objects.create_user(
         username='testuser1',
         email='test1@example.com',
@@ -30,7 +36,7 @@ def users():
 
 @pytest.fixture
 def players(users):
-    '''Creates test players associated with users.'''
+    """Creates test players associated with users."""
     player1 = Player.objects.create(user=users['user1'])
     player2 = Player.objects.create(user=users['user2'])
     player3 = Player.objects.create(user=users['user3'])
@@ -39,7 +45,7 @@ def players(users):
 
 @pytest.fixture
 def devices(players):
-    '''Creates test devices for different players.'''
+    """Creates test devices for different players."""
     device1 = Device.objects.create(
         token='fcm_test_token_1',
         player=players['player1'],
@@ -75,7 +81,7 @@ def devices(players):
 
 @pytest.fixture
 def device_tokens(devices):
-    '''Returns only device tokens for easier testing.'''
+    """Returns only device tokens for easier testing."""
     return {
         'active_tokens': [d.token for d in devices['active_devices']],
         'all_tokens': [d.token for d in devices['all_devices']]
@@ -139,3 +145,32 @@ def invalid_fcm_token_data():
         {'platform': DeviceType.ANDROID},
         {'token': 'some-token', 'platform': 'invalid'}
     ]
+@pytest.fixture
+def rate_notification():
+    return Notification(NotificationTypes.RATE)
+
+
+@pytest.fixture
+def remove_notification():
+    return Notification(NotificationTypes.REMOVED)
+
+
+@pytest.fixture
+def in_game_notification():
+    return Notification(NotificationTypes.IN_GAME)
+
+
+@pytest.fixture
+def sample_notification(
+    rate_notification,
+    remove_notification,
+    in_game_notification
+):
+    return choice(
+        [
+            rate_notification,
+            remove_notification,
+            in_game_notification
+        ]
+    )
+
