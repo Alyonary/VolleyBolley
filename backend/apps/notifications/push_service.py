@@ -190,7 +190,7 @@ class PushService:
         type: str,
         player_id: int | None = None,
         game_id: int | None = None,
-    ) -> bool | None:
+    ) -> dict | None:
         """
         Send notifications to multiple devices using FCM.
 
@@ -208,11 +208,6 @@ class PushService:
                 tokens = Device.objects.active().in_game(
                     game_id
                 ).values_list('token', flat=True)
-                if not tokens:
-                    logger.info(
-                        f'No active devices found for game_id={game_id}'
-                    )
-                    return None
                 return self.send_push_notifications(
                     tokens,
                     notification,
@@ -222,11 +217,6 @@ class PushService:
                 tokens = Device.objects.active().in_game(
                     game_id
                 ).values_list('token', flat=True)
-                if not tokens:
-                    logger.info(
-                        f'No active devices found for game_id={game_id}'
-                    )
-                    return None
                 return self.send_push_notifications(
                     tokens,
                     notification,
@@ -236,11 +226,6 @@ class PushService:
                 tokens = Device.objects.active().by_player(
                     player_id
                 ).values_list('token', flat=True)
-                if not tokens:
-                    logger.info(
-                        f'No active devices found for player_id={player_id}'
-                    )
-                    return None
                 return self.send_push_notifications(
                     tokens,
                     notification,
@@ -270,19 +255,30 @@ class PushService:
             game_id (int, optional): Game ID to include in the 
                 notification data.
         """
-        success_count = 0
+        result = {
+            'total_tokens': len(tokens),
+            'successful': 0,
+            'failed': 0,
+        }
+        if not tokens:
+            logger.warning('No tokens provided, skipping notification')
+            return result
         for token in tokens:
-            result = self._send_notification_by_token_internal(
+            is_notify = self._send_notification_by_token_internal(
                 token=token,
                 notification=notification,
                 game_id=game_id
             )
-            if result:
-                success_count += 1
+            if is_notify:
+                result['successful'] += 1
+                continue
+            result['failed'] += 1
         logger.info(
-            f'Sent notifications to {success_count}/{len(tokens)} devices'
+            f"Push notification '{notification.type}' results: "
+            f"{result['successful']}/{result['total_tokens']} successful, "
+            f"{result['failed']} failed"
         )
-        return success_count > 0
+        return result
 
     @service_required
     def send_notification_by_token(
@@ -301,6 +297,9 @@ class PushService:
             game_id (int, optional): Game ID to include in the 
                 notification data.
         """
+        if not token:
+            logger.warning('Empty token provided, skipping notification')
+            return False
         return self._send_notification_by_token_internal(
             token,
             notification,

@@ -10,7 +10,7 @@ from apps.notifications.notifications import (
 
 
 def test_in_game_notification_singleton():
-    '''Test InGameNotification singleton and its fields.'''
+    """Test InGameNotification singleton and its fields."""
     notif1 = InGameNotification()
     notif2 = InGameNotification()
     assert notif1 is notif2
@@ -21,7 +21,7 @@ def test_in_game_notification_singleton():
 
 
 def test_rate_notification_singleton():
-    '''Test RateNotification singleton and its fields.'''
+    """Test RateNotification singleton and its fields."""
     notif1 = RateNotification()
     notif2 = RateNotification()
     assert notif1 is notif2
@@ -32,7 +32,7 @@ def test_rate_notification_singleton():
 
 
 def test_removed_notification_singleton():
-    '''Test RemovedNotification singleton and its fields.'''
+    """Test RemovedNotification singleton and its fields."""
     notif1 = RemovedNotification()
     notif2 = RemovedNotification()
     assert notif1 is notif2
@@ -43,7 +43,7 @@ def test_removed_notification_singleton():
 
 
 def test_notification_factory_in_game():
-    '''Test Notification factory returns InGameNotification.'''
+    """Test Notification factory returns InGameNotification."""
     notif = Notification(NotificationTypes.IN_GAME)
     assert isinstance(notif, InGameNotification)
     assert notif.type == NotificationTypes.IN_GAME
@@ -53,7 +53,7 @@ def test_notification_factory_in_game():
 
 
 def test_notification_factory_rate():
-    '''Test Notification factory returns RateNotification.'''
+    """Test Notification factory returns RateNotification."""
     notif = Notification(NotificationTypes.RATE)
     assert isinstance(notif, RateNotification)
     assert notif.type == NotificationTypes.RATE
@@ -63,7 +63,7 @@ def test_notification_factory_rate():
 
 
 def test_notification_factory_removed():
-    '''Test Notification factory returns RemovedNotification.'''
+    """Test Notification factory returns RemovedNotification."""
     notif = Notification(NotificationTypes.REMOVED)
     assert isinstance(notif, RemovedNotification)
     assert notif.type == NotificationTypes.REMOVED
@@ -73,11 +73,11 @@ def test_notification_factory_removed():
 
 
 def test_notification_factory_unknown_type():
-    '''Test Notification factory raises ValueError for unknown type.'''
+    """Test Notification factory raises ValueError for unknown type."""
     with pytest.raises(ValueError):
         Notification('unknownType')
 
 def test_notification_requires_type():
-    '''Test Notification requires a type argument.'''
+    """Test Notification requires a type argument."""
     with pytest.raises(ValueError):
         Notification(None)
