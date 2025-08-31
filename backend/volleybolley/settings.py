@@ -167,6 +167,19 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
 SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'access_type': 'online'}
 
+FIREBASE_SERVICE_ACCOUNT = {
+    'type': os.getenv('FIREBASE_TYPE', 'service_account'),
+    'project_id': os.getenv('FIREBASE_PROJECT_ID', ''),
+    'private_key_id': os.getenv('FIREBASE_PRIVATE_KEY_ID', ''),
+    'private_key': os.getenv('FIREBASE_PRIVATE_KEY', '').replace('\\n', '\n'),
+    'client_email': os.getenv('FIREBASE_CLIENT_EMAIL', ''),
+    'client_id': os.getenv('FIREBASE_CLIENT_ID', ''),
+    'auth_uri': os.getenv('FIREBASE_AUTH_URI', 'https://accounts.google.com/o/oauth2/auth'),
+    'token_uri': os.getenv('FIREBASE_TOKEN_URI', 'https://oauth2.googleapis.com/token'),
+    'auth_provider_x509_cert_url': os.getenv('FIREBASE_AUTH_PROVIDER_CERT_URL', 'https://www.googleapis.com/oauth2/v1/certs'),
+    'client_x509_cert_url': os.getenv('FIREBASE_CLIENT_CERT_URL', ''),
+}
+
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')
 
@@ -194,11 +207,13 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+            'level': 'WARNING',
         },
         'file': {
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
             'formatter': 'verbose',
+            'level': 'DEBUG',
             'encoding': 'utf-8',
         },
         'error_file': {
@@ -213,7 +228,7 @@ LOGGING = {
         'django': {
             'handlers': ['console', 'file', 'error_file'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
         },
         'django.request': {
             'handlers': ['console', 'file', 'error_file'],
@@ -223,34 +238,51 @@ LOGGING = {
         'django.security': {
             'handlers': ['console', 'file', 'error_file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'django.db.backends': {
             'handlers': ['console'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'rest_framework': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'social_core': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'allauth': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'oauthlib': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'requests_oauthlib': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
-        '': {
-            'handlers': ['console', 'file'],
-            'level': 'WARNING',
+        'apps.api': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
         },
+        'apps.api.views': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    #    'root': {
+    #        'handlers': ['console'],
+    #        'level': 'INFO',
+    #    },
     },
 }

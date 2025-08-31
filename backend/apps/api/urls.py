@@ -2,7 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
-from apps.api.views import GoogleLogin, LogoutView
+from apps.api.views import GoogleLogin, LogoutView, PhoneNumberLogin
 from apps.courts.views import CourtViewSet
 from apps.locations.views import CountryListView
 from apps.players.views import PlayerViewSet
@@ -19,6 +19,11 @@ urlpatterns = [
     path('countries/', CountryListView.as_view(), name='countries'), 
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/google/login/', GoogleLogin.as_view(), name='google-login'),
+    path(
+        'auth/phone-number/login/',
+        PhoneNumberLogin.as_view(),
+        name='phone-number-login',
+    ),
     path(
         'auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'
     ),
