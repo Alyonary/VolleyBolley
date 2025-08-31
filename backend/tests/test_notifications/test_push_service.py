@@ -1,5 +1,7 @@
 from threading import Thread
 
+from pyfcm.errors import FCMError
+
 from apps.notifications.notifications import NotificationTypes
 from apps.notifications.push_service import PushService
 
@@ -311,11 +313,10 @@ class TestPushServiceErrorHandling:
         service = push_service_enabled
         service.push_service = mock_fcm_service_token_fail
         result = service._send_notification_by_token_internal(
-                'invalid_token',
-                sample_notification,
-            )
+            'invalid_token',
+            sample_notification,
+        )
         assert result is False
-
 
     def test_exception_handling_in_process_notifications(
         self, push_service_enabled, monkeypatch
@@ -327,7 +328,8 @@ class TestPushServiceErrorHandling:
             raise Exception('Notification creation failed')
 
         monkeypatch.setattr(
-            'apps.notifications.push_service.Notification', mock_notification
+            'apps.notifications.push_service.Notification',
+            mock_notification
         )
 
         result = service.process_notifications_by_type(
@@ -339,6 +341,7 @@ class TestPushServiceErrorHandling:
 
 class TestPushServiceEdgeCases:
     """Test edge cases and unusual scenarios."""
+
     def test_send_notification_with_invalid_token(
         self,
         push_service_enabled,
@@ -352,8 +355,8 @@ class TestPushServiceEdgeCases:
             invalid_token,
             sample_notification,
         )
-        assert result is False  
-    
+        assert result is False
+
     def test_send_notification_with_none_token(
         self,
         push_service_enabled,
@@ -368,3 +371,43 @@ class TestPushServiceEdgeCases:
             sample_notification,
         )
         assert result is False
+
+class TestPushServiceWithTasksIntegration:
+    """Test integration with Celery tasks."""
+
+    def test_send_notification_success(
+        self,
+        push_service_enabled,
+        sample_notification,
+        mock_tasks_import
+    ):
+        """Test successful FCM notification does not create retry task."""
+        service = push_service_enabled
+        service.push_service.notify.return_value = None
+
+        result = service._send_notification_by_token_internal(
+            'token123456789',
+            sample_notification
+        )
+        assert result is True
+        assert not mock_tasks_import.apply_async.called
+
+    def test_send_notification_fcm_error(
+        self,
+        push_service_enabled,
+        sample_notification,
+        mock_tasks_import
+    ):
+        """Test FCMError triggers retry_notification_task creation."""
+        service = push_service_enabled
+        service.push_service.notify.side_effect = FCMError('FCM fail')
+
+        result = service._send_notification_by_token_internal(
+            'token987654321',
+            sample_notification
+        )
+        assert result is False
+        assert mock_tasks_import.apply_async.called
+        args, kwargs = mock_tasks_import.apply_async.call_args
+        assert args[0][0] == 'token987654321'
+        assert args[0][1] == sample_notification.type

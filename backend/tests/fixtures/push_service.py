@@ -148,22 +148,14 @@ def mock_celery_inspector_inactive():
 
 
 @pytest.fixture
-def push_service_mock(mocker):
-    """
-    Legacy fixture using pytest-mock.
-    Provides complete mock of PushService class.
-    """
-    return mocker.patch('apps.notifications.push_service.PushService')
-
-
-@pytest.fixture
-def push_service_instance_mock(push_service_mock):
-    """Legacy fixture providing mock instance."""
-    mock_instance = Mock()
-    mock_instance.enable = True
-    mock_instance.send_notification_by_token.return_value = True
-    push_service_mock.return_value = mock_instance
-    return mock_instance
+def push_service_mock(monkeypatch):
+    """Mock PushService for tasks."""
+    mock_service = Mock()
+    monkeypatch.setattr(
+        'apps.notifications.tasks.PushService',
+        lambda: mock_service
+    )
+    return mock_service
 
 
 @pytest.fixture
@@ -183,3 +175,5 @@ def mock_tasks_import(monkeypatch):
 
     monkeypatch.setattr(builtins, '__import__', mock_import_func)
     return mock_retry_task
+
+    
