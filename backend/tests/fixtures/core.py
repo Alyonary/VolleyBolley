@@ -1,15 +1,6 @@
 import pytest
 
-from apps.core.models import CurrencyType, GameLevel, Gender, Payment
-
-
-@pytest.fixture
-def payment_account_revolut(active_user):
-    return Payment.objects.create(
-        owner=active_user,
-        payment_type='REVOLUT',
-        payment_account='test revolut account'
-    )
+from apps.core.models import CurrencyType, GameLevel, Gender
 
 
 @pytest.fixture

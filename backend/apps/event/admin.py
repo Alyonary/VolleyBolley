@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
 from apps.event.enums import EventFieldLength
-from apps.event.models import Game, Tourney, GameInvitation
+from apps.event.models import Game, GameInvitation, Tourney
 
 
 class BaseEventAdmin(admin.ModelAdmin):

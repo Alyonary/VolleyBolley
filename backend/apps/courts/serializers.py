@@ -6,7 +6,7 @@ from .models import Court, CourtLocation
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    '''Location serializer for all fileds exclude id.'''
+    """Location serializer for all fileds exclude id."""
 
     location_name = serializers.SerializerMethodField(read_only=True)
 
@@ -19,7 +19,7 @@ class LocationSerializer(serializers.ModelSerializer):
 
 
 class CourtSerializer(serializers.ModelSerializer):
-    '''Court model serializer.'''
+    """Court model serializer."""
 
     court_id = serializers.IntegerField(source='pk', read_only=True)
 

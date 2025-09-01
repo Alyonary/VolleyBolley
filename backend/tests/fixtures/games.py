@@ -4,7 +4,7 @@ from rest_framework.test import APIClient
 
 from apps.event.models import Game
 from apps.locations.models import City, Country
-from apps.players.models import Player
+from apps.players.models import Payment, Player
 
 User = get_user_model()
 
@@ -16,7 +16,8 @@ def game_data(
     court_obj_with_tag,
     payment_account_revolut,
     gender_men,
-    game_levels
+    game_levels,
+    active_user
 ):
     return {
         'court_id': court_obj_with_tag.id,
@@ -32,7 +33,7 @@ def game_data(
         'price_per_person': '5',
         'payment_type': payment_account_revolut,
         'players': bulk_create_users,
-        'host': payment_account_revolut.owner,
+        'host': active_user,
         'currency_type': currency_type,
         'payment_account': payment_account_revolut.payment_account
     }
@@ -91,6 +92,15 @@ def user_player(active_user):
         level='LIGHT',
         country=country,
         city=city
+    )
+
+
+@pytest.fixture
+def payment_account_revolut(user_player):
+    return Payment.objects.create(
+        player=user_player,
+        payment_type='REVOLUT',
+        payment_account='test revolut account'
     )
 
 

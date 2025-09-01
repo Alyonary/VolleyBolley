@@ -8,7 +8,7 @@ from apps.locations.models import City, Country
 
 
 class CourtLocation(models.Model):
-    '''Court location model.'''
+    """Court location model."""
 
     longitude = models.FloatField(
         _('Longtitude'),
@@ -71,7 +71,7 @@ class CourtLocation(models.Model):
 
 
 class Court(models.Model):
-    '''Court model.'''
+    """Court model."""
     location = models.ForeignKey(
         CourtLocation, on_delete=models.CASCADE
     )

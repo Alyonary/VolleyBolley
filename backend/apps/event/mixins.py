@@ -2,7 +2,7 @@ from django.core.validators import MaxLengthValidator
 from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.models import Payment
+from apps.players.constants import Payments
 from apps.event.enums import EventFieldLength
 
 
@@ -51,7 +51,7 @@ class EventMixin(m.Model):
     payment_type = m.CharField(
         verbose_name=_('Payment type'),
         max_length=EventFieldLength.PAYMENT_VALUE.value,
-        choices=Payment.PaymentTypeChoices.choices
+        choices=Payments.choices
     )
     payment_account = m.CharField(
         verbose_name=_('Payment account'),

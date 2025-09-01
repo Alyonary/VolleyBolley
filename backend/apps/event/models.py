@@ -7,7 +7,6 @@ from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.event.enums import EventFieldLength
 from apps.event.mixins import EventMixin
 
-
 User = get_user_model()
 
 

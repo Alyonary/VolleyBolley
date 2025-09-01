@@ -6,7 +6,6 @@ from apps.core.enums import CoreFieldLength
 from apps.core.mixins.name_title import NameMixin, TitleMixin
 from apps.locations.models import Country
 
-
 User = get_user_model()
 
 
@@ -47,54 +46,16 @@ class Contact(m.Model):
         return f'{self.contact_type} {self.contact}'
 
 
-class Payment(m.Model):
-    """Payment types model."""
-
-    class PaymentTypeChoices(m.TextChoices):
-        REVOLUT = 'REVOLUT', _('Revolut')
-        THAIBANK = 'THAIBANK', _('Thai bank')
-        CASH = 'CASH', _('Cash')
-
-    owner = m.ForeignKey(
-        User,
-        on_delete=m.CASCADE
-    )
-
-    payment_type = m.CharField(
-        verbose_name=_('Payment type'),
-        max_length=CoreFieldLength.NAME.value,
-        choices=PaymentTypeChoices.choices
-    )
-
-    payment_account = m.CharField(
-        _('Payment account'),
-        max_length=CoreFieldLength.NAME.value,
-        blank=True,
-        null=True
-    )
-
-    is_preferred = m.BooleanField(default=False)
-
-    def __str__(self):
-        return (f'Payment type: {self.payment_type}, '
-                f'for user: {self.owner}')
-
-    class Meta:
-        verbose_name = _('Payment type')
-        verbose_name_plural = _('Payment types')
-        default_related_name = 'payments'
-
-
 class Gender(m.Model):
-    """Модель гендера."""
+    """Gender model."""
 
     class GenderChoices(m.TextChoices):
-        MIX = 'MIX', _('Смешанный')
-        MEN = 'MEN', _('Мужской')
-        WOMEN = 'WOMEN', _('Женский')
+        MIX = 'MIX', _('Mixed')
+        MEN = 'MEN', _('Men')
+        WOMEN = 'WOMEN', _('Women')
 
     name = m.CharField(
-        verbose_name=_('Пол'),
+        verbose_name=_('Gender'),
         max_length=CoreFieldLength.NAME.value,
         choices=GenderChoices.choices,
         unique=True,
@@ -104,23 +65,23 @@ class Gender(m.Model):
         return self.get_name_display()
 
     class Meta:
-        verbose_name = _('Пол')
-        verbose_name_plural = _('Пола')
+        verbose_name = _('Gender')
+        verbose_name_plural = _('Genders')
         default_related_name = 'genders'
         ordering = ('name',)
 
 
 class GameLevel(m.Model):
-    """Модель игрового уровня."""
+    """Game level model."""
 
     class GameLevelChoices(m.TextChoices):
-        LIGHT = 'LIGHT', _('Новичок')
-        MEDIUM = 'MEDIUM', _('Средний')
-        HARD = 'HARD', _('Продвинутый')
-        PRO = 'PRO', _('Профессионал')
+        LIGHT = 'LIGHT', _('Beginner')
+        MEDIUM = 'MEDIUM', _('Intermediate')
+        HARD = 'HARD', _('Advanced')
+        PRO = 'PRO', _('Professional')
 
     name = m.CharField(
-        verbose_name=_('Уровень'),
+        verbose_name=_('Game level'),
         max_length=CoreFieldLength.NAME.value,
         choices=GameLevelChoices.choices,
         unique=True,
@@ -130,14 +91,14 @@ class GameLevel(m.Model):
         return self.get_name_display()
 
     class Meta:
-        verbose_name = _('Уровень игры')
-        verbose_name_plural = _('Уровни игры')
+        verbose_name = _('Game level')
+        verbose_name_plural = _('Game levels')
         default_related_name = 'game_levels'
         ordering = ('name',)
 
 
 class InfoPage(TitleMixin):
-    """Страница с информацией (FAQ, правила, контакты и т.д.)."""
+    """Information page (FAQ, rules, contacts, etc.)."""
     tag = m.ForeignKey(
         Tag,
         verbose_name=_('Тег'),
@@ -146,30 +107,30 @@ class InfoPage(TitleMixin):
     )
 
     class Meta(TitleMixin.Meta):
-        verbose_name = _('Информационная страница')
-        verbose_name_plural = _('Информационные страницы')
+        verbose_name = _('Info page')
+        verbose_name_plural = _('Info pages')
         default_related_name = 'info_pages'
 
 
 class InfoSection(TitleMixin):
-    """Раздел информационной страницы."""
+    """Section of the information page."""
     page = m.ForeignKey(
         InfoPage,
-        verbose_name=_('Страница'),
+        verbose_name=_('Page'),
         on_delete=m.CASCADE,
         related_name='sections',
     )
     content = m.TextField(
-        verbose_name=_('Содержимое'),
+        verbose_name=_('Content'),
     )
     order = m.PositiveIntegerField(
-        verbose_name=_('Сортировка'),
+        verbose_name=_('Ordering'),
         default=0
     )
 
     class Meta(TitleMixin.Meta):
-        verbose_name = _('Раздел информационной страницы')
-        verbose_name_plural = _('Разделы информационных страниц')
+        verbose_name = _('Section of the information page')
+        verbose_name_plural = _('Sections of the information page')
         default_related_name = 'sections'
         ordering = ('page', 'order')
 

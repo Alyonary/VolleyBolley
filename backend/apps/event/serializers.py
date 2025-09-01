@@ -4,17 +4,13 @@ from django.utils.translation import gettext_lazy as _
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
-from apps.core.models import (
-    CurrencyType,
-    GameLevel,
-    Gender,
-    Payment
-)
+from apps.core.models import CurrencyType, GameLevel, Gender
 from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
 from apps.event.enums import NumberOfPlayers
 from apps.event.models import Game, GameInvitation
 from apps.locations.models import Country
+from apps.players.models import Payment
 
 User = get_user_model()
 
@@ -83,18 +79,18 @@ class BaseGameSerializer(serializers.ModelSerializer):
 
     def validate(self, value):
         request = self.context.get('request', None)
+        player = request.user.player.first()
         if value.get('payment_type') == 'CASH':
             value['payment_account'] = 'Cash money'
         else:
             payment = Payment.objects.filter(
-                owner=request.user,
+                player=player,
                 payment_type=value.get('payment_type')
             ).first()
             if not payment or payment.payment_account is None:
                 raise serializers.ValidationError(
                     'No payment account found for this payment type')
             value['payment_account'] = payment.payment_account
-        player = request.user.player.first()
         country = Country.objects.get(name=player.location.country)
         currency_type = CurrencyType.objects.filter(
                             country=country).first()

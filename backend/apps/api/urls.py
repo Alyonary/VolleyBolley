@@ -3,7 +3,6 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 
 from apps.api.views import GoogleLogin, LogoutView
-from apps.core.views import PaymentViewSet
 from apps.courts.views import CourtViewSet
 from apps.event.views import GameViewSet
 from apps.locations.views import CountryListView
@@ -15,7 +14,6 @@ api_v1 = DefaultRouter()
 api_v1.register(r'courts', CourtViewSet, basename='courts')
 api_v1.register(r'players', PlayerViewSet, basename='players')
 api_v1.register(r'games', GameViewSet, basename='games')
-api_v1.register(r'payments', PaymentViewSet, basename='payments')
 
 urlpatterns = [
     path('', include(api_v1.urls)),
