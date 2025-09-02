@@ -2,7 +2,10 @@ import logging
 from functools import wraps
 from threading import Lock
 
+import firebase_admin
 from celery import current_app
+from django.conf import settings
+from firebase_admin import auth, credentials
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
 
@@ -12,7 +15,6 @@ from apps.notifications.notifications import (
     NotificationsClass,
     NotificationTypes,
 )
-from volleybolley.settings import FCM_FILE_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -74,49 +76,52 @@ class PushService:
 
     def _initialize_services(self):
         """Initialize FCM and Celery services."""
-        self.enable = False
-        self.celery_available = False
-        error_msg: str | None = None
+        error_msg: str = ''
         try:
-            fcm_available = self._check_fcm_file()
-            celery_workers_available = self._check_celery_availability()
-            if fcm_available and celery_workers_available:
-                self.push_service = FCMNotification(
-                    service_account_file=FCM_FILE_PATH
-                )
+            self.fb_available = self._initialize_firebase()
+            self.celery_available = self._check_celery_availability()
+            if self.fb_available and self.celery_available:
                 self.enable = True
-                self.celery_available = True
-                logger.info('FCM and Celery services connected successfully')
-            elif fcm_available and not celery_workers_available:
-                self.enable = False
-                self.celery_available = False
-                logger.warning(
-                    'FCM file exists but Celery workers not available. '
-                    'Notifications disabled.'
+                logger.info(
+                    'Firebase and Celery services connected successfully,'
+                    ' notifications enabled'
                 )
-            elif not fcm_available and celery_workers_available:
-                self.enable = False
-                self.celery_available = True
-                logger.warning(
-                    'Celery workers available but FCM file not found. '
-                    'Notifications disabled.'
-                )
-            else:
-                self.enable = False
-                self.celery_available = False
-                logger.error(
-                    'FCM and Celery workers are not available. '
-                    'Notifications disabled.'
-                )
-        except FCMError as e:
-            error_msg = f'FCM service initialization failed: {str(e)}'
+            if not self.fb_available:
+                error_msg = 'FCM service not available\n'
+            if not self.celery_available:
+                error_msg += ' Celery workers not available'
         except Exception as e:
-            error_msg = f'Unexpected error initializing services: {str(e)}'
+            error_msg = f'Unexpected error during initialization: {str(e)}'
         finally:
             if error_msg:
                 self.enable = False
-                logger.error(error_msg, exc_info=True)
+                logger.error(
+                    f'Error initializing services: {error_msg}',
+                    exc_info=True
+                )
             self._initialized = True
+
+    def _initialize_firebase(self):
+        """Initialize Firebase app if not already initialized."""
+        try:
+            if not firebase_admin._apps:
+                firebase_admin.initialize_app(
+                    credentials.Certificate(
+                        settings.FIREBASE_SERVICE_ACCOUNT
+                    )
+                )
+                self.fb_admin = firebase_admin.get_app()
+                self.push_service = FCMNotification(
+                    credentials=settings.FIREBASE_SERVICE_ACCOUNT
+                )
+                logger.info('Firebase app initialized successfully')
+                return True
+        except Exception as e:
+            self.push_service = None
+            logger.error(
+                f'Error initializing Firebase app: {str(e)}'
+            )
+            return False
 
     def reconnect(self) -> bool:
         """Reconnect to FCM and Celery services."""
@@ -146,21 +151,14 @@ class PushService:
         """
         return {
             'notifications_enabled': getattr(self, 'enable', False),
-            'fcm_available': self._check_fcm_file(),
+            'fcm_available': self._check_fcm(),
             'celery_available': getattr(self, 'celery_available', False),
             'initialized': getattr(self, '_initialized', False),
         }
 
-    def _check_fcm_file(self) -> bool:
-        """Check if the FCM service account file exists."""
-        if not FCM_FILE_PATH.exists():
-            error_msg = (
-                f'FCM service account file not found: {FCM_FILE_PATH}'
-            )
-            logger.error(error_msg)
-            return False
-        logger.debug(f'FCM file exists at {FCM_FILE_PATH}')
-        return True
+    def _check_fcm(self) -> bool:
+        """Check if FCM service is available."""
+        return all(firebase_admin.get_app(), self.push_service is not None)
 
     def _check_celery_availability(self) -> bool:
         """
@@ -182,6 +180,25 @@ class PushService:
             return False
         except Exception as e:
             logger.warning(f'Cannot connect to Celery: {str(e)}')
+            return False
+
+    def varify_token(self, token: str) -> bool:
+        """
+        Verify if a device token is valid by sending a test notification.
+        Args:
+            token (str): Device token to verify.
+        Returns:
+            bool: True if token is valid, False otherwise.
+        """
+        if not self.fb_available:
+            logger.warning('FCM service not available, cannot verify token')
+            return False
+        try:
+            auth.verify_id_token(token)
+            logger.debug('Token verified successfully')
+            return True
+        except Exception as e:
+            logger.warning(f'Token verification failed: {str(e)}')
             return False
 
     @service_required

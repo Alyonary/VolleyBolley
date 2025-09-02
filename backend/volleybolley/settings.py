@@ -5,11 +5,12 @@ from pathlib import Path
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR_OUT = Path(__file__).resolve().parents[2]
-ENV_FILE_PATH = BASE_DIR_OUT / 'infra' / '.env'
 
-load_dotenv(dotenv_path=ENV_FILE_PATH)
+
+load_dotenv()
 
 # Определяем режим тестирования
 TESTING = 'pytest' in sys.modules
@@ -298,8 +299,6 @@ else:
         },
     }
 
-FCM_SERVICE_ACCOUNT_PATH = os.environ.get('FCM_SERVICE_ACCOUNT_PATH', 'firebase/')
-FCM_FILE_PATH = BASE_DIR / FCM_SERVICE_ACCOUNT_PATH / 'fcm_service_account.json'
 # Redis Configuration
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
 REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
@@ -320,3 +319,25 @@ CELERY_TASK_SOFT_TIME_LIMIT = 1500  # 25 minutes
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
+# Firebase Configuration
+FIREBASE_SERVICE_ACCOUNT = {
+    'type': os.getenv('FIREBASE_TYPE', 'service_account'),
+    'project_id': os.getenv('FIREBASE_PROJECT_ID', ''),
+    'private_key_id': os.getenv('FIREBASE_PRIVATE_KEY_ID', ''),
+    'private_key': os.getenv('FIREBASE_PRIVATE_KEY', '').replace('\\n', '\n'),
+    'client_email': os.getenv('FIREBASE_CLIENT_EMAIL', ''),
+    'client_id': os.getenv('FIREBASE_CLIENT_ID', ''),
+    'auth_uri': os.getenv(
+        'FIREBASE_AUTH_URI',
+        'https://accounts.google.com/o/oauth2/auth'
+    ),
+    'token_uri': os.getenv(
+        'FIREBASE_TOKEN_URI',
+        'https://oauth2.googleapis.com/token'
+    ),
+    'auth_provider_x509_cert_url': os.getenv(
+        'FIREBASE_AUTH_PROVIDER_CERT_URL',
+        'https://www.googleapis.com/oauth2/v1/certs'
+    ),
+    'client_x509_cert_url': os.getenv('FIREBASE_CLIENT_CERT_URL', ''),
+}

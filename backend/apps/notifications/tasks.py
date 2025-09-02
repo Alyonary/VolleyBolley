@@ -1,6 +1,7 @@
 import logging
 
 from celery import shared_task
+from celery.signals import worker_ready
 
 from apps.notifications.constants import (
     MAX_RETRIES,
@@ -10,6 +11,25 @@ from apps.notifications.notifications import Notification
 from apps.notifications.push_service import PushService
 
 logger = logging.getLogger('django.notifications')
+
+@shared_task
+def init_push_service():
+    """
+    Initialize the push service to ensure Firebase Admin SDK is set up.
+    """
+    try:
+        push_service = PushService()
+        if not push_service.enable:
+            logger.error('Push service is not enabled. Check configuration.')
+            return False
+        logger.info('Push service initialized successfully.')
+        return True
+    except Exception as e:
+        logger.error(
+            f'Error initializing push service: {str(e)}',
+            exc_info=True
+        )
+        return False
 
 
 @shared_task(bind=True)
@@ -91,3 +111,8 @@ def retry_notification_task(
             countdown=RETRY_PUSH_TIME,
             max_retries=MAX_RETRIES - 1
         )
+
+@worker_ready.connect
+def at_start(**kwargs):
+    """Start the push service initialization task when the worker is ready."""
+    init_push_service.apply_async()

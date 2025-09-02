@@ -17,23 +17,33 @@ def reset_push_service(auto_use=True):
 
 
 @pytest.fixture
-def push_service_enabled(reset_push_service,mock_fcm_service_ok, monkeypatch):
+def push_service_enabled(
+    reset_push_service,
+    mock_fcm_service_ok,
+    monkeypatch
+):
     """
     Create real PushService instance with mocked connection checks.
     All services are available and working.
     """
+    def mock_initialize_firebase(self):
+        return True
 
-    def mock_check_fcm_file(self):
+    def mock_check_fcm(self):
         return True
     
     def mock_check_celery_availability(self):
         return True
     
-
     monkeypatch.setattr(
         PushService,
-        '_check_fcm_file',
-        mock_check_fcm_file
+        '_initialize_firebase',
+        mock_initialize_firebase
+    )
+    monkeypatch.setattr(
+        PushService,
+        '_check_fcm',
+        mock_check_fcm
     )
     monkeypatch.setattr(
         PushService,
@@ -53,14 +63,21 @@ def push_service_disabled(reset_push_service, monkeypatch):
     Create real PushService instance with mocked connection checks.
     All services are unavailable.
     """
-    def mock_check_fcm_file(self):
+    def mock_initialize_firebase(self):
+        return False
+
+    def mock_check_fcm(self):
         return False
 
     def mock_check_celery_availability(self):
         return False
 
-    
-    monkeypatch.setattr(PushService, '_check_fcm_file', mock_check_fcm_file)
+    monkeypatch.setattr(
+        PushService,
+        '_initialize_firebase',
+        mock_initialize_firebase
+    )    
+    monkeypatch.setattr(PushService, '_check_fcm', mock_check_fcm)
     monkeypatch.setattr(
         PushService,
         '_check_celery_availability',
@@ -77,7 +94,10 @@ def push_service_fcm_only(reset_push_service, monkeypatch):
     """
     Create real PushService with FCM available but Celery unavailable.
     """
-    def mock_check_fcm_file(self):
+    def mock_initialize_firebase(self):
+        return True
+
+    def mock_check_fcm(self):
         return True
     
     def mock_check_celery_availability(self):
@@ -88,8 +108,12 @@ def push_service_fcm_only(reset_push_service, monkeypatch):
     
     def mock_fcm_notification(*args, **kwargs):
         return mock_fcm_instance
-    
-    monkeypatch.setattr(PushService, '_check_fcm_file', mock_check_fcm_file)
+    monkeypatch.setattr(
+        PushService,
+        '_initialize_firebase',
+        mock_initialize_firebase
+    )
+    monkeypatch.setattr(PushService, '_check_fcm', mock_check_fcm)
     monkeypatch.setattr(
         PushService,
         '_check_celery_availability',

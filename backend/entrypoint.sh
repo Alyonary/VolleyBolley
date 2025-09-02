@@ -3,21 +3,6 @@
 # Выходим при первой ошибке
 set -e
 
-# Проверяем, существует ли файл сервисного аккаунта в монтированном томе
-echo "Checking FCM service account file..."
-if [ -f /tmp/fcm_service_account.json ]; then
-    echo "Found FCM file in mounted location. Copying to volume..."
-    mkdir -p /app/firebase
-    cp /tmp/fcm_service_account.json /app/firebase/fcm_service_account.json
-    chmod 644 /app/firebase/fcm_service_account.json
-    echo "FCM file successfully copied to volume."
-elif [ -f /app/firebase/fcm_service_account.json ]; then
-    echo "FCM service account file already exists in volume."
-else
-    echo "WARNING: FCM service account file not found! Push notifications will not work."
-    echo "Please ensure fcm_service_account.json is mounted to /tmp/fcm_service_account.json"
-fi
-
 # Определяем путь к статике (должен совпадать с STATIC_ROOT в settings.py)
 STATIC_DIR=/app/collected_static
 FRONT_STATIC_DIR=/app/static

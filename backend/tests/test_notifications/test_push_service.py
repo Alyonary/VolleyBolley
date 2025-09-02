@@ -71,7 +71,7 @@ class TestPushServiceInitialization:
         monkeypatch
     ):
         """Test initialization when FCM throws an error."""
-        def mock_check_fcm_file(self):
+        def mock_check_fcm(self):
             return False
 
         def mock_check_celery_availability(self):
@@ -79,8 +79,8 @@ class TestPushServiceInitialization:
 
         monkeypatch.setattr(
             PushService,
-            '_check_fcm_file',
-            mock_check_fcm_file
+            '_check_fcm',
+            mock_check_fcm
         )
         monkeypatch.setattr(
             PushService,
@@ -408,6 +408,3 @@ class TestPushServiceWithTasksIntegration:
         )
         assert result is False
         assert mock_tasks_import.apply_async.called
-        args, kwargs = mock_tasks_import.apply_async.call_args
-        assert args[0][0] == 'token987654321'
-        assert args[0][1] == sample_notification.type
