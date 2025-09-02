@@ -8,9 +8,10 @@ from apps.players.serializers import PlayerAuthSerializer
 
 logger = logging.getLogger(__name__)
 
+
 class LoginSerializer(serializers.Serializer):
     """Serialize data after successful authentication of player."""
-    
+
     player = PlayerAuthSerializer(read_only=True)
     access_token = serializers.CharField(
         max_length=1000,
@@ -21,8 +22,10 @@ class LoginSerializer(serializers.Serializer):
         read_only=True
     )
 
+
 class GoogleUserDataSerializer(serializers.Serializer):
     """Serialize user data for google authentication."""
+
     email = serializers.EmailField()
     given_name = serializers.CharField(required=False)
     family_name = serializers.CharField(required=False)

@@ -82,6 +82,72 @@ class TestGoogleAuth:
         assert player_json['city'] is None
         assert player_json['is_registered'] is False
 
+    @pytest.mark.parametrize(
+        'token_type, token_value, expected_status',
+        [
+            ('access_token', 'invalid-google-token',
+             status.HTTP_400_BAD_REQUEST),
+            ('id_token', 'invalid-google-id-token',
+             status.HTTP_400_BAD_REQUEST),
+            ('access_token', '', status.HTTP_400_BAD_REQUEST),
+            ('id_token', '', status.HTTP_400_BAD_REQUEST),
+            (None, None, status.HTTP_302_FOUND)
+        ]
+    )
+    def test_auth_with_invalid_google_token(
+        self, api_client, token_type, token_value, expected_status
+    ):
+        data = {}
+        if token_type:
+            data[token_type] = token_value
+        
+        response = api_client.post(
+            self.url,
+            data,
+            format='json'
+        )
+        assert response.status_code == expected_status
+
+    @pytest.mark.parametrize(
+        'invalid_google_response, expected_status',
+        [
+            ({'email': None}, status.HTTP_400_BAD_REQUEST),
+            ({'given_name': None, 'family_name': None},
+             status.HTTP_400_BAD_REQUEST),
+            ({'email': 'invalid-email'}, status.HTTP_400_BAD_REQUEST)
+        ]
+    )
+    def test_auth_with_invalid_google_response(
+        self, api_client, invalid_google_response, expected_status
+    ):
+        with patch(
+            'google.oauth2.id_token.verify_oauth2_token',
+            return_value=invalid_google_response
+        ):
+            response = api_client.post(
+                self.url,
+                {'id_token': 'fake-google-id-token'},
+                format='json'
+            )
+            assert response.status_code == expected_status
+
+    def test_auth_with_valid_google_response(
+        self, api_client, google_response
+    ):
+        with patch(
+            'google.oauth2.id_token.verify_oauth2_token',
+            return_value=google_response
+        ):
+            response = api_client.post(
+                self.url,
+                {'id_token': 'fake-google-id-token'},
+                format='json'
+            )
+            assert response.status_code == status.HTTP_200_OK
+            assert 'access_token' in response.data
+            assert 'refresh_token' in response.data
+            assert 'player' in response.data
+
 
 @pytest.mark.django_db
 class TestPhoneNumberAuth:
@@ -161,6 +227,7 @@ class TestPhoneNumberAuth:
             )
             assert response.status_code == expected_status
 
+    @pytest.mark.skip(reason="skipped until fresh token will be provided")
     def test_auth_with_real_firebase_token(
         self, api_client, real_firebase_token
     ):
