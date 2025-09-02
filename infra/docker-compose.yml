@@ -50,8 +50,6 @@ services:
     volumes:
       - static:/app/backend_static
       - media:/app/media
-      - ../fcm_service_account.json:/app/fcm_service_account.json:ro
-      - fcm_credentials:/app/firebase
     depends_on:
       db:
         condition: service_healthy
@@ -73,8 +71,6 @@ services:
     environment:
       - REDIS_HOST=redis
     volumes:
-      - fcm_credentials:/app/firebase
-      - ./fcm_service_account.json:/app/fcm_service_account.json:ro
       - media:/app/media
     depends_on:
       db:
@@ -96,9 +92,6 @@ services:
     env_file: ./.env
     environment:
       - REDIS_HOST=redis
-    volumes:
-      - ../fcm_service_account.json:/app/fcm_service_account.json:ro
-      - fcm_credentials:/app/firebase
     depends_on:
       db:
         condition: service_healthy
@@ -127,4 +120,3 @@ volumes:
   redis_data:
   static:
   media:
-  fcm_credentials:

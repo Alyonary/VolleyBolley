@@ -56,9 +56,6 @@ services:
     env_file: ./.env
     environment:
       - REDIS_HOST=redis
-    volumes:
-      - fcm_credentials:/app/firebase
-      - ./fcm_service_account.json:/app/fcm_service_account.json:ro
     depends_on:
       db:
         condition: service_healthy
@@ -77,9 +74,6 @@ services:
     env_file: ./.env
     environment:
       - REDIS_HOST=redis
-    volumes:
-      - ../fcm_service_account.json:/app/fcm_service_account.json:ro
-      - fcm_credentials:/app/firebase
     depends_on:
       db:
         condition: service_healthy
@@ -90,4 +84,3 @@ services:
 volumes:
   pg_data_volleybolley:
   redis_data:
-  fcm_credentials:
