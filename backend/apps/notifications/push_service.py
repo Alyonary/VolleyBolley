@@ -52,7 +52,20 @@ class PushService:
     Manages connection to FCM and Celery services.
     Uses double-checked locking to ensure thread-safe singleton instantiation.
     Provides methods to send notifications and check service status.
-    
+    Arguments:
+        enable (bool): Flag to enable/disable push notifications.
+    Attributes:
+        fb_admin: Firebase app instance.
+        push_service: FCMNotification instance for sending notifications.
+        fb_available (bool): Flag indicating if FCM service is available.
+        celery_available (bool): Flag indicating if Celery workers are available.
+        _initialized (bool): Flag indicating if services have been initialized.
+    Methods:
+        reconnect(): Attempts to reconnect to FCM and Celery services.
+        get_status(): Returns current status of services.
+        varify_token(token): Verifies if a device token is valid.
+        process_notifications_by_type(type, player_id=None, game_id=None):
+            Sends notifications to multiple devices using FCM.
     """
     _instance = None
     _lock = Lock()
