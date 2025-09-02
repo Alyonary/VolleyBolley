@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from apps.event.enums import EventFieldLength
+from apps.event.enums import EventIntEnums
 from apps.event.models import Game, GameInvitation, Tourney
 
 
@@ -12,16 +12,17 @@ class BaseEventAdmin(admin.ModelAdmin):
         'host',
         'is_active',
         'is_private',
+        'gender'
     )
     list_display_links = ('id',)
     search_fields = ('message',)
     list_filter = ('court', 'is_active', 'is_private')
     filter_horizontal = ('player_levels', 'players')
     empty_value_display = _('Not defined',)
-    autocomplete_fields = ('court', 'host', 'gender')
+    autocomplete_fields = ('court', 'host',)
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('id',)
-    list_per_page = EventFieldLength.ADMIN_LIST_PER_PAGE.value
+    list_per_page = EventIntEnums.ADMIN_LIST_PER_PAGE.value
 
 
 @admin.register(Game)
@@ -46,4 +47,4 @@ class GameInvitationAdmin(admin.ModelAdmin):
     search_fields = ('game', 'host', 'invited')
     ordering = ('game',)
     empty_value_display = _('Not defined')
-    list_per_page = EventFieldLength.ADMIN_LIST_PER_PAGE.value
+    list_per_page = EventIntEnums.ADMIN_LIST_PER_PAGE.value

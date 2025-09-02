@@ -4,10 +4,10 @@ from django.utils.translation import gettext_lazy as _
 from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
-from apps.core.models import CurrencyType, GameLevel, Gender
+from apps.core.models import CurrencyType, GameLevel
 from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
-from apps.event.enums import NumberOfPlayers
+from apps.event.enums import EventIntEnums
 from apps.event.models import Game, GameInvitation
 from apps.locations.models import Country
 from apps.players.models import Payment
@@ -34,9 +34,7 @@ class BaseGameSerializer(serializers.ModelSerializer):
         many=True
     )
 
-    gender = serializers.SlugRelatedField(
-        slug_field='name',
-        queryset=Gender.objects.all()
+    gender = serializers.CharField(
     )
 
     currency_type = serializers.CharField(
@@ -70,8 +68,8 @@ class BaseGameSerializer(serializers.ModelSerializer):
         ]
 
     def validate_maximum_players(self, value):
-        minimal = NumberOfPlayers.MIN_PLAYERS.value
-        maximal = NumberOfPlayers.MAX_PLAYERS.value
+        minimal = EventIntEnums.MIN_PLAYERS.value
+        maximal = EventIntEnums.MAX_PLAYERS.value
         if not (minimal <= value <= maximal):
             raise serializers.ValidationError(
                 f'Number of players must be between {minimal} and {maximal}!')

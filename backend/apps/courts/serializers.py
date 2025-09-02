@@ -1,8 +1,7 @@
 from rest_framework import serializers
 
 from apps.core.serializers import ContactSerializer
-
-from .models import Court, CourtLocation
+from apps.courts.models import Court, CourtLocation
 
 
 class LocationSerializer(serializers.ModelSerializer):
@@ -11,7 +10,7 @@ class LocationSerializer(serializers.ModelSerializer):
     location_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        exclude = ('id', 'country', 'city')
+        fields = ('latitude', 'longitude', 'court_name', 'location_name')
         model = CourtLocation
 
     def get_location_name(self, obj):

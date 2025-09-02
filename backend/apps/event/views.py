@@ -80,7 +80,7 @@ class GameViewSet(ModelViewSet):
         ).filter(start_time__gt=current_time).order_by('start_time').first()
         if upcoming_game is not None:
             upcoming_game_time = upcoming_game.start_time.strftime(
-                '%Y-%m-%d %H:%M')
+                format='iso-8601')
         else:
             upcoming_game_time = None
         invites = GameInvitation.objects.filter(

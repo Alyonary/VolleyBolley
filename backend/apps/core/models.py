@@ -46,35 +46,11 @@ class Contact(m.Model):
         return f'{self.contact_type} {self.contact}'
 
 
-class Gender(m.Model):
-    """Gender model."""
-
-    class GenderChoices(m.TextChoices):
-        MIX = 'MIX', _('Mixed')
-        MEN = 'MEN', _('Men')
-        WOMEN = 'WOMEN', _('Women')
-
-    name = m.CharField(
-        verbose_name=_('Gender'),
-        max_length=CoreFieldLength.NAME.value,
-        choices=GenderChoices.choices,
-        unique=True,
-    )
-
-    def __str__(self):
-        return self.get_name_display()
-
-    class Meta:
-        verbose_name = _('Gender')
-        verbose_name_plural = _('Genders')
-        default_related_name = 'genders'
-        ordering = ('name',)
-
-
 class GameLevel(m.Model):
     """Game level model."""
 
     class GameLevelChoices(m.TextChoices):
+        """Game levels enum for game."""
         LIGHT = 'LIGHT', _('Beginner')
         MEDIUM = 'MEDIUM', _('Intermediate')
         HARD = 'HARD', _('Advanced')
@@ -101,7 +77,7 @@ class InfoPage(TitleMixin):
     """Information page (FAQ, rules, contacts, etc.)."""
     tag = m.ForeignKey(
         Tag,
-        verbose_name=_('Тег'),
+        verbose_name=_('Tag'),
         on_delete=m.CASCADE,
         related_name='info_pages',
     )

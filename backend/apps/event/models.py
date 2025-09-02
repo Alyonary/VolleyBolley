@@ -4,7 +4,7 @@ from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.mixins.created_updated import CreatedUpdatedMixin
-from apps.event.enums import EventFieldLength
+from apps.event.enums import EventIntEnums
 from apps.event.mixins import EventMixin
 
 User = get_user_model()
@@ -26,7 +26,7 @@ class GameInvitation(m.Model):
 
     status = m.CharField(
         verbose_name=_('Invitation status'),
-        max_length=EventFieldLength.TITLE.value,
+        max_length=EventIntEnums.TITLE.value,
         choices=StatusTypeChoices.choices,
         default=StatusTypeChoices.NOT_DECIDED
     )
@@ -64,7 +64,7 @@ class Game(EventMixin, CreatedUpdatedMixin):
             f'time: {self.start_time}'
             f'host: {self.host}, '
         )
-        return name[:EventFieldLength.STR_MAX_LEN.value]
+        return name[:EventIntEnums.STR_MAX_LEN.value]
 
     class Meta:
         verbose_name = _('Game')

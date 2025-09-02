@@ -3,7 +3,8 @@ from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
 from apps.players.constants import Payments
-from apps.event.enums import EventFieldLength
+from apps.event.enums import EventIntEnums
+from apps.core.constants import GenderChoices
 
 
 class EventMixin(m.Model):
@@ -11,7 +12,7 @@ class EventMixin(m.Model):
 
     message = m.TextField(
         verbose_name=_('Description'),
-        validators=[MaxLengthValidator(EventFieldLength.MESSAGE.value)]
+        validators=[MaxLengthValidator(EventIntEnums.MESSAGE.value)]
     )
     start_time = m.DateTimeField(
         verbose_name=_('Start date and time')
@@ -26,12 +27,11 @@ class EventMixin(m.Model):
         null=False,
         blank=False,
     )
-    gender = m.ForeignKey(
-        'core.Gender',
+    gender = m.CharField(
         verbose_name=_('Gender of players'),
-        on_delete=m.SET_NULL,
+        choices=GenderChoices.choices,
         null=True,
-        blank=True,
+        blank=True
     )
     player_levels = m.ManyToManyField(
         'core.GameLevel',
@@ -50,12 +50,12 @@ class EventMixin(m.Model):
     )
     payment_type = m.CharField(
         verbose_name=_('Payment type'),
-        max_length=EventFieldLength.PAYMENT_VALUE.value,
+        max_length=EventIntEnums.PAYMENT_VALUE.value,
         choices=Payments.choices
     )
     payment_account = m.CharField(
         verbose_name=_('Payment account'),
-        max_length=EventFieldLength.PAYMENT_VALUE.value
+        max_length=EventIntEnums.PAYMENT_VALUE.value
     )
     currency_type = m.ForeignKey(
         'core.CurrencyType',

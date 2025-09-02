@@ -1,11 +1,6 @@
 import pytest
 
-from apps.core.models import CurrencyType, GameLevel, Gender
-
-
-@pytest.fixture
-def gender_men():
-    return Gender.objects.create(name=Gender.GenderChoices.MEN)
+from apps.core.models import CurrencyType, GameLevel
 
 
 @pytest.fixture()

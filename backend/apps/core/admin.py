@@ -6,7 +6,6 @@ from .models import (
     Contact,
     CurrencyType,
     GameLevel,
-    Gender,
     InfoPage,
     InfoSection,
     Tag
@@ -45,11 +44,6 @@ class ContactAdmin(admin.ModelAdmin):
 
 @admin.register(Tag)
 class TagAdmin(BaseNameAdmin):
-    pass
-
-
-@admin.register(Gender)
-class GenderAdmin(BaseChoicesAdmin):
     pass
 
 

@@ -15,7 +15,6 @@ def game_data(
     currency_type,
     court_obj_with_tag,
     payment_account_revolut,
-    gender_men,
     game_levels,
     active_user
 ):
@@ -24,7 +23,7 @@ def game_data(
         'message': 'Test game in Thailand',
         'start_time': '2025-08-21T15:30:00Z',
         'end_time': '2025-08-21T18:30:00Z',
-        'gender': gender_men,
+        'gender': 'MEN',
         'player_levels': [
             game_levels
         ],
