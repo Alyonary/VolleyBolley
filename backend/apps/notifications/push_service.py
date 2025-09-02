@@ -110,12 +110,12 @@ class PushService:
                         settings.FIREBASE_SERVICE_ACCOUNT
                     )
                 )
-                self.fb_admin = firebase_admin.get_app()
-                self.push_service = FCMNotification(
-                    credentials=settings.FIREBASE_SERVICE_ACCOUNT
-                )
-                logger.info('Firebase app initialized successfully')
-                return True
+            self.fb_admin = firebase_admin.get_app()
+            self.push_service = FCMNotification(
+                credentials=settings.FIREBASE_SERVICE_ACCOUNT
+            )
+            logger.info('Firebase app initialized successfully')
+            return True
         except Exception as e:
             self.push_service = None
             logger.error(
