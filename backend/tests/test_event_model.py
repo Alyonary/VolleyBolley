@@ -155,39 +155,39 @@ class TestGameSerializers:
     ):
 
         payload = {
-            "court_id": court_obj.id,
-            "message": "Hi! Just old",
-            "start_time": "2025-07-01T14:30:00Z",
-            "end_time": "2025-07-01T14:30:00Z",
-            "gender": "MEN",
-            "levels": [game_levels.name],
-            "is_private": False,
-            "maximum_players": 5,
-            "price_per_person": "5",
-            "payment_type": 'REVOLUT',
-            "players": []
+            'court_id': court_obj.id,
+            'message': 'Hi! Just old',
+            'start_time': '2025-07-01T14:30:00Z',
+            'end_time': '2025-07-01T14:30:00Z',
+            'gender': 'MEN',
+            'levels': [game_levels.name],
+            'is_private': False,
+            'maximum_players': 5,
+            'price_per_person': '5',
+            'payment_type': 'REVOLUT',
+            'players': []
         }
         response = authored_api_client.post(
             reverse('api:games-list'), data=payload, format='json')
-        assert Game.objects.filter(pk=response.json()["game_id"]).exists()
+        assert Game.objects.filter(pk=response.json()['game_id']).exists()
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
-            "game_id": response.json()["game_id"],
-            "court_id": court_obj.id,
-            "message": "Hi! Just old",
-            "start_time": "2025-07-01T14:30:00Z",
-            "end_time": "2025-07-01T14:30:00Z",
-            "gender": "MEN",
-            "levels": [
-                "LIGHT"
+            'game_id': response.json()['game_id'],
+            'court_id': court_obj.id,
+            'message': 'Hi! Just old',
+            'start_time': '2025-07-01T14:30:00Z',
+            'end_time': '2025-07-01T14:30:00Z',
+            'gender': 'MEN',
+            'levels': [
+                'LIGHT'
             ],
-            "is_private": False,
-            "maximum_players": 5,
-            "price_per_person": "5.00",
-            "currency_type": "THB",
-            "payment_type": "REVOLUT",
-            "payment_account": "Not defined",
-            "players": [
+            'is_private': False,
+            'maximum_players': 5,
+            'price_per_person': '5.00',
+            'currency_type': 'THB',
+            'payment_type': 'REVOLUT',
+            'payment_account': 'Not defined',
+            'players': [
                 user_player.id
             ]
         }
@@ -212,32 +212,32 @@ class TestGameSerializers:
                 'player_id', 'first_name', 'last_name', 'level', 'avatar'
             )
         assert response_data == {
-            "game_id": game_with_players.id,
-            "game_type": "MY GAMES",
-            "host": {
-                "player_id": user_player.id,
-                "first_name": user_player.user.first_name,
-                "last_name": user_player.user.last_name,
-                "avatar": None,
-                "level": "LIGHT"
+            'game_id': game_with_players.id,
+            'game_type': 'MY GAMES',
+            'host': {
+                'player_id': user_player.id,
+                'first_name': user_player.user.first_name,
+                'last_name': user_player.user.last_name,
+                'avatar': None,
+                'level': 'LIGHT'
             },
             'is_private': False,
-            "message": game_data['message'],
-            "court_location": {
-                "longitude": court_obj.location.longitude,
-                "latitude": court_obj.location.latitude,
-                "court_name": court_obj.location.court_name,
-                "location_name": court_obj.location.location_name
+            'message': game_data['message'],
+            'court_location': {
+                'longitude': court_obj.location.longitude,
+                'latitude': court_obj.location.latitude,
+                'court_name': court_obj.location.court_name,
+                'location_name': court_obj.location.location_name
             },
             'start_time': '2025-08-21T15:30:00Z',
             'end_time': '2025-08-21T18:30:00Z',
-            "levels": [
-                "LIGHT"
+            'levels': [
+                'LIGHT'
             ],
-            "gender": "MEN",
-            "price_per_person": "5.00",
-            "currency_type": "THB",
-            "payment_type": "REVOLUT",
-            "payment_account": "test acc",
-            "maximum_players": game_data['max_players'],
+            'gender': 'MEN',
+            'price_per_person': '5.00',
+            'currency_type': 'THB',
+            'payment_type': 'REVOLUT',
+            'payment_account': 'test acc',
+            'maximum_players': game_data['max_players'],
         }

@@ -8,7 +8,7 @@ from .models import (
     GameLevel,
     InfoPage,
     InfoSection,
-    Tag
+    Tag,
 )
 
 

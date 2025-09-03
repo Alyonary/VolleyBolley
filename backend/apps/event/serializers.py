@@ -145,13 +145,13 @@ class GameSerializer(BaseGameSerializer):
 
 class GameDetailSerializer(BaseGameSerializer):
     """Game serializer uses for retrieve requests."""
-    #########
+
     host = PlayerGameSerializer()
 
     game_type = serializers.SerializerMethodField(read_only=True)
 
     court_location = LocationSerializer(source='court.location')
-    #########
+
     players = PlayerGameSerializer(many=True)
 
     class Meta(BaseGameSerializer.Meta):
@@ -214,7 +214,7 @@ class TourneySerializer(serializers.ModelSerializer):
 class GameShortSerializer(serializers.ModelSerializer):
 
     game_id = serializers.IntegerField(source='pk', read_only=True)
-    #########
+
     host = PlayerGameSerializer()
 
     court_location = LocationSerializer(source='court.location')

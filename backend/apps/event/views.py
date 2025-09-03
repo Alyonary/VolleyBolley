@@ -75,10 +75,7 @@ class GameViewSet(ModelViewSet):
     )
     def preview(self, request, *args, **kwargs):
         """Returns the time of the next game and the number of invitations."""
-        # current_time = now()
-        # upcoming_game = Game.objects.filter(
-        #     Q(host=player) | Q(players=player)
-        # ).filter(start_time__gt=current_time).order_by('start_time').first()
+
         upcoming_game = Game.objects.nearest_game(request.user.player)
         if upcoming_game is not None:
             upcoming_game_time = upcoming_game.start_time.strftime(
@@ -98,10 +95,7 @@ class GameViewSet(ModelViewSet):
     )
     def my_games(self, request, *args, **kwargs):
         """Retrieves the list of games created by the user."""
-        # current_time = now()
-        # my_games = Game.objects.filter(
-        #     host=request.user.player).filter(
-        #         start_time__gt=current_time).select_related('host', 'court')
+
         my_games = Game.objects.my_upcoming_games(request.user.player)
         serializer = self.get_serializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
@@ -114,10 +108,7 @@ class GameViewSet(ModelViewSet):
     )
     def archive_games(self, request, *args, **kwargs):
         """Retrieves the list of archived games related to user."""
-        # current_time = now()
-        # my_games = Game.objects.filter(end_time__lt=current_time).filter(
-        #     Q(host=request.user.player) | Q(players=request.user.player)
-        # ).select_related('host', 'court')
+
         archived_games = Game.objects.archive_games(request.user.player)
         serializer = self.get_serializer(archived_games, many=True)
         wrapped_data = {'games': serializer.data}
