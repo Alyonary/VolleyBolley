@@ -15,7 +15,7 @@ class DeviceManager(models.Manager):
 
     def in_game(self, game_id):
         """Return devices associated with players in a specific game."""
-        game = Game.objects.get(id=game_id)
+        game = Game.objects.filter(id=game_id).first()
         user_ids = game.players.values_list('id', flat=True)
         player_ids = Player.objects.filter(
             user_id__in=user_ids

@@ -336,7 +336,9 @@ class TestPushServiceErrorHandling:
             NotificationTypes.IN_GAME, game_id=1
         )
 
-        assert result is None
+        assert result['status'].startswith(
+            'Error: Notification creation failed'
+        )
 
 
 class TestPushServiceEdgeCases:

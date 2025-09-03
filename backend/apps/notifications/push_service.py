@@ -1,4 +1,6 @@
+import json
 import logging
+import os
 from functools import wraps
 from threading import Lock
 
@@ -30,7 +32,8 @@ def service_required(func):
         if not self.enable:
             logger.info(
                 f'Service not available for {func.__name__}, '
-                f'attempting reconnection')
+                f'attempting reconnection'
+            )
             if not self.reconnect():
                 logger.warning(
                     f'Service unavailable, skipping {func.__name__}'
@@ -38,7 +41,7 @@ def service_required(func):
                 return None
         if not self.enable:
             logger.error(
-                f'Service still unavailable after reconnection attempt'
+                f'Service still unavailable after reconnection attempt '
                 f'for {func.__name__}'
             )
             return None
@@ -57,19 +60,19 @@ class PushService:
     Attributes:
         fb_admin: Firebase app instance.
         push_service: FCMNotification instance for sending notifications.
-        fb_available (bool): Flag indicating if FCM service is available.
-        celery_available (bool): Flag indicating if Celery workers are available.
-        _initialized (bool): Flag indicating if services have been initialized.
+        fb_available (bool): Flag  if FCM service is available.
+        celery_available (bool): Flag if Celery workers are available.
+        _initialized (bool): Flag if services have been initialized.
     Methods:
         reconnect(): Attempts to reconnect to FCM and Celery services.
         get_status(): Returns current status of services.
-        varify_token(token): Verifies if a device token is valid.
+        verify_token(token): Verifies if a device token is valid.
         process_notifications_by_type(type, player_id=None, game_id=None):
             Sends notifications to multiple devices using FCM.
     """
     _instance = None
     _lock = Lock()
-    
+
     def __new__(cls):
         if cls._instance is None:
             with cls._lock:
@@ -77,7 +80,7 @@ class PushService:
                     cls._instance = super().__new__(cls)
                     cls._instance._initialized = False
         return cls._instance
-    
+
     def __init__(self):
         if self._initialized:
             return
@@ -96,8 +99,8 @@ class PushService:
             if self.fb_available and self.celery_available:
                 self.enable = True
                 logger.info(
-                    'Firebase and Celery services connected successfully,'
-                    ' notifications enabled'
+                    'Firebase and Celery services connected successfully, '
+                    'notifications enabled'
                 )
             if not self.fb_available:
                 error_msg = 'FCM service not available\n'
@@ -114,22 +117,44 @@ class PushService:
                 )
             self._initialized = True
 
+    def _get_fcm_file_path(self) -> str:
+        """Return path to fcm.json in BASE_DIR."""
+        return os.path.join(settings.BASE_DIR, 'service_acc.json')
+
+    def _fcm_file_exists(self) -> bool:
+        """Check if fcm.json exists in BASE_DIR."""
+        return os.path.isfile(self._get_fcm_file_path())
+
+    def _create_fcm_file(self):
+        """Create fcm.json from FIREBASE_SERVICE_ACCOUNT in BASE_DIR."""
+        file_path = self._get_fcm_file_path()
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(
+                settings.FIREBASE_SERVICE_ACCOUNT,
+                f,
+                indent=2,
+                ensure_ascii=False
+            )
+        logger.info(f'FCM file created at {file_path}')
+
     def _initialize_firebase(self):
         """Initialize Firebase app if not already initialized."""
         try:
+            cred = credentials.Certificate(settings.FIREBASE_SERVICE_ACCOUNT)
             if not firebase_admin._apps:
-                firebase_admin.initialize_app(
-                    credentials.Certificate(
-                        settings.FIREBASE_SERVICE_ACCOUNT
-                    )
-                )
+                firebase_admin.initialize_app(cred)
             self.fb_admin = firebase_admin.get_app()
+            logger.info('FB_admin initialized successfully')
+            fcm_file_path = self._get_fcm_file_path()
+            if not self._fcm_file_exists():
+                self._create_fcm_file()
             self.push_service = FCMNotification(
-                credentials=settings.FIREBASE_SERVICE_ACCOUNT
+                service_account_file=fcm_file_path,
             )
             logger.info('Firebase app initialized successfully')
             return True
         except Exception as e:
+            self.fb_admin = None
             self.push_service = None
             logger.error(
                 f'Error initializing Firebase app: {str(e)}'
@@ -158,7 +183,7 @@ class PushService:
     def get_status(self) -> dict:
         """
         Get current status of services.
-        
+
         Returns:
             dict: Current status of FCM and Celery services
         """
@@ -171,12 +196,17 @@ class PushService:
 
     def _check_fcm(self) -> bool:
         """Check if FCM service is available."""
-        return all(firebase_admin.get_app(), self.push_service is not None)
+        return all(
+            [
+                getattr(self, 'fb_admin', False),
+                getattr(self, 'push_service', False)
+            ]
+        )
 
     def _check_celery_availability(self) -> bool:
         """
         Check if Celery workers are available and working.
-        
+
         Returns:
             bool: True if Celery workers are available, False otherwise
         """
@@ -186,7 +216,9 @@ class PushService:
             if not active_workers:
                 logger.warning('No active Celery workers found')
                 return False
-            logger.debug(f'Found {len(active_workers)} active Celery workers')
+            logger.debug(
+                f'Found {len(active_workers)} active Celery workers'
+            )
             return True
         except ImportError:
             logger.error('Celery is not installed')
@@ -195,9 +227,9 @@ class PushService:
             logger.warning(f'Cannot connect to Celery: {str(e)}')
             return False
 
-    def varify_token(self, token: str) -> bool:
+    def verify_token(self, token: str) -> bool:
         """
-        Verify if a device token is valid by sending a test notification.
+        Verify if a user token is valid.
         Args:
             token (str): Device token to verify.
         Returns:
@@ -207,7 +239,7 @@ class PushService:
             logger.warning('FCM service not available, cannot verify token')
             return False
         try:
-            auth.verify_id_token(token)
+            auth.verify_id_token(id_token=token, app=self.fb_admin)
             logger.debug('Token verified successfully')
             return True
         except Exception as e:
@@ -223,50 +255,79 @@ class PushService:
     ) -> dict | None:
         """
         Send notifications to multiple devices using FCM.
-
+        Logs and returns statistics of successful and failed notifications.
         Args:
             type (str): Type of notification to send.
-            player_id (int, optional): Player ID for player-specific 
+            player_id (int, optional): Player ID for player-specific
                 notifications.
-            game_id (int, optional): Game ID to include in the 
-                notification data.
+            game_id (int, optional): 
+                Game ID to include in the notification data.
+        Returns:
+            dict: Statistics of notification sending.
         """
+        stats = {
+            'type': type,
+            'devices_count': 0,
+            'successful': 0,
+            'failed': 0,
+            'status': '',
+        }
         try:
             logger.info(f'Processing notification type: {type}')
             notification = Notification(type)
-            if type == NotificationTypes.IN_GAME:
-                tokens = Device.objects.active().in_game(
+            if (
+                type == NotificationTypes.IN_GAME or
+                type == NotificationTypes.RATE
+            ):
+                tokens = Device.objects.in_game(
                     game_id
                 ).values_list('token', flat=True)
-                return self.send_push_notifications(
-                    tokens,
-                    notification,
-                    game_id=game_id
-                )
-            elif type == NotificationTypes.RATE:
-                tokens = Device.objects.active().in_game(
-                    game_id
-                ).values_list('token', flat=True)
-                return self.send_push_notifications(
-                    tokens,
-                    notification,
-                    game_id=game_id
-                )
             elif type == NotificationTypes.REMOVED:
-                tokens = Device.objects.active().by_player(
+                tokens = Device.objects.by_player(
                     player_id
                 ).values_list('token', flat=True)
-                return self.send_push_notifications(
-                    tokens,
-                    notification,
-                )
             else:
                 logger.warning(f'Unknown notification type: {type}')
-                return None
+                stats['status'] = 'Unknown notification type'
+                return stats
+
+            tokens = list(tokens)
+            stats['devices_count'] = len(tokens)
+            if not tokens:
+                logger.warning(
+                    'No tokens found for notification type: %s', type
+                )
+                stats['status'] = 'No tokens found'
+                return stats
+
+            for token in tokens:
+                is_notify = self._send_notification_by_token_internal(
+                    token=token,
+                    notification=notification,
+                    game_id=game_id
+                )
+                if is_notify:
+                    stats['successful'] += 1
+                else:
+                    stats['failed'] += 1
+
+            stats['status'] = (
+                f"Sent successfully: {stats['successful']}, "
+                f"Failed: {stats['failed']}"
+            )
+            logger.info(
+                f"Notification '{type}' results: "
+                f"{stats['successful']}/{stats['devices_count']} successful, "
+                f"{stats['failed']} failed"
+            )
+            return stats
         except Exception as e:
-            err_msg = f'Error processing notification type {type}: {str(e)}'
+            err_msg = (
+                f'Error processing notification type {type}: {str(e)}'
+            )
             logger.error(err_msg, exc_info=True)
-            return None
+            stats['status'] = f'Error: {str(e)}'
+            return stats
 
     @service_required
     def send_push_notifications(
@@ -282,7 +343,7 @@ class PushService:
             tokens (list): List of device tokens to send the notification to.
             notification (Notification): Notification object containing title,
                 body, and screen.
-            game_id (int, optional): Game ID to include in the 
+            game_id (int, optional): Game ID to include in the
                 notification data.
         """
         result = {
@@ -324,7 +385,7 @@ class PushService:
             token (str): Device token to send the notification to.
             notification (Notification): Notification object containing title,
                 body, and screen.
-            game_id (int, optional): Game ID to include in the 
+            game_id (int, optional): Game ID to include in the
                 notification data.
         """
         if not token:
@@ -349,11 +410,13 @@ class PushService:
         """
         data_message = {'screen': notification.screen}
         if game_id:
-            data_message['gameId'] = game_id
+            data_message['gameId'] = str(game_id)
         error_occurred = False
-        
+
         try:
-            masked_token = token[:8] + '...' if len(token) > 8 else token
+            masked_token = (
+                token[:8] + '...' if len(token) > 8 else token
+            )
             logger.debug(f'Sending notification to device {masked_token}')
             self.push_service.notify(
                 fcm_token=token,
@@ -367,7 +430,9 @@ class PushService:
             return True
         except FCMError as e:
             error_occurred = True
-            logger.warning(f'FCM Error for token {masked_token}: {str(e)}')
+            logger.warning(
+                f'FCM Error for token {masked_token}: {str(e)}'
+            )
             return False
         except Exception as e:
             error_occurred = True

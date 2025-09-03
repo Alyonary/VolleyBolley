@@ -1,4 +1,3 @@
-
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
@@ -59,8 +58,8 @@ class FCMTokenView(APIView):
 @api_view(['GET'])
 def test_notifications(request):
     """
-    Test view to send all notification types for game ID 1
-    with a 1-second delay between notifications.
+    Test view to send all notification types for game ID 1.
+    Just creates notification tasks and returns response.
     """
     push_service = PushService()
     if not push_service:
@@ -76,38 +75,22 @@ def test_notifications(request):
             {'error': 'No active devices found.'},
             status=status.HTTP_404_NOT_FOUND
         )
-    results = []
     for notification_type in NotificationTypes.CHOICES:
         notification = Notification(notification_type=notification_type)
-        try:
-            if notification_type == NotificationTypes.IN_GAME:
-                result = push_service.send_push_notifications(
-                    tokens=all_tokens,
-                    notification=notification,
-                    game_id=1
-                )
-            else:
-                result = push_service.send_push_notifications(
-                    tokens=all_tokens,
-                    notification=notification,
-                )
-            results.append({
-                'type': notification_type,
-                'success': result is not None,
-                'devices_count': len(all_tokens),
-                'status': 'Sent successfully' if result else 'Failed to send'
-            })
-                
-        except Exception as e:
-            results.append({
-                'type': notification_type,
-                'success': False,
-                'devices_count': len(all_tokens),
-                'status': f'Error: {str(e)}'
-            })
-    return Response({
-        'notifications_sent': len(results),
-        'devices_count': len(all_tokens),
-        'results': results
-    })
 
+        if notification_type == NotificationTypes.IN_GAME:
+            push_service.send_push_notifications(
+                tokens=all_tokens,
+                notification=notification,
+                game_id=1
+            )
+        else:
+            push_service.send_push_notifications(
+                tokens=all_tokens,
+                notification=notification,
+            )
+    return Response({
+        'status': 'Notification tasks created',
+        'notifications_types': NotificationTypes.CHOICES,
+        'devices_count': len(all_tokens)
+    }, status=status.HTTP_202_ACCEPTED)
