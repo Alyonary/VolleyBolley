@@ -152,7 +152,6 @@ class TestGameSerializers:
             user_player,
             game_levels,
             currency_type
-
     ):
 
         payload = {

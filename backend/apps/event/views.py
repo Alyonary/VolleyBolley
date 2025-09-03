@@ -22,18 +22,28 @@ class GameViewSet(ModelViewSet):
     permission_classes = (IsHostOrReadOnly, IsAuthenticated)
 
     def get_queryset(self):
-        if self.action in ('list', 'retrieve'):
-            player = getattr(self.request.user, 'player', None)
-            if player is None or player.country is None:
-                return Game.objects.all()
-            return Game.objects.filter(
-                court__location__country=player.country, is_private=False)
-        else:
+        player = getattr(self.request.user, 'player', None)
+        if player is None or player.country is None:
             return Game.objects.all()
+        elif self.action in ('joining_game', 'delete_invitation'):
+            return Game.objects.all()
+        return Game.objects.player_located_games(player)
 
-    def get_serializer_class(self):
-        if self.action == 'retrieve':
+    def get_serializer_class(self, *args, **kwargs):
+        if self.action in (
+                            'retrieve',
+                            'join_game'):
             return GameDetailSerializer
+
+        elif self.action == 'invite_players':
+            return GameInviteSerializer
+
+        elif self.action in (
+                            'my_games',
+                            'archive',
+                            'invites',
+                            'upcoming'):
+            return GameShortSerializer
         else:
             return GameSerializer
 
@@ -47,7 +57,7 @@ class GameViewSet(ModelViewSet):
         game_id = self.get_object().id
         host_id = request.user.player.id
         for id in request.data['players']:
-            serializer = GameInviteSerializer(
+            serializer = self.get_serializer(
                     data={
                         'host': host_id,
                         'invited': id,
@@ -65,18 +75,18 @@ class GameViewSet(ModelViewSet):
     )
     def preview(self, request, *args, **kwargs):
         """Returns the time of the next game and the number of invitations."""
-        player = request.user.player
-        current_time = now()
-        upcoming_game = Game.objects.filter(
-            Q(host=player) | Q(players=player)
-        ).filter(start_time__gt=current_time).order_by('start_time').first()
+        # current_time = now()
+        # upcoming_game = Game.objects.filter(
+        #     Q(host=player) | Q(players=player)
+        # ).filter(start_time__gt=current_time).order_by('start_time').first()
+        upcoming_game = Game.objects.nearest_game(request.user.player)
         if upcoming_game is not None:
             upcoming_game_time = upcoming_game.start_time.strftime(
                 format='iso-8601')
         else:
             upcoming_game_time = None
         invites = GameInvitation.objects.filter(
-            invited=player).values('game').distinct().count()
+            invited=request.user.player).values('game').distinct().count()
         return Response(
                 data={'upcoming_game_time': upcoming_game_time,
                       'invites': invites}, status=status.HTTP_200_OK)
@@ -88,11 +98,12 @@ class GameViewSet(ModelViewSet):
     )
     def my_games(self, request, *args, **kwargs):
         """Retrieves the list of games created by the user."""
-        current_time = now()
-        my_games = Game.objects.filter(
-            host=request.user.player).filter(
-                start_time__gt=current_time).select_related('host', 'court')
-        serializer = GameShortSerializer(my_games, many=True)
+        # current_time = now()
+        # my_games = Game.objects.filter(
+        #     host=request.user.player).filter(
+        #         start_time__gt=current_time).select_related('host', 'court')
+        my_games = Game.objects.my_upcoming_games(request.user.player)
+        serializer = self.get_serializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
@@ -103,11 +114,12 @@ class GameViewSet(ModelViewSet):
     )
     def archive_games(self, request, *args, **kwargs):
         """Retrieves the list of archived games related to user."""
-        current_time = now()
-        my_games = Game.objects.filter(end_time__lt=current_time).filter(
-            Q(host=request.user.player) | Q(players=request.user.player)
-        ).select_related('host', 'court')
-        serializer = GameShortSerializer(my_games, many=True)
+        # current_time = now()
+        # my_games = Game.objects.filter(end_time__lt=current_time).filter(
+        #     Q(host=request.user.player) | Q(players=request.user.player)
+        # ).select_related('host', 'court')
+        archived_games = Game.objects.archive_games(request.user.player)
+        serializer = self.get_serializer(archived_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
@@ -126,7 +138,7 @@ class GameViewSet(ModelViewSet):
             for invitation in my_invitations
             if invitation.game.start_time > current_time
         ]
-        serializer = GameShortSerializer(my_games, many=True)
+        serializer = self.get_serializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
@@ -141,7 +153,7 @@ class GameViewSet(ModelViewSet):
         my_games = Game.objects.filter(start_time__gt=current_time).filter(
             Q(host=request.user.player) | Q(players=request.user.player)
         ).select_related('host', 'court')
-        serializer = GameShortSerializer(my_games, many=True)
+        serializer = self.get_serializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
@@ -163,7 +175,8 @@ class GameViewSet(ModelViewSet):
             invitation.delete()
         else:
             is_joined = {'is_joined': False}
-        serializer = GameDetailSerializer(game, context={'request': request})
+        serializer = self.get_serializer(
+            game, context={'request': request})
         data = serializer.data.copy()
         data.update(is_joined)
         return Response(data=data, status=status.HTTP_200_OK)
