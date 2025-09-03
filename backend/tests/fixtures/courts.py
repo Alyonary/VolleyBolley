@@ -8,20 +8,20 @@ from apps.locations.models import City, Country
 
 @pytest.fixture
 def country_for_court_location():
-    country = Country.objects.create(name='Thailand')
+    country, _ = Country.objects.get_or_create(name='Thailand')
     return country
 
 
 @pytest.fixture
 def country_for_another_court_location():
-    country = Country.objects.create(name='Cyprus')
+    country, _ = Country.objects.get_or_create(name='Cyprus')
     return country
 
 
 @pytest.fixture
 def city_for_court_location(country_for_court_location):
 
-    city = City.objects.create(
+    city, _ = City.objects.get_or_create(
         name='Pattaya',
         country=country_for_court_location
     )
@@ -31,7 +31,7 @@ def city_for_court_location(country_for_court_location):
 @pytest.fixture
 def city_for_another_court_location(country_for_another_court_location):
 
-    city = City.objects.create(
+    city, _ = City.objects.get_or_create(
         name='Limassol',
         country=country_for_another_court_location
     )

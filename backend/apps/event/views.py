@@ -1,4 +1,3 @@
-from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -16,8 +15,6 @@ from apps.event.serializers import (
     GameSerializer,
     GameShortSerializer,
 )
-
-User = get_user_model()
 
 
 class GameViewSet(ModelViewSet):
@@ -40,11 +37,6 @@ class GameViewSet(ModelViewSet):
         else:
             return GameSerializer
 
-    def perform_create(self, serializer):
-        game = serializer.save(
-            host=self.request.user)
-        game.players.add(self.request.user)
-
     @action(
         methods=['post'],
         detail=True,
@@ -52,14 +44,14 @@ class GameViewSet(ModelViewSet):
     )
     def invite_players(self, request, *args, **kwargs):
         """Creates invitations to the game for players on the list."""
-        game = self.get_object().id
-        user = request.user.id
+        game_id = self.get_object().id
+        host_id = request.user.player.id
         for id in request.data['players']:
             serializer = GameInviteSerializer(
                     data={
-                        'host': user,
+                        'host': host_id,
                         'invited': id,
-                        'game': game
+                        'game': game_id
                     }
             )
             serializer.is_valid(raise_exception=True)
@@ -73,10 +65,10 @@ class GameViewSet(ModelViewSet):
     )
     def preview(self, request, *args, **kwargs):
         """Returns the time of the next game and the number of invitations."""
-        user = request.user
+        player = request.user.player
         current_time = now()
         upcoming_game = Game.objects.filter(
-            Q(host=user) | Q(players=user)
+            Q(host=player) | Q(players=player)
         ).filter(start_time__gt=current_time).order_by('start_time').first()
         if upcoming_game is not None:
             upcoming_game_time = upcoming_game.start_time.strftime(
@@ -84,7 +76,7 @@ class GameViewSet(ModelViewSet):
         else:
             upcoming_game_time = None
         invites = GameInvitation.objects.filter(
-            invited=user).values('game').distinct().count()
+            invited=player).values('game').distinct().count()
         return Response(
                 data={'upcoming_game_time': upcoming_game_time,
                       'invites': invites}, status=status.HTTP_200_OK)
@@ -98,7 +90,7 @@ class GameViewSet(ModelViewSet):
         """Retrieves the list of games created by the user."""
         current_time = now()
         my_games = Game.objects.filter(
-            host=request.user).filter(
+            host=request.user.player).filter(
                 start_time__gt=current_time).select_related('host', 'court')
         serializer = GameShortSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
@@ -113,7 +105,7 @@ class GameViewSet(ModelViewSet):
         """Retrieves the list of archived games related to user."""
         current_time = now()
         my_games = Game.objects.filter(end_time__lt=current_time).filter(
-            Q(host=request.user) | Q(players=request.user)
+            Q(host=request.user.player) | Q(players=request.user.player)
         ).select_related('host', 'court')
         serializer = GameShortSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
@@ -126,8 +118,8 @@ class GameViewSet(ModelViewSet):
     )
     def invited_games(self, request, *args, **kwargs):
         """Retrieving upcoming games to which the player has been invited."""
-        my_invitations = GameInvitation.objects.select_related(
-            'game').filter(invited=request.user)
+        my_invitations = GameInvitation.objects.filter(
+            invited=request.user.player).select_related('game')
         current_time = now()
         my_games = [
             invitation.game
@@ -147,7 +139,7 @@ class GameViewSet(ModelViewSet):
         """Retrieving upcoming games to which the player has been invited."""
         current_time = now()
         my_games = Game.objects.filter(start_time__gt=current_time).filter(
-            Q(host=request.user) | Q(players=request.user)
+            Q(host=request.user.player) | Q(players=request.user.player)
         ).select_related('host', 'court')
         serializer = GameShortSerializer(my_games, many=True)
         wrapped_data = {'games': serializer.data}
@@ -162,12 +154,12 @@ class GameViewSet(ModelViewSet):
     def joining_game(self, request, *args, **kwargs):
         """Adding a user to the game and removing the invitation."""
         game = self.get_object()
-        user = request.user
+        player = request.user.player
         invitation = GameInvitation.objects.filter(
-            Q(game=game) & Q(invited=user)).first()
+            Q(game=game) & Q(invited=player)).first()
         if invitation is not None and game.max_players > game.players.count():
             is_joined = {'is_joined': True}
-            game.players.add(user)
+            game.players.add(player)
             invitation.delete()
         else:
             is_joined = {'is_joined': False}
@@ -184,9 +176,9 @@ class GameViewSet(ModelViewSet):
     )
     def delete_invitation(self, request, *args, **kwargs):
         game = self.get_object()
-        user = request.user
+        player = request.user.player
         delete_count, dt = GameInvitation.objects.filter(
-            Q(game=game) & Q(invited=user)).delete()
+            Q(game=game) & Q(invited=player)).delete()
         if not delete_count:
             return Response(
                 data={'error': _('The invitation does not exist!')},

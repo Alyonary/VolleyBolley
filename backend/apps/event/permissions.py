@@ -8,4 +8,4 @@ class IsHostOrReadOnly(IsAuthenticatedOrReadOnly):
 
     def has_object_permission(self, request, view, obj):
         return (request.method in SAFE_METHODS
-                or request.user == obj.host)
+                or request.user.player == obj.host)

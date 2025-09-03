@@ -11,12 +11,12 @@ User = get_user_model()
 
 @pytest.fixture
 def game_data(
-    bulk_create_users,
+    bulk_create_registered_players,
     currency_type,
     court_obj_with_tag,
     payment_account_revolut,
     game_levels,
-    active_user
+    user_player
 ):
     return {
         'court_id': court_obj_with_tag.id,
@@ -30,9 +30,9 @@ def game_data(
         'is_private': False,
         'max_players': 5,
         'price_per_person': '5',
-        'payment_type': payment_account_revolut,
-        'players': bulk_create_users,
-        'host': active_user,
+        'payment_type': payment_account_revolut.payment_type,
+        'players': bulk_create_registered_players,
+        'host': user_player,
         'currency_type': currency_type,
         'payment_account': payment_account_revolut.payment_account
     }
@@ -99,7 +99,7 @@ def payment_account_revolut(user_player):
     return Payment.objects.create(
         player=user_player,
         payment_type='REVOLUT',
-        payment_account='test revolut account'
+        payment_account='test acc'
     )
 
 
@@ -123,9 +123,9 @@ def another_user_client(another_user, client):
 
 
 @pytest.fixture
-def another_game_cyprus(another_user, game_data, another_court_obj):
+def another_game_cyprus(another_user_player, game_data, another_court_obj):
     game_data['court_id'] = another_court_obj.id
     game_data['message'] = 'Test game in Cyprus'
-    game_data['host'] = another_user
+    game_data['host'] = another_user_player
     game = Game.objects.create(**game_data)
     return game

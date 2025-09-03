@@ -1,13 +1,10 @@
-from django.conf import settings
-from django.contrib.auth import get_user_model
 from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.event.enums import EventIntEnums
 from apps.event.mixins import EventMixin
-
-User = get_user_model()
+from apps.players.models import Player
 
 
 class GameInvitation(m.Model):
@@ -18,9 +15,9 @@ class GameInvitation(m.Model):
         REJECTED = 'REJECTED', _('Rejected')
         NOT_DECIDED = 'NOT_DECIDED', _('Not decided')
 
-    host = m.ForeignKey(User, on_delete=m.CASCADE, related_name='host')
+    host = m.ForeignKey(Player, on_delete=m.CASCADE, related_name='host')
 
-    invited = m.ForeignKey(User, on_delete=m.CASCADE, related_name='invited')
+    invited = m.ForeignKey(Player, on_delete=m.CASCADE, related_name='invited')
 
     game = m.ForeignKey('event.Game', on_delete=m.CASCADE)
 
@@ -44,13 +41,13 @@ class GameInvitation(m.Model):
 class Game(EventMixin, CreatedUpdatedMixin):
     """Game model."""
     host = m.ForeignKey(
-        User,
+        Player,
         verbose_name=_('Game organizer'),
         on_delete=m.CASCADE,
         related_name='games_host'
     )
     players = m.ManyToManyField(
-        User,
+        Player,
         verbose_name=_('Players'),
         related_name='games_players',
         blank=True
@@ -76,7 +73,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
     """Tourney model."""
 
     host = m.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        Player,
         verbose_name=_('Tourney organizer'),
         on_delete=m.SET_NULL,
         null=True,
@@ -84,7 +81,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         related_name='tournaments_host',
     )
     players = m.ManyToManyField(
-        settings.AUTH_USER_MODEL,
+        Player,
         verbose_name=_('Players'),
         related_name='tournaments_players',
     )

@@ -1,7 +1,5 @@
-from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
-from djoser.serializers import UserSerializer
 from rest_framework import serializers
 
 from apps.core.models import CurrencyType, GameLevel
@@ -10,19 +8,14 @@ from apps.courts.serializers import LocationSerializer
 from apps.event.enums import EventIntEnums
 from apps.event.models import Game, GameInvitation
 from apps.locations.models import Country
-from apps.players.models import Payment
-
-User = get_user_model()
+from apps.players.models import Payment, Player
+from apps.players.serializers import PlayerGameSerializer
 
 
 class BaseGameSerializer(serializers.ModelSerializer):
 
     game_id = serializers.IntegerField(source='pk', read_only=True)
 
-    host = serializers.HiddenField(
-        write_only=True,
-        default=serializers.CurrentUserDefault()
-    )
     start_time = serializers.DateTimeField(format='iso-8601')
 
     end_time = serializers.DateTimeField(format='iso-8601')
@@ -53,7 +46,6 @@ class BaseGameSerializer(serializers.ModelSerializer):
         model = Game
         fields = [
             'game_id',
-            'host',
             'message',
             'start_time',
             'end_time',
@@ -77,7 +69,7 @@ class BaseGameSerializer(serializers.ModelSerializer):
 
     def validate(self, value):
         request = self.context.get('request', None)
-        player = request.user.player.first()
+        player = request.user.player
         if value.get('payment_type') == 'CASH':
             value['payment_account'] = 'Cash money'
         else:
@@ -85,11 +77,14 @@ class BaseGameSerializer(serializers.ModelSerializer):
                 player=player,
                 payment_type=value.get('payment_type')
             ).first()
-            if not payment or payment.payment_account is None:
+            if not payment:
                 raise serializers.ValidationError(
                     'No payment account found for this payment type')
-            value['payment_account'] = payment.payment_account
-        country = Country.objects.get(name=player.location.country)
+            if payment.payment_account is None:
+                value['payment_account'] = 'Not defined'
+            else:
+                value['payment_account'] = payment.payment_account
+        country = Country.objects.get(name=player.country)
         currency_type = CurrencyType.objects.filter(
                             country=country).first()
         value['currency_type'] = currency_type
@@ -97,10 +92,10 @@ class BaseGameSerializer(serializers.ModelSerializer):
 
 
 class GameSerializer(BaseGameSerializer):
-    """Uses for create, list requests."""
+    """Uses for create requests."""
 
     players = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all(),
+        queryset=Player.objects.all(),
         many=True,
         required=False
     )
@@ -117,9 +112,12 @@ class GameSerializer(BaseGameSerializer):
         ]
 
     def create(self, validated_data):
+        host = self.context['request'].user.player
+        validated_data['host'] = host
         players = validated_data.pop('players')
         levels = validated_data.pop('player_levels')
         game = Game.objects.create(**validated_data)
+        game.players.add(host)
         game.player_levels.set(levels)
         for player in players:
             serializer = GameInviteSerializer(
@@ -135,7 +133,7 @@ class GameSerializer(BaseGameSerializer):
         return game
 
     def validate_players(self, value):
-        host = self.context['request'].user
+        host = self.context['request'].user.player
         if host in value:
             raise serializers.ValidationError(
                 'Нельзя отправить приглашение на игру себе.')
@@ -147,19 +145,20 @@ class GameSerializer(BaseGameSerializer):
 
 class GameDetailSerializer(BaseGameSerializer):
     """Game serializer uses for retrieve requests."""
-
-    host = UserSerializer()
+    #########
+    host = PlayerGameSerializer()
 
     game_type = serializers.SerializerMethodField(read_only=True)
 
     court_location = LocationSerializer(source='court.location')
-
-    players = UserSerializer(many=True)
+    #########
+    players = PlayerGameSerializer(many=True)
 
     class Meta(BaseGameSerializer.Meta):
         model = BaseGameSerializer.Meta.model
         fields = BaseGameSerializer.Meta.fields + [
             'game_type',
+            'host',
             'court_location',
             'players'
         ]
@@ -167,13 +166,13 @@ class GameDetailSerializer(BaseGameSerializer):
     def get_game_type(self, obj):
         """Assigns a type to the game.
         Returning values:
-        MY, UPCOMING, ARCHIVE, INVITES, ACTIVE.
+        MY GAMES, UPCOMING, ARCHIVE, INVITES, ACTIVE.
         """
         request = self.context.get('request', None)
-        if obj.host == request.user:
-            return 'MY'
+        if obj.host == request.user.player:
+            return 'MY GAMES'
         elif GameInvitation.objects.filter(
-                invited=request.user, game=obj).exists():
+                invited=request.user.player, game=obj).exists():
             return 'INVITES'
         elif obj.end_time < timezone.now():
             return 'ARCHIVE'
@@ -186,7 +185,7 @@ class GameDetailSerializer(BaseGameSerializer):
 class GameInviteSerializer(serializers.ModelSerializer):
 
     invited = serializers.PrimaryKeyRelatedField(
-        write_only=True, queryset=User.objects.all())
+        write_only=True, queryset=Player.objects.all())
 
     class Meta:
         model = GameInvitation
@@ -215,8 +214,8 @@ class TourneySerializer(serializers.ModelSerializer):
 class GameShortSerializer(serializers.ModelSerializer):
 
     game_id = serializers.IntegerField(source='pk', read_only=True)
-
-    host = UserSerializer()
+    #########
+    host = PlayerGameSerializer()
 
     court_location = LocationSerializer(source='court.location')
 

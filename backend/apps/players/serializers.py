@@ -263,3 +263,24 @@ class FavoriteSerializer(PlayerListSerializer):
                     'in your favorite list.'
                 )
         return data
+
+
+class PlayerGameSerializer(PlayerAuthSerializer):
+    """Player data for retrieve in event serializer."""
+
+    class Meta:
+        model = Player
+        fields = (
+            'player_id',
+            'first_name',
+            'last_name',
+            'avatar',
+            'level'
+        )
+        read_only_fields = (
+            'player_id',
+            'first_name',
+            'last_name',
+            'avatar',
+            'level'
+        )
