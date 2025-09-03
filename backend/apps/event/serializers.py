@@ -201,9 +201,13 @@ class GameInviteSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         host = attrs.get('host')
         invited = attrs.get('invited')
+        game = attrs.get('game')
         if host == invited:
             raise serializers.ValidationError(
                 'You can not invite yourself.')
+        elif invited in game.players.all():
+            raise serializers.ValidationError(
+                'This player is already participating in the game.')
         return attrs
 
 
