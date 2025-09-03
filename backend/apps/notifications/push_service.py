@@ -7,7 +7,7 @@ from threading import Lock
 import firebase_admin
 from celery import current_app
 from django.conf import settings
-from firebase_admin import auth, credentials
+from firebase_admin import credentials
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
 
@@ -66,7 +66,6 @@ class PushService:
     Methods:
         reconnect(): Attempts to reconnect to FCM and Celery services.
         get_status(): Returns current status of services.
-        verify_token(token): Verifies if a device token is valid.
         process_notifications_by_type(type, player_id=None, game_id=None):
             Sends notifications to multiple devices using FCM.
     """
@@ -227,24 +226,6 @@ class PushService:
             logger.warning(f'Cannot connect to Celery: {str(e)}')
             return False
 
-    def verify_token(self, token: str) -> bool:
-        """
-        Verify if a user token is valid.
-        Args:
-            token (str): Device token to verify.
-        Returns:
-            bool: True if token is valid, False otherwise.
-        """
-        if not self.fb_available:
-            logger.warning('FCM service not available, cannot verify token')
-            return False
-        try:
-            auth.verify_id_token(id_token=token, app=self.fb_admin)
-            logger.debug('Token verified successfully')
-            return True
-        except Exception as e:
-            logger.warning(f'Token verification failed: {str(e)}')
-            return False
 
     @service_required
     def process_notifications_by_type(
