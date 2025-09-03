@@ -121,6 +121,7 @@ class GameViewSet(ModelViewSet):
     )
     def invited_games(self, request, *args, **kwargs):
         """Retrieving upcoming games to which the player has been invited."""
+
         my_invitations = GameInvitation.objects.filter(
             invited=request.user.player).select_related('game')
         current_time = now()
@@ -139,12 +140,10 @@ class GameViewSet(ModelViewSet):
         url_path='upcoming'
     )
     def upcoming_games(self, request, *args, **kwargs):
-        """Retrieving upcoming games to which the player has been invited."""
-        current_time = now()
-        my_games = Game.objects.filter(start_time__gt=current_time).filter(
-            Q(host=request.user.player) | Q(players=request.user.player)
-        ).select_related('host', 'court')
-        serializer = self.get_serializer(my_games, many=True)
+        """Retrieving upcoming games that the player participates in."""
+
+        upcomming_games = Game.objects.upcomming_games(request.user.player)
+        serializer = self.get_serializer(upcomming_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
@@ -156,6 +155,7 @@ class GameViewSet(ModelViewSet):
     )
     def joining_game(self, request, *args, **kwargs):
         """Adding a user to the game and removing the invitation."""
+
         game = self.get_object()
         player = request.user.player
         invitation = GameInvitation.objects.filter(
