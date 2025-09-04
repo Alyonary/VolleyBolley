@@ -1,11 +1,19 @@
 import base64
+from datetime import timedelta
 
+from backend.apps.players.rating import (
+    LEVEL_DOWN,
+    LEVEL_UP,
+    PlayerLevelChange,
+    get_rating_coefficient,
+)
 from django.core.files.base import ContentFile
 from django.db import transaction
+from pytz import timezone
 from rest_framework import serializers
 
 from apps.players.constants import PlayerIntEnums
-from apps.players.models import Favorite, Payment, Player
+from apps.players.models import Favorite, Payment, Player, PlayerRatingVote
 
 
 class Base64ImageField(serializers.ImageField):
@@ -263,3 +271,97 @@ class FavoriteSerializer(PlayerListSerializer):
                     'in your favorite list.'
                 )
         return data
+
+
+class PlayerRateItemSerializer(serializers.Serializer):
+    """
+    Serializer for a single player rating action.
+
+    Validates that the rater can rate the specified player, checks the limit
+    of ratings within the last 2 months, and calculates the rating value
+    based on the level change and coefficient table.
+    Returns a dict with rater id, rated player id, and calculated value.
+    """
+
+    player_id = serializers.IntegerField()
+    level_changed = serializers.ChoiceField(choices=[LEVEL_UP, LEVEL_DOWN])
+
+    def validate(self, attrs):
+        """
+        Validates rating limits and calculates rating value for one player.
+
+        Raises ValidationError if the rater has already rated the player
+        2 times in the last 2 months or if the player does not exist.
+        """
+        request = self.context.get('request')
+        if not request or not hasattr(request.user, 'player'):
+            raise serializers.ValidationError('Invalid rater player.')
+
+        rater_player: Player = request.user.player
+        try:
+            rated_player = Player.objects.get(id=attrs['player_id'])
+        except Player.DoesNotExist as e:
+            raise serializers.ValidationError(
+                f"Player with id {attrs['player_id']} does not exist."
+            ) from e
+        two_months_ago = timezone.now() - timedelta(days=60)
+        last_votes = PlayerRatingVote.objects.filter(
+            rater=rater_player,
+            rated=rated_player,
+            created_at__gte=two_months_ago
+        )
+        if last_votes.count() >= 2:
+            raise serializers.ValidationError(
+                f"You have already rated player {rated_player.user.username} "
+                "2 times in the last 2 months."
+            )
+        value = getattr(
+            PlayerLevelChange,
+            attrs['level_changed'],
+            0
+        ) * get_rating_coefficient(
+            rater_player.level,
+            rated_player.level
+        )
+        return {
+            'rater': rater_player.id,
+            'rated_player': rated_player.id,
+            'value': value
+        }
+
+
+class PlayerRateSerializer(serializers.Serializer):
+    """
+    Serializer for bulk player rating actions.
+
+    Accepts a list of player rating actions, validates each using
+    PlayerRateItemSerializer, and creates PlayerRatingVote objects in bulk.
+    Returns a list of dicts with rater id, rated player id, and rating value.
+    """
+
+    players = PlayerRateItemSerializer(many=True)
+
+    def create(self, validated_data):
+        """
+        Bulk creates PlayerRatingVote objects for all valid ratings.
+
+        Returns a list of dicts with rater id, rated player id, and value.
+        """
+        votes = []
+        results = []
+        for item in validated_data['players']:
+            rater_player = Player.objects.get(id=item['rater'])
+            rated_player = Player.objects.get(id=item['rated_player'])
+            vote = PlayerRatingVote(
+                rater=rater_player,
+                rated=rated_player,
+                value=item['value']
+            )
+            votes.append(vote)
+            results.append({
+                'rater': item['rater'],
+                'rated_player': item['rated_player'],
+                'value': item['value']
+            })
+        PlayerRatingVote.objects.bulk_create(votes)
+        return results

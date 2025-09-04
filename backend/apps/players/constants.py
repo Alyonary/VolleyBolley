@@ -15,6 +15,8 @@ class PlayerIntEnums(IntEnum):
     LEVEL_MAX_LENGTH = 6
     PAYMENT_MAX_LENGTH = 10
     PLAYER_DATA_MAX_LENGTH = 150
+    MIN_RATING_VALUE = 0
+    MAX_RATING_VALUE = 6
 
 class Genders(models.TextChoices):
     """Gender enums for player."""
