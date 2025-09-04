@@ -136,10 +136,10 @@ class GameSerializer(BaseGameSerializer):
         host = self.context['request'].user.player
         if host in value:
             raise serializers.ValidationError(
-                'Нельзя отправить приглашение на игру себе.')
+                'You can not invite yourself.')
         if len(value) != len(set(value)):
             raise serializers.ValidationError(
-                'Игроки не должны повторяться')
+                'The players should not repeat themselves.')
         return value
 
 

@@ -158,12 +158,11 @@ class GameViewSet(ModelViewSet):
 
         game = self.get_object()
         player = request.user.player
-        invitation = GameInvitation.objects.filter(
-            Q(game=game) & Q(invited=player)).first()
-        if invitation is not None and game.max_players > game.players.count():
+        if game.max_players > game.players.count():
             is_joined = {'is_joined': True}
             game.players.add(player)
-            invitation.delete()
+            GameInvitation.objects.filter(
+                Q(game=game) & Q(invited=player)).delete()
         else:
             is_joined = {'is_joined': False}
         serializer = self.get_serializer(
