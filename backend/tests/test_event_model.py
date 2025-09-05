@@ -1,6 +1,5 @@
 import pytest
 from django.core.exceptions import ValidationError
-from django.db.utils import IntegrityError
 from django.urls import reverse
 from pytest_lazy_fixtures import lf
 from rest_framework import status
@@ -43,8 +42,8 @@ class TestGameModel:
         game_data.pop('players', )
         game_data.pop('player_levels')
         game_data['court_id'] = wrong_data
-        with pytest.raises((ValidationError, ValueError, IntegrityError)):
-            game = Game.objects.create(**game_data)
+        with pytest.raises(ValidationError):
+            game = Game(**game_data)
             game.full_clean()
 
 
@@ -154,46 +153,28 @@ class TestGameSerializers:
             court_thailand,
             api_client_thailand,
             player_thailand,
-            game_levels_light,
-            game_levels_medium,
             currency_type_thailand,
-            payment_account_revolut
+            payment_account_revolut,
+            game_create_data
     ):
 
-        game_data = {
-            'court_id': court_thailand.id,
-            'message': 'Hi! Just old',
-            'start_time': '2026-07-01T14:30:00Z',
-            'end_time': '2026-07-01T16:30:00Z',
-            'gender': 'MEN',
-            'levels': [game_levels_light.name,
-                       game_levels_medium.name],
-            'is_private': False,
-            'maximum_players': 5,
-            'price_per_person': '5',
-            'payment_type': payment_account_revolut.payment_type,
-            'players': []
-        }
         response = api_client_thailand.post(
-            reverse('api:games-list'), data=game_data, format='json')
+            reverse('api:games-list'), data=game_create_data, format='json')
         assert Game.objects.filter(pk=response.json()['game_id']).exists()
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
             'game_id': response.json()['game_id'],
             'court_id': court_thailand.id,
-            'message': 'Hi! Just old',
-            'start_time': '2026-07-01T14:30:00Z',
-            'end_time': '2026-07-01T16:30:00Z',
-            'gender': 'MEN',
-            'levels': [
-                'LIGHT',
-                'MEDIUM'
-            ],
-            'is_private': False,
-            'maximum_players': 5,
-            'price_per_person': '5.00',
+            'message': game_create_data['message'],
+            'start_time': game_create_data['start_time'],
+            'end_time': game_create_data['end_time'],
+            'gender': game_create_data['gender'],
+            'levels': game_create_data['levels'],
+            'is_private': game_create_data['is_private'],
+            'maximum_players': game_create_data['maximum_players'],
+            'price_per_person': game_create_data['price_per_person'],
             'currency_type': currency_type_thailand.currency_type,
-            'payment_type': payment_account_revolut.payment_type,
+            'payment_type': game_create_data['payment_type'],
             'payment_account': payment_account_revolut.payment_account,
             'players': [
                 player_thailand.id
@@ -248,3 +229,47 @@ class TestGameSerializers:
             'payment_account': game_thailand_with_players.payment_account,
             'maximum_players': game_thailand_with_players.max_players,
         }
+
+    @pytest.mark.parametrize(('field, value'), [
+        ('start_time', '2024-07-01T14:30:00Z'),
+        ('end_time', '2024-07-01T14:30:00Z'),
+        ('gender', 'Wrong gender'),
+        ('levels', ['Wrong levels'])
+    ])
+    def test_create_game_with_wrong_data(
+            self,
+            game_create_data,
+            api_client_thailand,
+            field,
+            value
+    ):
+        wrong_data = game_create_data
+        wrong_data[field] = value
+        response = api_client_thailand.post(
+            reverse('api:games-list'), data=game_create_data, format='json')
+        print(response.data)
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_game_short_serializer(self):
+        pass
+
+    def test_preview_filtering(self):
+        # with no upcoming games
+        # with upcoming game
+        pass
+
+    def test_my_games_filtering(self):
+        # only created by player
+        pass
+
+    def test_archive_filtering(self):
+        # only completed games with player or host
+        pass
+
+    def test_invites_filtering(self):
+        # only games where player invited
+        pass
+
+    def test_upcoming_filtering(self):
+        # only games where player participate
+        pass

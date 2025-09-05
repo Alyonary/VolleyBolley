@@ -147,3 +147,26 @@ def game_cyprus(player_cyprus, game_data, court_cyprus):
     game_data['host'] = player_cyprus
     game = Game.objects.create(**game_data)
     return game
+
+
+@pytest.fixture
+def game_create_data(
+    court_thailand,
+    game_levels_light,
+    game_levels_medium,
+    payment_account_revolut
+):
+    return {
+            'court_id': court_thailand.id,
+            'message': 'Hi! Just old',
+            'start_time': '2026-07-01T14:30:00Z',
+            'end_time': '2026-07-01T16:30:00Z',
+            'gender': 'MEN',
+            'levels': [game_levels_light.name,
+                       game_levels_medium.name],
+            'is_private': False,
+            'maximum_players': 5,
+            'price_per_person': '5.00',
+            'payment_type': payment_account_revolut.payment_type,
+            'players': []
+        }

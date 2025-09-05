@@ -2,6 +2,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
 
+from apps.core.constants import GenderChoices
 from apps.core.models import CurrencyType, GameLevel
 from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
@@ -27,8 +28,7 @@ class BaseGameSerializer(serializers.ModelSerializer):
         many=True
     )
 
-    gender = serializers.CharField(
-    )
+    gender = serializers.ChoiceField(choices=GenderChoices.choices)
 
     currency_type = serializers.CharField(
         required=False
@@ -88,6 +88,14 @@ class BaseGameSerializer(serializers.ModelSerializer):
         currency_type = CurrencyType.objects.filter(
                             country=country).first()
         value['currency_type'] = currency_type
+        start_time = value.get('start_time')
+        end_time = value.get('end_time')
+        if start_time < timezone.now():
+            raise serializers.ValidationError(
+                'Game start time can be in future.')
+        elif end_time < start_time:
+            raise serializers.ValidationError(
+                'The end time of the game must be later than the start time.')
         return value
 
 
