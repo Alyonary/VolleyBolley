@@ -1,5 +1,7 @@
 import pytest
+from datetime import timedelta
 from django.core.exceptions import ValidationError
+from django.utils.timezone import now
 from django.urls import reverse
 from pytest_lazy_fixtures import lf
 from rest_framework import status
@@ -252,7 +254,29 @@ class TestGameSerializers:
     def test_game_short_serializer(self):
         pass
 
-    def test_preview_filtering(self):
+
+@pytest.mark.django_db()
+class TestGameFiltering:
+
+    def test_preview_filtering(
+            self,
+            api_client_thailand,
+            game_data,
+            game_thailand,
+            player_thailand
+    ):
+        nearest_time = now() + timedelta(minutes=5)
+        nearest_time = nearest_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        game_data['start_time'] = nearest_time
+        Game.objects.create(
+            **game_data
+            )
+        assert Game.objects.count() == 2
+        response = api_client_thailand.get(reverse('api:games-preview'))
+        assert response.json() == {
+            'upcoming_game_time': nearest_time,
+            'invites': 0
+        }
         # with no upcoming games
         # with upcoming game
         pass

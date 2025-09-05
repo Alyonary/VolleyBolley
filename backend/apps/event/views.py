@@ -78,8 +78,7 @@ class GameViewSet(ModelViewSet):
 
         upcoming_game = Game.objects.nearest_game(request.user.player)
         if upcoming_game is not None:
-            upcoming_game_time = upcoming_game.start_time.strftime(
-                format='iso-8601')
+            upcoming_game_time = upcoming_game.start_time
         else:
             upcoming_game_time = None
         invites = GameInvitation.objects.filter(

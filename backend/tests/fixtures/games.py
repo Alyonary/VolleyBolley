@@ -42,8 +42,8 @@ def game_data(
     return {
         'court_id': court_thailand.id,
         'message': 'Test game in Thailand',
-        'start_time': '2025-08-21T15:30:00Z',
-        'end_time': '2025-08-21T18:30:00Z',
+        'start_time': '2025-09-21T15:30:00Z',
+        'end_time': '2025-09-21T18:30:00Z',
         'gender': 'MEN',
         'player_levels': [
             game_levels_light,
