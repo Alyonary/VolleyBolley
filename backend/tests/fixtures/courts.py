@@ -3,69 +3,40 @@ from django.urls import reverse
 
 from apps.core.models import Contact, Tag
 from apps.courts.models import Court, CourtLocation
-from apps.locations.models import City, Country
 
 
 @pytest.fixture
-def country_for_court_location():
-    country, _ = Country.objects.get_or_create(name='Thailand')
-    return country
-
-
-@pytest.fixture
-def country_for_another_court_location():
-    country, _ = Country.objects.get_or_create(name='Cyprus')
-    return country
-
-
-@pytest.fixture
-def city_for_court_location(country_for_court_location):
-
-    city, _ = City.objects.get_or_create(
-        name='Pattaya',
-        country=country_for_court_location
-    )
-    return city
-
-
-@pytest.fixture
-def city_for_another_court_location(country_for_another_court_location):
-
-    city, _ = City.objects.get_or_create(
-        name='Limassol',
-        country=country_for_another_court_location
-    )
-    return city
-
-
-@pytest.fixture
-def location_for_court_data(
-    country_for_court_location,
-    city_for_court_location
-):
+def location_for_court_data():
     return {
         'longitude': 12.345,
         'latitude': -54.321,
         'court_name': 'Test court in Thailand',
-        'country': country_for_court_location,
-        'city': city_for_court_location
     }
 
 
 @pytest.fixture
-def location_for_court(location_for_court_data):
+def location_for_court_thailand(
+        location_for_court_data,
+        country_thailand,
+        city_in_thailand
+):
+    location_for_court_data.update({
+                'court_name': 'Test court in Thailand',
+                'country': country_thailand,
+                'city': city_in_thailand
+    })
     return CourtLocation.objects.create(**location_for_court_data)
 
 
 @pytest.fixture
-def location_for_another_court(
+def location_for_court_cyprus(
     location_for_court_data,
-    city_for_another_court_location,
-    country_for_another_court_location
+    country_cyprus,
+    city_in_cyprus
 ):
     another_country = {
-        'country': country_for_another_court_location,
-        'city': city_for_another_court_location,
+        'country': country_cyprus,
+        'city': city_in_cyprus,
         'court_name': 'Test court in Cyprus'
     }
     location_for_court_data.update(another_country)
@@ -73,9 +44,8 @@ def location_for_another_court(
 
 
 @pytest.fixture
-def court_data(location_for_court):
+def court_data():
     return {
-        'location': location_for_court,
         'price_description': '1$/hour',
         'description': 'Test court description',
         'working_hours': 'Test court working hours'
@@ -83,17 +53,14 @@ def court_data(location_for_court):
 
 
 @pytest.fixture
-def another_court_obj(location_for_another_court):
-    return Court.objects.create(
-        location=location_for_another_court,
-        price_description='1$/hour',
-        description='Test court description',
-        working_hours='Test court working hours'
-    )
+def court_cyprus(court_data, location_for_court_cyprus):
+    court_data.update({'location': location_for_court_cyprus})
+    return Court.objects.create(**court_data)
 
 
 @pytest.fixture
-def court_obj(court_data):
+def court_thailand(court_data, location_for_court_thailand):
+    court_data.update({'location': location_for_court_thailand})
     return Court.objects.create(**court_data)
 
 
@@ -110,11 +77,11 @@ def tag_obj(tag_data):
 
 
 @pytest.fixture
-def contact_data(court_obj):
+def contact_data(court_thailand):
     return {
         'contact_type': 'TEST Phone',
         'contact': '+79999999999',
-        'court': court_obj
+        'court': court_thailand
     }
 
 
@@ -129,9 +96,9 @@ def court_list_url():
 
 
 @pytest.fixture
-def court_obj_with_tag(court_obj, tag_obj):
-    court_obj.tag_list.add(tag_obj)
-    return court_obj
+def court_obj_with_tag(court_thailand, tag_obj):
+    court_thailand.tag_list.add(tag_obj)
+    return court_thailand
 
 
 @pytest.fixture

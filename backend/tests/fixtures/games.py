@@ -10,36 +10,58 @@ User = get_user_model()
 
 
 @pytest.fixture
+def country_thailand():
+    return Country.objects.create(name='Thailand')
+
+
+@pytest.fixture
+def city_in_thailand(country_thailand):
+    return City.objects.create(name='Pattaya', country=country_thailand)
+
+
+@pytest.fixture
+def country_cyprus():
+    return Country.objects.create(name='Cyprus')
+
+
+@pytest.fixture
+def city_in_cyprus(country_cyprus):
+    return City.objects.create(name='Limassol', country=country_cyprus)
+
+
+@pytest.fixture
 def game_data(
     bulk_create_registered_players,
-    currency_type,
-    court_obj_with_tag,
+    currency_type_thailand,
+    court_thailand,
     payment_account_revolut,
-    game_levels,
-    user_player
+    game_levels_light,
+    game_levels_medium,
+    player_thailand
 ):
     return {
-        'court_id': court_obj_with_tag.id,
+        'court_id': court_thailand.id,
         'message': 'Test game in Thailand',
         'start_time': '2025-08-21T15:30:00Z',
         'end_time': '2025-08-21T18:30:00Z',
         'gender': 'MEN',
         'player_levels': [
-            game_levels
+            game_levels_light,
+            game_levels_medium
         ],
         'is_private': False,
         'max_players': 5,
-        'price_per_person': '5',
+        'price_per_person': '5.00',
         'payment_type': payment_account_revolut.payment_type,
         'players': bulk_create_registered_players,
-        'host': user_player,
-        'currency_type': currency_type,
+        'host': player_thailand,
+        'currency_type': currency_type_thailand,
         'payment_account': payment_account_revolut.payment_account
     }
 
 
 @pytest.fixture
-def game_without_players(game_data):
+def game_thailand(game_data):
     game_data.pop('players')
     levels = game_data.pop('player_levels')
     game = Game.objects.create(**game_data)
@@ -48,7 +70,7 @@ def game_without_players(game_data):
 
 
 @pytest.fixture
-def game_with_players(game_data):
+def game_thailand_with_players(game_data):
     players = game_data.pop('players')
     levels = game_data.pop('player_levels')
     game = Game.objects.create(**game_data)
@@ -58,8 +80,8 @@ def game_with_players(game_data):
 
 
 @pytest.fixture
-def game_for_args(game_with_players):
-    return (game_with_players.id,)
+def game_for_args(game_thailand):
+    return (game_thailand.id,)
 
 
 @pytest.fixture
@@ -69,7 +91,7 @@ def client():
 
 
 @pytest.fixture
-def authored_api_client(active_user, client):
+def api_client_thailand(active_user, client):
     client.force_authenticate(active_user)
     return client
 
@@ -82,50 +104,46 @@ def another_user(user_data):
 
 
 @pytest.fixture
-def user_player(active_user):
-    country, _ = Country.objects.get_or_create(name='Thailand')
-    city, _ = City.objects.get_or_create(country=country, name='Pattaya')
+def player_thailand(active_user, country_thailand, city_in_thailand):
     return Player.objects.create(
         user=active_user,
         gender='MALE',
         level='LIGHT',
-        country=country,
-        city=city
+        country=country_thailand,
+        city=city_in_thailand
     )
 
 
 @pytest.fixture
-def payment_account_revolut(user_player):
+def payment_account_revolut(player_thailand):
     return Payment.objects.create(
-        player=user_player,
+        player=player_thailand,
         payment_type='REVOLUT',
         payment_account='test acc'
     )
 
 
 @pytest.fixture
-def another_user_player(another_user):
-    country, _ = Country.objects.get_or_create(name='Cyprus')
-    city, _ = City.objects.get_or_create(country=country, name='Limassol')
+def player_cyprus(another_user, country_cyprus, city_in_cyprus):
     return Player.objects.create(
         user=another_user,
         gender='MALE',
         level='LIGHT',
-        country=country,
-        city=city
+        country=country_cyprus,
+        city=city_in_cyprus
     )
 
 
 @pytest.fixture
-def another_user_client(another_user, client):
+def api_client_cyprus(another_user, client):
     client.force_authenticate(another_user)
     return client
 
 
 @pytest.fixture
-def another_game_cyprus(another_user_player, game_data, another_court_obj):
-    game_data['court_id'] = another_court_obj.id
+def game_cyprus(player_cyprus, game_data, court_cyprus):
+    game_data['court_id'] = court_cyprus.id
     game_data['message'] = 'Test game in Cyprus'
-    game_data['host'] = another_user_player
+    game_data['host'] = player_cyprus
     game = Game.objects.create(**game_data)
     return game

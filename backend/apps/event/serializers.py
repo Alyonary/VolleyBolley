@@ -76,7 +76,7 @@ class BaseGameSerializer(serializers.ModelSerializer):
             payment = Payment.objects.filter(
                 player=player,
                 payment_type=value.get('payment_type')
-            ).first()
+            ).last()
             if not payment:
                 raise serializers.ValidationError(
                     'No payment account found for this payment type')

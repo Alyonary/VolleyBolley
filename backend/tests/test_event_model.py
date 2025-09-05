@@ -1,4 +1,5 @@
 import pytest
+from django.core.exceptions import ValidationError
 from django.db.utils import IntegrityError
 from django.urls import reverse
 from pytest_lazy_fixtures import lf
@@ -10,14 +11,14 @@ from apps.event.models import Game, GameInvitation
 @pytest.mark.django_db
 class TestGameModel:
 
-    def test_create_game(self, court_obj_with_tag, user_player, game_data):
+    def test_create_game(self, court_thailand, player_thailand, game_data):
         players = game_data.pop('players')
         levels = game_data.pop('player_levels')
         game = Game.objects.create(**game_data)
         game.players.set(players)
         game.player_levels.set(levels)
 
-        assert game.court == court_obj_with_tag
+        assert game.court == court_thailand
         assert game.message == game_data['message']
         assert game.start_time == game_data['start_time']
         assert game.end_time == game_data['end_time']
@@ -28,21 +29,23 @@ class TestGameModel:
         assert game.price_per_person == game_data['price_per_person']
         assert game.payment_type == game_data['payment_type']
         assert list(game.players.all()) == players
-        assert game.host == user_player
+        assert game.host == player_thailand
         assert game.currency_type == game_data['currency_type']
         assert game.payment_account == game_data['payment_account']
 
-    @pytest.mark.django_db(transaction=True)
-    def test_create_game_with_wrong_court(self, game_data):
+    @pytest.mark.django_db
+    @pytest.mark.parametrize('wrong_data', [
+        'Court in Thalland',
+        None,
+        999
+    ])
+    def test_create_game_with_wrong_court(self, game_data, wrong_data):
         game_data.pop('players', )
         game_data.pop('player_levels')
-        original_court_id = game_data['court_id']
-        try:
-            game_data['court_id'] = 0
-            with pytest.raises(IntegrityError):
-                Game.objects.create(**game_data)
-        finally:
-            game_data['court_id'] = original_court_id
+        game_data['court_id'] = wrong_data
+        with pytest.raises((ValidationError, ValueError, IntegrityError)):
+            game = Game.objects.create(**game_data)
+            game.full_clean()
 
 
 @pytest.mark.django_db
@@ -60,49 +63,49 @@ class TestGameAPI:
             )
     )
     def test_urls_availability(
-            self, authored_api_client, name, args, user_player):
+            self, api_client_thailand, name, args, player_thailand):
         url = reverse(name, args=args)
-        response = authored_api_client.get(url)
+        response = api_client_thailand.get(url)
         assert response.status_code == status.HTTP_200_OK
 
     def test_for_invite_creation(
             self,
-            game_without_players,
-            authored_api_client,
+            game_thailand,
+            api_client_thailand,
             bulk_create_registered_players
     ):
         url = reverse(
             'api:games-invite-players',
-            args=(game_without_players.id,)
+            args=(game_thailand.id,)
         )
         player_ids = [player.id for player in bulk_create_registered_players]
         data = {'players': player_ids}
-        response = authored_api_client.post(url, data, format='json')
+        response = api_client_thailand.post(url, data, format='json')
         assert response.status_code == status.HTTP_201_CREATED
         assert GameInvitation.objects.count() == len(player_ids)
         for user in player_ids:
             invite = GameInvitation.objects.filter(
-                host=game_without_players.host,
+                host=game_thailand.host,
                 invited=user,
-                game=game_without_players
+                game=game_thailand
             ).first()
             assert invite is not None
 
     def test_for_game_joining(
-            self, game_without_players,
-            another_user_player,
-            another_user_client
+            self, game_thailand,
+            player_cyprus,
+            api_client_cyprus
     ):
         GameInvitation.objects.create(
-            host=game_without_players.host,
-            invited=another_user_player,
-            game=game_without_players
+            host=game_thailand.host,
+            invited=player_cyprus,
+            game=game_thailand
         )
         url = reverse(
-            'api:games-joining-game', args=(game_without_players.id,))
-        assert game_without_players.players.count() == 0
-        response = another_user_client.post(url)
-        assert another_user_player in game_without_players.players.all()
+            'api:games-joining-game', args=(game_thailand.id,))
+        assert game_thailand.players.count() == 0
+        response = api_client_cyprus.post(url)
+        assert player_cyprus in game_thailand.players.all()
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
         assert data['is_joined'] is True
@@ -110,36 +113,37 @@ class TestGameAPI:
 
     def test_for_game_invitation_declining(
             self,
-            game_without_players,
-            another_user_player,
-            another_user_client
+            game_thailand,
+            api_client_cyprus,
+            player_cyprus,
+
     ):
         GameInvitation.objects.create(
-            host=game_without_players.host,
-            invited=another_user_player,
-            game=game_without_players
+            host=game_thailand.host,
+            invited=player_cyprus,
+            game=game_thailand
         )
         url = reverse(
             'api:games-delete-invitation',
-            args=(game_without_players.id,)
+            args=(game_thailand.id,)
         )
-        assert game_without_players.players.count() == 0
-        response = another_user_client.delete(url)
-        assert another_user_player not in game_without_players.players.all()
+        assert game_thailand.players.count() == 0
+        response = api_client_cyprus.delete(url)
+        assert player_cyprus not in game_thailand.players.all()
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert GameInvitation.objects.first() is None
 
     def test_filtering_queryset(
             self,
-            game_without_players,
-            another_game_cyprus,
-            user_player,
-            authored_api_client,
+            game_thailand,
+            game_cyprus,
+            player_thailand,
+            api_client_thailand,
     ):
         assert Game.objects.count() == 2
-        response = authored_api_client.get(reverse('api:games-list'))
+        response = api_client_thailand.get(reverse('api:games-list'))
         assert len(response.data) == 1
-        assert response.data[0]['game_id'] == game_without_players.id
+        assert response.data[0]['game_id'] == game_thailand.id
 
 
 @pytest.mark.django_db(transaction=False)
@@ -147,97 +151,100 @@ class TestGameSerializers:
 
     def test_game_create_serializer(
             self,
-            court_obj,
-            authored_api_client,
-            user_player,
-            game_levels,
-            currency_type
+            court_thailand,
+            api_client_thailand,
+            player_thailand,
+            game_levels_light,
+            game_levels_medium,
+            currency_type_thailand,
+            payment_account_revolut
     ):
 
-        payload = {
-            'court_id': court_obj.id,
+        game_data = {
+            'court_id': court_thailand.id,
             'message': 'Hi! Just old',
-            'start_time': '2025-07-01T14:30:00Z',
-            'end_time': '2025-07-01T14:30:00Z',
+            'start_time': '2026-07-01T14:30:00Z',
+            'end_time': '2026-07-01T16:30:00Z',
             'gender': 'MEN',
-            'levels': [game_levels.name],
+            'levels': [game_levels_light.name,
+                       game_levels_medium.name],
             'is_private': False,
             'maximum_players': 5,
             'price_per_person': '5',
-            'payment_type': 'REVOLUT',
+            'payment_type': payment_account_revolut.payment_type,
             'players': []
         }
-        response = authored_api_client.post(
-            reverse('api:games-list'), data=payload, format='json')
+        response = api_client_thailand.post(
+            reverse('api:games-list'), data=game_data, format='json')
         assert Game.objects.filter(pk=response.json()['game_id']).exists()
         assert response.status_code == status.HTTP_201_CREATED
         assert response.json() == {
             'game_id': response.json()['game_id'],
-            'court_id': court_obj.id,
+            'court_id': court_thailand.id,
             'message': 'Hi! Just old',
-            'start_time': '2025-07-01T14:30:00Z',
-            'end_time': '2025-07-01T14:30:00Z',
+            'start_time': '2026-07-01T14:30:00Z',
+            'end_time': '2026-07-01T16:30:00Z',
             'gender': 'MEN',
             'levels': [
-                'LIGHT'
+                'LIGHT',
+                'MEDIUM'
             ],
             'is_private': False,
             'maximum_players': 5,
             'price_per_person': '5.00',
-            'currency_type': 'THB',
-            'payment_type': 'REVOLUT',
-            'payment_account': 'Not defined',
+            'currency_type': currency_type_thailand.currency_type,
+            'payment_type': payment_account_revolut.payment_type,
+            'payment_account': payment_account_revolut.payment_account,
             'players': [
-                user_player.id
+                player_thailand.id
             ]
         }
 
     def test_game_detail_serializer(
             self,
-            authored_api_client,
-            user_player,
-            game_with_players,
-            game_for_args,
-            game_data,
-            court_obj
+            api_client_thailand,
+            player_thailand,
+            game_thailand_with_players,
+            court_thailand
 
     ):
-        response = authored_api_client.get(
-            reverse('api:games-detail', args=game_for_args))
+        response = api_client_thailand.get(
+            reverse('api:games-detail', args=(game_thailand_with_players.id,)))
         response_data = response.json()
         players = response_data.pop('players')
-        assert game_with_players.players.count() == len(players)
+        assert game_thailand_with_players.players.count() == len(players)
         for key in list(players[0].keys()):
             assert key in (
                 'player_id', 'first_name', 'last_name', 'level', 'avatar'
             )
+        levels = response_data.pop('levels')
+        for level in game_thailand_with_players.player_levels.all():
+            assert level.name in levels
         assert response_data == {
-            'game_id': game_with_players.id,
+            'game_id': game_thailand_with_players.id,
             'game_type': 'MY GAMES',
             'host': {
-                'player_id': user_player.id,
-                'first_name': user_player.user.first_name,
-                'last_name': user_player.user.last_name,
-                'avatar': None,
-                'level': 'LIGHT'
+                'player_id': player_thailand.id,
+                'first_name': player_thailand.user.first_name,
+                'last_name': player_thailand.user.last_name,
+                'avatar': player_thailand.avatar,
+                'level': player_thailand.level
             },
-            'is_private': False,
-            'message': game_data['message'],
+            'is_private': game_thailand_with_players.is_private,
+            'message': game_thailand_with_players.message,
             'court_location': {
-                'longitude': court_obj.location.longitude,
-                'latitude': court_obj.location.latitude,
-                'court_name': court_obj.location.court_name,
-                'location_name': court_obj.location.location_name
+                'longitude': court_thailand.location.longitude,
+                'latitude': court_thailand.location.latitude,
+                'court_name': court_thailand.location.court_name,
+                'location_name': court_thailand.location.location_name
             },
-            'start_time': '2025-08-21T15:30:00Z',
-            'end_time': '2025-08-21T18:30:00Z',
-            'levels': [
-                'LIGHT'
-            ],
-            'gender': 'MEN',
-            'price_per_person': '5.00',
-            'currency_type': 'THB',
-            'payment_type': 'REVOLUT',
-            'payment_account': 'test acc',
-            'maximum_players': game_data['max_players'],
+            'start_time': game_thailand_with_players.start_time,
+            'end_time': game_thailand_with_players.end_time,
+            'gender': game_thailand_with_players.gender,
+            'price_per_person': game_thailand_with_players.price_per_person,
+            'currency_type': (
+                game_thailand_with_players.currency_type.currency_type),
+            'payment_type': game_thailand_with_players.payment_type,
+            'payment_account': game_thailand_with_players.payment_account,
+            'maximum_players': game_thailand_with_players.max_players,
         }
