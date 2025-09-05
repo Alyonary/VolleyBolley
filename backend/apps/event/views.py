@@ -32,7 +32,7 @@ class GameViewSet(ModelViewSet):
     def get_serializer_class(self, *args, **kwargs):
         if self.action in (
                             'retrieve',
-                            'join_game'):
+                            'joining_game'):
             return GameDetailSerializer
 
         elif self.action == 'invite_players':

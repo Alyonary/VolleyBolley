@@ -247,7 +247,6 @@ class TestGameSerializers:
         wrong_data[field] = value
         response = api_client_thailand.post(
             reverse('api:games-list'), data=game_create_data, format='json')
-        print(response.data)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_game_short_serializer(self):
