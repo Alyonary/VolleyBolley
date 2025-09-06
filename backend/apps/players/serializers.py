@@ -1,20 +1,14 @@
 import base64
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from django.core.files.base import ContentFile
 from django.db import transaction
-from django.utils import timezone
 from rest_framework import serializers
 
 from apps.event.models import Game, Tourney
 from apps.players.constants import PlayerIntEnums
 from apps.players.models import Favorite, Payment, Player, PlayerRatingVote
-from apps.players.rating import (
-    LEVEL_DOWN,
-    LEVEL_UP,
-    PlayerLevelChange,
-    get_rating_coefficient,
-)
+from apps.players.rating import PlayerLevelGrade
 
 
 class Base64ImageField(serializers.ImageField):
@@ -301,26 +295,28 @@ class PlayerRateItemSerializer(serializers.Serializer):
     """
 
     player_id = serializers.IntegerField()
-    level_changed = serializers.ChoiceField(choices=[LEVEL_UP, LEVEL_DOWN])
+    level_changed = serializers.ChoiceField(
+        choices=[
+            PlayerLevelGrade.UP,
+            PlayerLevelGrade.DOWN,
+            PlayerLevelGrade.CONFIRM]
+    )
 
-    def validate(self, attrs):
+    def validate(self, data):
         """
         Validates rating limits and calculates rating value for one player.
-
-        Raises ValidationError if the rater has already rated the player
-        2 times in the last 2 months or if the player does not exist.
         """
         request = self.context.get('request')
         if not request or not hasattr(request.user, 'player'):
             raise serializers.ValidationError('Invalid rater player.')
-
         rater_player: Player = request.user.player
         try:
-            rated_player = Player.objects.get(id=attrs['player_id'])
+            rated_player = Player.objects.get(id=data['player_id'])
         except Player.DoesNotExist as e:
             raise serializers.ValidationError(
-                f"Player with id {attrs['player_id']} does not exist."
+                f"Player with id {data['player_id']} does not exist."
             ) from e
+        # мб убрать?
         two_months_ago = timezone.now() - timedelta(days=60)
         last_votes = PlayerRatingVote.objects.filter(
             rater=rater_player,
@@ -332,14 +328,12 @@ class PlayerRateItemSerializer(serializers.Serializer):
                 f"You have already rated player {rated_player.user.username} "
                 "2 times in the last 2 months."
             )
-        value = getattr(
-            PlayerLevelChange,
-            attrs['level_changed'],
-            0
-        ) * get_rating_coefficient(
-            rater_player.level,
-            rated_player.level
-        )
+        value = PlayerLevelGrade.get_value(
+            rater = rater_player,
+            rated = rated_player,
+            level_change = data['level_changed']
+            
+        ) 
         return {
             'rater': rater_player.id,
             'rated_player': rated_player.id,
