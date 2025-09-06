@@ -97,7 +97,7 @@ class GoogleLogin(APIView):
                 )
 
                 return redirect('api:social:begin', backend='google-oauth2')
-    
+
         except ValidationError as e:
             error_msg = f'validation error: {e}.'
             logger.error(error_msg)
@@ -106,7 +106,7 @@ class GoogleLogin(APIView):
                 {'error': error_msg},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-            
+
         except (requests.exceptions.GoogleAuthError, AuthForbidden) as e:
             error_msg = f'Failed to verify google id_token: {e}.'
             logger.error(error_msg)
