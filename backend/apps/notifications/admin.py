@@ -17,14 +17,14 @@ class DeviceAdmin(admin.ModelAdmin):
     search_fields = ['player__user__username', 'platform']
     list_filter = ['platform', 'is_active', 'created_at', 'updated_at']
     ordering = ['-created_at']
-    # readonly_fields = [
-    #     'created_at',
-    #     'updated_at',
-    #     'masked_token',
-    #     'player',
-    #     'platform',
-    #     'token'
-    # ]
+    readonly_fields = [
+        'created_at',
+        'updated_at',
+        'masked_token',
+        'player',
+        'platform',
+        'token'
+    ]
     empty_value_display = '-empty-'
     list_display_links = ['id']
     
@@ -36,9 +36,9 @@ class DeviceAdmin(admin.ModelAdmin):
     
     masked_token.short_description = 'Token'
     
-    # def has_add_permission(self, request):
-    #     """Disable adding new devices through admin."""
-    #     return False
+    def has_add_permission(self, request):
+        """Disable adding new devices through admin."""
+        return False
     
     def has_change_permission(self, request, obj=None):
         """Disable editing devices through admin."""
@@ -51,6 +51,8 @@ class DeviceAdmin(admin.ModelAdmin):
     fields = [
         'player',
         'platform',
+        'masked_token',
         'is_active',
-        'token'
+        'created_at',
+        'updated_at'
     ]
