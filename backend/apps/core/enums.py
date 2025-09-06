@@ -1,8 +1,5 @@
 from enum import Enum
 
-from django.db import models
-from django.utils.translation import gettext_lazy as _
-
 
 class CoreFieldLength(int, Enum):
     """Константы для приложения Core."""
@@ -14,12 +11,3 @@ class CoreFieldLength(int, Enum):
     CONTACT_NAME = 255
     ADMIN_LIST_PER_PAGE = 25
     ADMIN_INFO_SHORT_CONTENT = 50
-
-
-class Levels(models.TextChoices):
-    """Level enums for players and games."""
-
-    LIGHT = 'LIGHT', _('Beginner')
-    MEDIUM = 'MEDIUM', _('Confident amateur')
-    HARD = 'HARD', _('Advanced')
-    PRO = 'PRO', _('Professional')

@@ -171,8 +171,18 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         serializer.is_valid(raise_exception=True)
         if request.method == 'POST':
             Favorite.objects.create(player=player, favorite=favorite)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            response_serializer = FavoriteSerializer(
+                favorite,
+                context={
+                    'request': request,
+                    'player': player,
+                    'favorite': favorite
+                }
+            )
+            return Response(
+                response_serializer.data,
+                status=status.HTTP_201_CREATED
+            )
 
         instance = get_object_or_404(
             Favorite, player=player, favorite=favorite

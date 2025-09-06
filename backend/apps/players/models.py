@@ -6,10 +6,11 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.enums import Levels
 from apps.locations.models import City, Country
 from apps.players.constants import (
     Genders,
+    Grades,
+    LevelMarkChoices,
     Payments,
     PlayerIntEnums,
     PlayerStrEnums,
@@ -41,22 +42,12 @@ class Player(models.Model):
         blank=False,
         default=PlayerStrEnums.DEFAULT_GENDER.value
     )
-    level = models.CharField(
-        verbose_name=_('Level of player'),
-        max_length=PlayerIntEnums.LEVEL_MAX_LENGTH.value,
-        choices=Levels.choices,
-        default=PlayerStrEnums.DEFAULT_LEVEL.value,
-    )
     avatar = models.ImageField(
         verbose_name=_('Avatar'),
         upload_to='players/avatars/',
         null=True,
         blank=True,
         default=None,
-    )
-    rating = models.PositiveIntegerField(
-        default=PlayerIntEnums.DEFAULT_RATING.value,
-        verbose_name=_('Rating of player'),
     )
     date_of_birth = models.DateField(
         default=PlayerStrEnums.DEFAULT_BIRTHDAY.value,
@@ -172,26 +163,27 @@ class Favorite(models.Model):
 
 
 class PlayerRating(models.Model):
-    """Player rating history model."""
+    """Player rating model."""
 
-    player = models.ForeignKey(
+    player = models.OneToOneField(
         Player,
         related_name='rating',
         verbose_name=_('Player'),
         on_delete=models.CASCADE,
-        null=False,
-        blank=False
     )
-    rating = models.PositiveIntegerField(
-        verbose_name=_('Player rating'),
-        null=False,
-        blank=False
+    grade = models.CharField(
+        verbose_name=_('Grade of the player'),
+        choices=Grades.choices,
+        default=PlayerStrEnums.DEFAULT_GRADE.value,
+    )
+    level_mark = models.PositiveSmallIntegerField(
+        verbose_name=_('Level mark of the player'),
+        choices=LevelMarkChoices.choices,
+        default=LevelMarkChoices.ONE,
     )
     value = models.SmallIntegerField(
         verbose_name=_('Change in rating'),
-        default=6,
-        min_value=PlayerIntEnums.MIN_RATING_VALUE,
-        max_value=PlayerIntEnums.MAX_RATING_VALUE,
+        default=PlayerIntEnums.DEFAULT_RATING,
     )
     updated_at = models.DateTimeField(
         verbose_name=_('Date of rating update'),

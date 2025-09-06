@@ -1,19 +1,20 @@
 import base64
-from datetime import timedelta
+from datetime import datetime, timedelta
 
-from backend.apps.players.rating import (
+from django.core.files.base import ContentFile
+from django.db import transaction
+from django.utils import timezone
+from rest_framework import serializers
+
+from apps.event.models import Game, Tourney
+from apps.players.constants import PlayerIntEnums
+from apps.players.models import Favorite, Payment, Player, PlayerRatingVote
+from apps.players.rating import (
     LEVEL_DOWN,
     LEVEL_UP,
     PlayerLevelChange,
     get_rating_coefficient,
 )
-from django.core.files.base import ContentFile
-from django.db import transaction
-from pytz import timezone
-from rest_framework import serializers
-
-from apps.players.constants import PlayerIntEnums
-from apps.players.models import Favorite, Payment, Player, PlayerRatingVote
 
 
 class Base64ImageField(serializers.ImageField):
@@ -105,15 +106,18 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         required=False
     )
     avatar = Base64ImageField(read_only=True)
-    
+    level = serializers.PrimaryKeyRelatedField(
+        source='rating.grade', read_only=True
+    )
+
     class Meta:
         model = Player
         fields = (
             'first_name',
             'last_name',
             'gender',
-            'date_of_birth',
             'level',
+            'date_of_birth',
             'country',
             'city',
             'avatar'
@@ -135,6 +139,7 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         return instance
 
 
+
 class AvatarSerializer(PlayerBaseSerializer):
     """Serialize avatar data for avatar managing."""
 
@@ -150,6 +155,9 @@ class PlayerAuthSerializer(PlayerBaseSerializer):
 
     player_id = serializers.PrimaryKeyRelatedField(
         source='id', read_only=True
+    )
+    level = serializers.PrimaryKeyRelatedField(
+        source='rating.grade', read_only=True
     )
 
     class Meta:
@@ -194,6 +202,7 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
         required=True
     )
 
+
     class Meta:
         model = Player
         fields = (
@@ -201,10 +210,15 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
             'last_name',
             'gender',
             'date_of_birth',
-            'level',
             'country',
             'city',
         )
+
+    def create(self, validated_data):
+        level = validated_data.pop('level', None)
+        player = Player.objects.create(**validated_data)
+        player.level = level
+        return player
 
 
 class PlayerListSerializer(PlayerBaseSerializer):
@@ -215,6 +229,9 @@ class PlayerListSerializer(PlayerBaseSerializer):
     )
     is_favorite = serializers.SerializerMethodField(
         read_only=True
+    )
+    level = serializers.PrimaryKeyRelatedField(
+        source='rating.grade', read_only=True
     )
 
     class Meta:
@@ -365,3 +382,43 @@ class PlayerRateSerializer(serializers.Serializer):
             })
         PlayerRatingVote.objects.bulk_create(votes)
         return results
+
+    @classmethod
+    def get_players_to_rate(
+        cls,
+        rater_player: Player,
+        event: Game | Tourney
+    ) -> list[Player]:
+        """
+        Returns a list of players whom rater_player can still rate
+        (not more than 2 ratings in the last 2 months).
+        """
+        two_months_ago = datetime.now() - timedelta(days=60)
+        available_players = []
+        for player in event.players.all().exclude(id=rater_player.id):
+            votes_count = PlayerRatingVote.objects.filter(
+                rater=rater_player,
+                rated=player,
+                created_at__gte=two_months_ago
+            ).count()
+            if votes_count < 2:
+                available_players.append(player)
+        return available_players
+
+class PlayerShortSerializer(serializers.ModelSerializer):
+    """Serialize short player data for list of players in event."""
+    player_id = serializers.IntegerField(source='id')
+    first_name = serializers.CharField(source='user.first_name')
+    last_name = serializers.CharField(source='user.last_name')
+    avatar = serializers.ImageField(allow_null=True)
+    level = serializers.CharField(source='rating.grade', read_only=True)
+
+    class Meta:
+        model = Player
+        fields = (
+            'player_id',
+            'first_name',
+            'last_name',
+            'avatar',
+            'level',
+        )

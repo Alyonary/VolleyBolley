@@ -29,6 +29,7 @@ def bulk_create_registered_players(bulk_create_users):
     for user in bulk_create_users:
         player, _ = Player.objects.get_or_create(user=user)
         player.is_registered = True
+        player.rating.grade = 'PRO'
         player.save()
         players.append(player)
     return players
@@ -36,8 +37,11 @@ def bulk_create_registered_players(bulk_create_users):
 
 @pytest.fixture
 def player_male_light(player_data):
-    return Player.objects.create(**player_data)
-
+    grade = player_data.pop('level')
+    player = Player.objects.create(**player_data)
+    player.rating.grade = grade
+    player.rating.save()
+    return player
 
 @pytest.fixture
 def player_data_for_registration(countries_cities):
@@ -45,8 +49,8 @@ def player_data_for_registration(countries_cities):
         'first_name': 'TestPlayerName',
         'last_name': 'TestPlayerSurname',
         'gender': 'FEMALE',
+        'level': 'LIGHT',
         'date_of_birth': '2000-01-01',
-        'level': 'PRO',
         'country': countries_cities['Thailand'].id,
         'city': countries_cities['Thailand'].cities.filter(
             name='Bangkok'
@@ -59,10 +63,12 @@ def player_not_default_data(countries_cities, active_user):
         'user': active_user,
         'gender': 'FEMALE',
         'date_of_birth': '2000-01-01',
-        'level': 'PRO',
-        'rating': 10,
         'country': countries_cities['Thailand'],
         'city': countries_cities['Thailand'].cities.filter(
             name='Bangkok'
         ).first(),
     }
+
+@pytest.fixture
+def player_grade():
+    return 'PRO'

@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+import sys
 
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
@@ -16,6 +17,8 @@ SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+
+TESTING = 'pytest' in sys.modules
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -72,16 +75,27 @@ TEMPLATES = [
 WSGI_APPLICATION = 'volleybolley.wsgi.application'
 
 
+# if TESTING:
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'volleybolley_db'),
-        'USER': os.getenv('POSTGRES_USER', 'postgres'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
-        'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', 5432)
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'test_db.sqlite3',
     }
 }
+# else:
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': os.getenv('POSTGRES_DB', 'volleybolley_db'),
+#             'USER': os.getenv('POSTGRES_USER', 'postgres'),
+#             'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+#             'HOST': os.getenv('DB_HOST', 'localhost'),
+#             'PORT': os.getenv('DB_PORT', 5432),
+#             'OPTIONS': {
+#                 'client_encoding': 'UTF8',
+#             },
+#         }
+#     }
 
 
 AUTH_PASSWORD_VALIDATORS = [

@@ -11,17 +11,18 @@ RATING_COEFFICIENTS = {
     'HARD': {'LIGHT': 2.0, 'MEDIUM': 2.0, 'HARD': 1.0, 'PRO': 0.5},
     'PRO': {'LIGHT': 3.0, 'MEDIUM': 3.0, 'HARD': 2.0, 'PRO': 1.0},
 }
-
+GRADES = {
+    'L': 'LIGHT',
+    'M': 'MEDIUM',
+    'H': 'HARD',
+    'P': 'PRO',
+}
 LEVEL_UP: str = 'UP'
 LEVEL_DOWN: str = 'DOWN'
 
 class PlayerLevelChange:
     """
-    Enum-like class for player level change actions.
-
-    UP: 1
-    CONFIRM: 0
-    DOWN: -1
+    Enum-like class for player level change states.
     """
     UP = 1
     CONFIRM = 0
@@ -40,8 +41,9 @@ class PlayerLevelGrade:
         self.next = None
         self.prev = None
         self.code = code
-        self.level, self.grade = code.split(':')
-        self.grade = int(self.grade)
+        self.grade, self.level = code.split(':')
+        self.grade = GRADES[self.grade]
+        self.level = int(self.level)
 
     def get_level_grade(self) -> tuple[str, int]:
         """
@@ -50,6 +52,7 @@ class PlayerLevelGrade:
         :return: (level, grade)
         """
         return self.level, self.grade
+
 
 _player_level_grade_objs = [
     PlayerLevelGrade(code) for code in PLAYER_LEVEL_GRADE_CODES
@@ -79,7 +82,7 @@ def get_rating_coefficient(evaluator_level: str, rated_level: str) -> float:
     """
     Returns the rating coefficient based on evaluator and rated levels.
 
-    :param playerevaluator_level_level: Evaluator's level (e.g., 'LIGHT')
+    :param evaluator_level: Evaluator's level (e.g., 'LIGHT')
     :param rated_level: Rated player's level (e.g., 'PRO')
     :return: Coefficient as float
     """

@@ -90,66 +90,84 @@ def setup_test_data():
     john_bangkok = Player.objects.create(
         user=john_bangkok_user,
         gender='MALE',
-        level='LIGHT',
         country=thailand,
         city=bangkok
     )
+    john_bangkok.rating.grade = 'LIGHT'
+    john_bangkok.rating.save()
+
     john_pattaya = Player.objects.create(
         user=john_pattaya_user,
         gender='MALE',
-        level='PRO',
         country=thailand,
         city=pattaya
     )
+    john_pattaya.rating.grade = 'PRO'
+    john_pattaya.rating.save()
+
     jane_bangkok = Player.objects.create(
         user=jane_bangkok_user,
         gender='FEMALE',
-        level='LIGHT',
         country=thailand,
         city=bangkok
     )
+    jane_bangkok.rating.grade = 'LIGHT'
+    jane_bangkok.rating.save()
+
     requesting_player_bangkok = Player.objects.create(
         user=requesting_user_bangkok,
         gender='MALE',
-        level='PRO',
         country=thailand,
         city=bangkok
     )
+    requesting_player_bangkok.rating.grade = 'PRO'
+    requesting_player_bangkok.rating.save()
+
     requesting_player_pattaya = Player.objects.create(
         user=requesting_user_pattaya,
         gender='MALE',
-        level='LIGHT',
         country=thailand,
         city=pattaya
     )
+    requesting_player_pattaya.rating.grade = 'LIGHT'
+    requesting_player_pattaya.rating.save()
+
     john_limassol = Player.objects.create(
         user=john_limassol_user,
         gender='MALE',
-        level='LIGHT',
         country=cyprus,
         city=limassol
     )
+    john_limassol.rating.grade = 'LIGHT'
+    john_limassol.rating.save()
+
     john_nicosia = Player.objects.create(
         user=john_nicosia_user,
         gender='MALE',
-        level='PRO',
         country=cyprus,
         city=nicosia
     )
+    john_nicosia.rating.grade = 'PRO'
+    john_nicosia.rating.save()
+
     jane_larnaca = Player.objects.create(
         user=jane_larnaca_user,
         gender='FEMALE',
-        level='LIGHT',
         country=cyprus,
         city=larnaca
     )
+    jane_larnaca.rating.grade = 'LIGHT'
+    jane_larnaca.rating.save()
+
     requesting_player_limassol = Player.objects.create(
         user=requesting_user_limassol,
         gender='FEMALE',
-        level='PRO',
         country=cyprus,
         city=limassol
     )
+    requesting_player_limassol.rating.grade = 'PRO'
+    requesting_player_limassol.rating.save()
+
     return {
         'countries': Country.objects.all(),
         'thailand_cities': City.objects.filter(country=thailand),
@@ -380,7 +398,6 @@ class TestPlayersFilter:
         Player.objects.create(
             user=johnny_user,
             gender='MALE',
-            level='LIGHT',
             country=setup_test_data['countries'].get(name='Thailand'),
             city=setup_test_data['thailand_cities'].get(name='Bangkok')
         )
@@ -420,5 +437,3 @@ class TestPlayersFilter:
 @pytest.mark.django_db
 class TestPlayersFilterAPI:
     '''Class for API filter tests.'''
-
-    pass
