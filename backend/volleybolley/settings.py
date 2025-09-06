@@ -40,6 +40,18 @@ INSTALLED_APPS = [
 
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = False
+CSRF_TRUSTED_ORIGINS = [
+    'https://api.volleybolley.app',
+    'https://www.api.volleybolley.app',
+]
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -136,8 +148,10 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
+
 SOCIAL_AUTH_URL_NAMESPACE = 'api:social'
-SOCIAL_AUTH_RAISE_EXCEPTIONS = True  # Для дебага
+SOCIAL_AUTH_RAISE_EXCEPTIONS = False # set True if debag
 SOCIAL_AUTH_LOG_REDIRECTS = True
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_CLEAN_USERNAMES = False
@@ -166,6 +180,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
 ]
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
 SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'access_type': 'online'}
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'https://api.volleybolley.app/api/social-auth/complete/google-oauth2/'
 
 FIREBASE_SERVICE_ACCOUNT = {
     'type': os.getenv('FIREBASE_TYPE', 'service_account'),
