@@ -4,12 +4,13 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.event.mixins import EventMixin
+from apps.players.models import Player
 
 
 class Game(EventMixin, CreatedUpdatedMixin):
     """Модель игры."""
     host = m.ForeignKey(
-        settings.AUTH_USER_MODEL,
+        Player,
         verbose_name=_('Организатор'),
         on_delete=m.SET_NULL,
         null=True,
@@ -17,7 +18,7 @@ class Game(EventMixin, CreatedUpdatedMixin):
         related_name='games_host',
     )
     players = m.ManyToManyField(
-        settings.AUTH_USER_MODEL,
+        Player,
         verbose_name=_('Игроки'),
         related_name='games_players',
     )

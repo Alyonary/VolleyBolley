@@ -1,31 +1,50 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.event.models import Game
 from apps.notifications.constants import DEVICE_TOKEN_MAX_LENGTH, DeviceType
-from apps.players.models import Player
 
 
-class DeviceManager(models.Manager):
-    """Custom manager for Device model."""
+class DeviceQuerySet(models.QuerySet):
+    """
+    Custom QuerySet for Device model.
+    Allows chaining custom filters and queries.
+    """
 
     def active(self):
         """Return only active devices."""
-        return self.get_queryset().filter(is_active=True)
+        return self.filter(is_active=True)
 
     def in_game(self, game_id):
-        """Return devices associated with players in a specific game."""
-        game = Game.objects.filter(id=game_id).first()
-        user_ids = game.players.values_list('id', flat=True)
-        player_ids = Player.objects.filter(
-            user_id__in=user_ids
-        ).values_list('id', flat=True)
-        return self.active().filter(player_id__in=player_ids)
+        """
+        Return devices for all players participating in a specific game.
+        """
+        return self.active().filter(player__games_players=game_id)
 
     def by_player(self, player_id):
-        """Return devices associated with a specific player."""
-        return self.active(
-            ).filter(player_id=player_id)
+        """Return active devices for a specific player."""
+        return self.active().filter(player_id=player_id)
+
+
+class DeviceManager(models.Manager):
+    """
+    Custom manager for Device model.
+    Uses DeviceQuerySet for advanced querying.
+    """
+
+    def get_queryset(self):
+        return DeviceQuerySet(self.model, using=self._db)
+
+    def active(self):
+        """Return only active devices."""
+        return self.get_queryset().active()
+
+    def in_game(self, game_id):
+        """Return devices for all players in a specific game."""
+        return self.get_queryset().in_game(game_id)
+
+    def by_player(self, player_id):
+        """Return active devices for a specific player."""
+        return self.get_queryset().by_player(player_id)
 
     def update_or_create_token(
         self,
@@ -42,21 +61,15 @@ class DeviceManager(models.Manager):
         """
         if not platform:
             platform = DeviceType.ANDROID
-        try:
-            device = self.get(token=token)
-            device.player = player
-            device.platform = platform
-            device.is_active = is_active
-            device.save()
-            return device, False
-        except self.model.DoesNotExist:
-            device = self.create(
-                token=token,
-                player=player,
-                platform=platform,
-                is_active=is_active
-            )
-            return device, True
+        device, created = self.update_or_create(
+            token=token,
+            defaults={
+                'player': player,
+                'platform': platform,
+                'is_active': is_active
+            }
+        )
+        return device, created
 
 
 class Device(models.Model):
