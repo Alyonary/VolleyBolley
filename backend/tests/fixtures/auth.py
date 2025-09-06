@@ -67,20 +67,19 @@ def empty_token():
 @pytest.fixture
 def real_firebase_token():
     return (
-        'eyJhbGciOiJSUzI1NiIsImtpZCI6ImVmMjQ4ZjQyZjc0YWUwZjk0OTIwYWY5YTlhMD'
-        'EzMTdlZjJkMzVmZTEiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZ'
-        'XRva2VuLmdvb2dsZS5jb20vdm9sbGV5Ym9sbGV5LTkwMDllIiwiYXVkIjoidm9sbGV'
-        '5Ym9sbGV5LTkwMDllIiwiYXV0aF90aW1lIjoxNzU2NzQxNzI4LCJ1c2VyX2lkIjoic'
-        'TROcTlrM2xXSGhQZnhZUFlVRnNQUlJEeFN0MSIsInN1YiI6InE0TnE5azNsV0hoUGZ'
-        '4WVBZVUZzUFJSRHhTdDEiLCJpYXQiOjE3NTY3NDE3MjgsImV4cCI6MTc1Njc0NTMyO'
-        'CwicGhvbmVfbnVtYmVyIjoiKzc5MDAwMDAwMDAxIiwiZmlyZWJhc2UiOnsiaWRlbnR'
-        'pdGllcyI6eyJwaG9uZSI6WyIrNzkwMDAwMDAwMDEiXX0sInNpZ25faW5fcHJvdmlkZ'
-        'XIiOiJwaG9uZSJ9fQ.MGNSQgAS9oKZLGoETPTUVXsil14vrwxAVL3P9rUYHyu7fZ4O'
-        'hrgTOZja7C1xL9_MOmSLZJuf1ltf_JcNsec2YuCpP8JGVLyIqbtrARPEZocjOB7iRd'
-        'Q2gEHeU0tFG1Irh2PEvDpSPl6bpFzXl9EuR_3KYP49NcdGfNy-Bmclq30266cZI-L1'
-        'Laet0ZdkIR3JYzgynrmB4SxDgZ3C1mMFaqhBswyKAn4G8ubRcQ9w7pPpQdcvL3tuA8'
-        'y3TCAGwRHbgeXmMZ_Sb_srVMWQ0-qg3oi10lZ1J-iUW5sCfibRiezYLi4X_K-x-vou'
-        'zPl6BA6YoXooK9xbpLHZV5UjUeI4aA'
+        'eyJhbGciOiJSUzI1NiIsImtpZCI6ImUzZWU3ZTAyOGUzODg1YTM0NWNlMDcwNTVmODQ2O'
+        'DYyMjU1YTcwNDYiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJodHRwczovL3NlY3VyZXRva2V'
+        'uLmdvb2dsZS5jb20vdm9sbGV5Ym9sbGV5LTkwMDllIiwiYXVkIjoidm9sbGV5Ym9sbGV5'
+        'LTkwMDllIiwiYXV0aF90aW1lIjoxNzU3MDg5MDU5LCJ1c2VyX2lkIjoicTROcTlrM2xXS'
+        'GhQZnhZUFlVRnNQUlJEeFN0MSIsInN1YiI6InE0TnE5azNsV0hoUGZ4WVBZVUZzUFJSRH'
+        'hTdDEiLCJpYXQiOjE3NTcwODkwNTksImV4cCI6MTc1NzA5MjY1OSwicGhvbmVfbnVtYmV'
+        'yIjoiKzc5MDAwMDAwMDAxIiwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJwaG9uZSI6'
+        'WyIrNzkwMDAwMDAwMDEiXX0sInNpZ25faW5fcHJvdmlkZXIiOiJwaG9uZSJ9fQ.X0Xpv5'
+        'D8V3I0PBr46AQN_rGU35IJkgFvkAQRrckAzhhMkPX12VjV0L73czJ5UPkOI-dzklw7ae6'
+        'l8jfXeb2cApBD_TsacUmKP1M-n7LZbUzmsUVrPfESF6lLJC3uxp3ZDe3s0xF9RioFH94I'
+        'nCCPza9srRoUeCa4GaXpXwXiiYINS8Db26NMPYVQLlsbrdQvVmQoFqrcESf0kIbMSv5El'
+        'PeX4ayotuw0glapanQYzk0E8pdPLYqq2thlUb68XbERbV-sKcwLMTgc4Bd6M4plnPFPzE'
+        'S4wxJPTRIJSTXSuJunZPh6iBiINv3Po7O91j9d0g2hUsEnWjeFOfYuNIsL0Q'
     )
 
 @pytest.fixture
