@@ -12,8 +12,6 @@ BASE_DIR_OUT = Path(__file__).resolve().parents[2]
 
 load_dotenv()
 
-# Определяем режим тестирования
-TESTING = 'pytest' in sys.modules
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
@@ -77,28 +75,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'volleybolley.wsgi.application'
 
-# Database Configuration - SQLite для тестов, PostgreSQL для остального
-if TESTING:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'test_db.sqlite3',
-        }
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'volleybolley_db'),
+        'USER': os.getenv('POSTGRES_USER', 'postgres'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
+        'HOST': os.getenv('DB_HOST', 'localhost'),
+        'PORT': os.getenv('DB_PORT', 5432),
+        'OPTIONS': {
+            'client_encoding': 'UTF8',
+        },
     }
-else:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('POSTGRES_DB', 'volleybolley_db'),
-            'USER': os.getenv('POSTGRES_USER', 'postgres'),
-            'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
-            'HOST': os.getenv('DB_HOST', 'localhost'),
-            'PORT': os.getenv('DB_PORT', 5432),
-            'OPTIONS': {
-                'client_encoding': 'UTF8',
-            },
-        }
-    }
+}
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -193,111 +182,94 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
 
-# Упрощенное логирование для тестов
-if TESTING:
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'level': 'ERROR',
-            },
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
         },
-        'root': {
-            'handlers': ['console'],
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+        'file': {
+            'class': 'logging.FileHandler',
+            'filename': 'debug.log',
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        },
+        'error_file': {
+            'class': 'logging.FileHandler',
+            'filename': 'errors.log',
+            'formatter': 'verbose',
             'level': 'ERROR',
+            'encoding': 'utf-8',
         },
-    }
-else:
-    LOGGING = {
-        'version': 1,
-        'disable_existing_loggers': False,
-        'formatters': {
-            'verbose': {
-                'format': '{levelname} {asctime} {module} {message}',
-                'style': '{',
-            },
-            'simple': {
-                'format': '{levelname} {message}',
-                'style': '{',
-            },
+        'notifications_file': {
+            'class': 'logging.FileHandler',
+            'filename': 'notifications.log',
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        }
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'INFO',
+            'propagate': False,
         },
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'verbose',
-            },
-            'file': {
-                'class': 'logging.FileHandler',
-                'filename': 'debug.log',
-                'formatter': 'verbose',
-                'encoding': 'utf-8',
-            },
-            'error_file': {
-                'class': 'logging.FileHandler',
-                'filename': 'errors.log',
-                'formatter': 'verbose',
-                'level': 'ERROR',
-                'encoding': 'utf-8',
-            },
-            'notifications_file': {
-                'class': 'logging.FileHandler',
-                'filename': 'notifications.log',
-                'formatter': 'verbose',
-                'encoding': 'utf-8',
-            }
+        'apps.notifications': {
+        'handlers': ['console', 'notifications_file',],
+        'level': 'DEBUG',
+        'propagate': False,
         },
-        'loggers': {
-            'django': {
-                'handlers': ['console', 'file', 'error_file'],
-                'level': 'INFO',
-                'propagate': False,
-            },
-            'apps.notifications': {
-            'handlers': ['console', 'notifications_file',],
+        'django.request': {
+            'handlers': ['console', 'file', 'error_file'],
             'level': 'DEBUG',
             'propagate': False,
-            },
-            'django.request': {
-                'handlers': ['console', 'file', 'error_file'],
-                'level': 'DEBUG',
-                'propagate': False,
-            },
-            'django.security': {
-                'handlers': ['console', 'file', 'error_file'],
-                'level': 'DEBUG',
-            },
-            'django.db.backends': {
-                'handlers': ['console'],
-                'level': 'DEBUG',
-            },
-            'rest_framework': {
-                'handlers': ['console', 'file'],
-                'level': 'DEBUG',
-            },
-            'social_core': {
-                'handlers': ['console', 'file'],
-                'level': 'DEBUG',
-            },
-            'allauth': {
-                'handlers': ['console', 'file'],
-                'level': 'DEBUG',
-            },
-            'oauthlib': {
-                'handlers': ['console', 'file'],
-                'level': 'DEBUG',
-            },
-            'requests_oauthlib': {
-                'handlers': ['console', 'file'],
-                'level': 'DEBUG',
-            },
-            '': {
-                'handlers': ['console', 'file'],
-                'level': 'WARNING',
-            },
         },
-    }
+        'django.security': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+        },
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+        },
+        'rest_framework': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        'social_core': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        'allauth': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        'oauthlib': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        'requests_oauthlib': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+        },
+        '': {
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
+        },
+    },
+}
 
 # Redis Configuration
 REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
