@@ -1,6 +1,8 @@
 from datetime import date
 
 from django.contrib.auth import get_user_model
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
@@ -243,3 +245,28 @@ class PlayerRatingVote(models.Model):
             f'Vote {self.value} from {self.rater} to {self.rated} '
             f'on {self.created_at}'
         )
+
+
+class PlayerEventRate(models.Model):
+    """
+    Tracks how many times a player has skipped rating for a specific event
+    (Game or Tourney). If skip < 3, player can still be reminded to rate.
+    """
+
+    player = models.ForeignKey(
+        'players.Player',
+        on_delete=models.CASCADE,
+        related_name='game_rates'
+    )
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE
+    )
+    object_id = models.PositiveIntegerField()
+    event = GenericForeignKey('content_type', 'object_id')
+    skip = models.PositiveSmallIntegerField(default=0)
+
+    class Meta:
+        unique_together = ('player', 'content_type', 'object_id')
+        verbose_name = _('Player rates skip')
+        verbose_name_plural = _('Player rates skip')

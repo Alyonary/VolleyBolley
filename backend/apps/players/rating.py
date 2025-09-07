@@ -85,6 +85,7 @@ class PlayerLevelGrade:
         """
         Returns the PlayerLevelGrade object by grade and level.
         """
+
         return cls.get_by_code(f'{grade[0]}:{level}')
 
     @classmethod
@@ -99,6 +100,7 @@ class PlayerLevelGrade:
         level_change can be UP, DOWN or CONFIRM.
         If CONFIRM, returns 0.
         """
+
         if level_change == cls.CONFIRM:
             return 0
         coefficient = cls.get_rating_coefficient(
@@ -114,6 +116,7 @@ class PlayerLevelGrade:
     @classmethod
     def update_players_rating(cls):
         """Updates player ratings based on votes."""
+
         players = Player.objects.all()
         for player in players:
             player_rating: PlayerRating = player.rating
