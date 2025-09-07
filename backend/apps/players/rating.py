@@ -1,3 +1,7 @@
+from datetime import timedelta
+
+from django.utils import timezone
+
 from apps.players.models import Player, PlayerRating, PlayerRatingVote
 
 
@@ -13,7 +17,7 @@ class PlayerLevelGrade:
         'P:1', 'P:2', 'P:3'
     )
 
-    RATING_COEFFICIENTS: dict[dict[str:float]] = {
+    RATING_COEFFICIENTS: dict[dict[str: float]] = {
         'LIGHT': {'LIGHT': 0.5, 'MEDIUM': 0.5, 'HARD': 0, 'PRO': 0},
         'MEDIUM': {'LIGHT': 1.0, 'MEDIUM': 1.0, 'HARD': 0.5, 'PRO': 0},
         'HARD': {'LIGHT': 2.0, 'MEDIUM': 2.0, 'HARD': 1.0, 'PRO': 0.5},
@@ -70,11 +74,10 @@ class PlayerLevelGrade:
         cls,
         evaluator_level: str,
         rated_level: str
-        ) -> float:
+    ) -> float:
         """Returns the coefficient based on rater and rated player levels."""
         return cls.RATING_COEFFICIENTS.get(
-            evaluator_level,
-            {}
+            evaluator_level, {}
         ).get(rated_level, 0)
 
     @classmethod
@@ -90,7 +93,7 @@ class PlayerLevelGrade:
         rater: Player,
         rated: Player,
         level_change: str
-        ) -> int:
+    ) -> int:
         """
         Returns the rating value for player based on level change.
         level_change can be UP, DOWN or CONFIRM.
@@ -115,10 +118,12 @@ class PlayerLevelGrade:
         for player in players:
             player_rating: PlayerRating = player.rating
             last_day_rates = PlayerRatingVote.objects.filter(
-                rated_player=player,
+                rated=player,
                 is_counted=False
             )
             votes = list(last_day_rates)
+            if not votes:
+                continue
             rating_value_sum = sum(
                 v.rating for v in votes
             ) + player_rating.value
@@ -148,9 +153,28 @@ class PlayerLevelGrade:
                     new_value = rating_value_sum
             else:
                 new_value = rating_value_sum
-            PlayerRating.objects.filter(pk=player_rating.pk).update(
-                grade=new_grade,
-                level_mark=new_level,
-                value=new_value
-            )
+
+            player_rating.grade = new_grade
+            player_rating.level_mark = new_level
+            player_rating.value = new_value
+            player_rating.save()
             last_day_rates.update(is_counted=True)
+
+    @classmethod
+    def downgrade_inactive_players(cls, days: int = 60) -> int:
+        """
+        Downgrade player level by one step inside current grade if no activity
+        for `days`. Grade (Pro, Hard, etc.) does not change, only level_mark
+        decreases. Returns the number of downgraded players.
+        """
+        inactive_ratings = PlayerRating.objects.filter(
+            updated_at__lt=timezone.now() - timedelta(days=days)
+        )
+        for rating in inactive_ratings:
+            new_level_mark = rating.level_mark - 1
+            if new_level_mark < 1:
+                new_level_mark = 1
+            rating.level_mark = new_level_mark
+            rating.value = 6
+            rating.save()
+        return len(inactive_ratings)
