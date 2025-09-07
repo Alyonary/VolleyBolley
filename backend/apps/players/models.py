@@ -181,7 +181,7 @@ class PlayerRating(models.Model):
     level_mark = models.PositiveSmallIntegerField(
         verbose_name=_('Level mark of the player'),
         choices=LevelMarkChoices.choices,
-        default=LevelMarkChoices.ONE,
+        default=LevelMarkChoices.TWO.value,
     )
     value = models.SmallIntegerField(
         verbose_name=_('Change in rating'),

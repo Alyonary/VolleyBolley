@@ -14,7 +14,7 @@ app.autodiscover_tasks()
 CELERY_BEAT_SCHEDULE = {
     'downgrade-inactive-players-every-day': {
         'task': 'apps.players.tasks.downgrade_inactive_players_task',
-        'schedule': crontab(hour=1, minute=0),
+        'schedule': crontab(hour=2, minute=0),
     },
     'create-rate-objects-and-notify-every-10-minutes': {
         'task': 'apps.event.tasks.create_rate_objects_and_notify',
@@ -22,6 +22,6 @@ CELERY_BEAT_SCHEDULE = {
     },
     'update-players-rating-every-day': {
         'task': 'apps.players.tasks.update_players_rating_task',
-        'schedule': crontab(hour=3, minute=0),
+        'schedule': crontab(hour=1, minute=0),
     },
 }

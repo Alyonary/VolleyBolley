@@ -75,7 +75,9 @@ class PlayerGradeLevel:
         evaluator_level: str,
         rated_level: str
     ) -> float:
-        """Returns the coefficient based on rater and rated player levels."""
+        """
+        Returns the coefficient based on rater and rated player levels.
+        """
         return cls.RATING_COEFFICIENTS.get(
             evaluator_level, {}
         ).get(rated_level, 0)
@@ -85,7 +87,6 @@ class PlayerGradeLevel:
         """
         Returns the PlayerGradeLevel object by grade and level.
         """
-
         return cls.get_by_code(f'{grade[0]}:{level}')
 
     @classmethod
@@ -114,10 +115,18 @@ class PlayerGradeLevel:
         return 0
 
     @classmethod
-    def update_players_rating(cls):
-        """Updates player ratings based on votes."""
-
+    def update_players_rating(cls) -> dict[str, int]:
+        """
+        Updates player ratings based on votes.
+        Returns statistics: total processed, upgraded, downgraded, unchanged.
+        """
         players = Player.objects.all()
+        stats = {
+            "total": len(players),
+            "upgraded": 0,
+            "downgraded": 0,
+            "unchanged": 0,
+        }
         for player in players:
             player_rating: PlayerRating = player.rating
             last_day_rates = PlayerRatingVote.objects.filter(
@@ -126,7 +135,9 @@ class PlayerGradeLevel:
             )
             votes = list(last_day_rates)
             if not votes:
+                stats["unchanged"] += 1
                 continue
+
             rating_value_sum = sum(
                 v.rating for v in votes
             ) + player_rating.value
@@ -143,6 +154,9 @@ class PlayerGradeLevel:
                     new_grade = change.grade
                     new_level = change.level
                     new_value = 6
+                    stats["downgraded"] += 1
+                    continue
+                new_value = rating_value_sum
             elif rating_value_sum > 12:
                 change = cls.get_obj_by_level_grade(
                     player_rating.grade,
@@ -152,8 +166,9 @@ class PlayerGradeLevel:
                     new_grade = change.grade
                     new_level = change.level
                     new_value = 6
-                else:
-                    new_value = rating_value_sum
+                    stats["upgraded"] += 1
+                    continue
+                new_value = rating_value_sum
             else:
                 new_value = rating_value_sum
 
@@ -162,6 +177,10 @@ class PlayerGradeLevel:
             player_rating.value = new_value
             player_rating.save()
             last_day_rates.update(is_counted=True)
+        stats["unchanged"] = (
+            stats["total"] - stats["upgraded"] - stats["downgraded"]
+        )
+        return stats
 
     @classmethod
     def downgrade_inactive_players(cls, days: int = 60) -> int:
