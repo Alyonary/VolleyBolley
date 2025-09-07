@@ -8,7 +8,7 @@ from rest_framework import serializers
 from apps.event.models import Game, Tourney
 from apps.players.constants import PlayerIntEnums
 from apps.players.models import Favorite, Payment, Player, PlayerRatingVote
-from apps.players.rating import PlayerLevelGrade
+from apps.players.rating import PlayerGradeLevel
 
 
 class Base64ImageField(serializers.ImageField):
@@ -297,9 +297,9 @@ class PlayerRateItemSerializer(serializers.Serializer):
     player_id = serializers.IntegerField()
     level_changed = serializers.ChoiceField(
         choices=[
-            PlayerLevelGrade.UP,
-            PlayerLevelGrade.DOWN,
-            PlayerLevelGrade.CONFIRM]
+            PlayerGradeLevel.UP,
+            PlayerGradeLevel.DOWN,
+            PlayerGradeLevel.CONFIRM]
     )
 
     def validate(self, data):
@@ -328,7 +328,7 @@ class PlayerRateItemSerializer(serializers.Serializer):
                 f"You have already rated player {rated_player.user.username} "
                 "2 times in the last 2 months."
             )
-        value = PlayerLevelGrade.get_value(
+        value = PlayerGradeLevel.get_value(
             rater = rater_player,
             rated = rated_player,
             level_change = data['level_changed']

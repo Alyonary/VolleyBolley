@@ -5,7 +5,7 @@ from django.utils import timezone
 from apps.players.models import Player, PlayerRating, PlayerRatingVote
 
 
-class PlayerLevelGrade:
+class PlayerGradeLevel:
     """
     Represents a player's level and grade node for a doubly linked list.
     """
@@ -83,7 +83,7 @@ class PlayerLevelGrade:
     @classmethod
     def get_obj_by_level_grade(cls, grade: str, level: int):
         """
-        Returns the PlayerLevelGrade object by grade and level.
+        Returns the PlayerGradeLevel object by grade and level.
         """
 
         return cls.get_by_code(f'{grade[0]}:{level}')
@@ -181,3 +181,5 @@ class PlayerLevelGrade:
             rating.value = 6
             rating.save()
         return len(inactive_ratings)
+    
+PlayerGradeLevel.setup()
