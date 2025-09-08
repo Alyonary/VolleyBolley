@@ -177,3 +177,21 @@ def game_create_data(
             'payment_type': payment_account_revolut.payment_type,
             'players': []
         }
+
+
+@pytest.fixture
+def player_thailand_female_pro(country_thailand):
+    user = User.objects.create(
+        first_name='Test user for games 1',
+        last_name='Test user for games 1',
+        username='Test user for games 1',
+        email='test4@games.com',
+        password='test4@games.com',
+        phone_number='+82648129229',
+    )
+    return Player.objects.create(
+        user=user,
+        gender='FEMALE',
+        level='PRO',
+        country=country_thailand
+    )

@@ -211,12 +211,18 @@ class GameInviteSerializer(serializers.ModelSerializer):
         host = attrs.get('host')
         invited = attrs.get('invited')
         game = attrs.get('game')
+        levels = [level.name for level in game.player_levels.all()]
         if host == invited:
             raise serializers.ValidationError(
-                'You can not invite yourself.')
+                {'invited': 'You can not invite yourself.'})
         elif invited in game.players.all():
             raise serializers.ValidationError(
-                'This player is already participating in the game.')
+                {'invited': 'This player is already participate in the game.'})
+        elif invited.level not in levels:
+            raise serializers.ValidationError(
+                {'invited': f'Level of the player {invited.level} '
+                 'not allowed in this game. '
+                 f'Allowed levels: {", ".join(levels)}'})
         return attrs
 
 

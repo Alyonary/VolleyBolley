@@ -252,6 +252,19 @@ class TestGameSerializers:
             reverse('api:games-list'), data=game_create_data, format='json')
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
+    def test_level_validation_in_game_invitation(
+            self,
+            player_thailand_female_pro,
+            api_client_thailand,
+            game_for_args
+    ):
+        response = api_client_thailand.post(
+            reverse('api:games-invite-players', args=game_for_args),
+            data={'players': [player_thailand_female_pro.id,]}
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data.get('invited')
+
     def test_game_short_serializer(self):
         pass
 

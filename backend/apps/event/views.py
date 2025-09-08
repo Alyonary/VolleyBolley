@@ -23,9 +23,9 @@ class GameViewSet(ModelViewSet):
 
     def get_queryset(self):
         player = getattr(self.request.user, 'player', None)
-        if player is None or player.country is None:
-            return Game.objects.all()
-        elif self.action in ('joining_game', 'delete_invitation'):
+        if (player is None or
+                player.country is None or
+                self.action in ('joining_game', 'delete_invitation')):
             return Game.objects.all()
         return Game.objects.player_located_games(player)
 
