@@ -1,8 +1,9 @@
-import pytest
 from datetime import timedelta
+
+import pytest
 from django.core.exceptions import ValidationError
-from django.utils.timezone import now
 from django.urls import reverse
+from django.utils.timezone import now
 from pytest_lazy_fixtures import lf
 from rest_framework import status
 
@@ -268,6 +269,8 @@ class TestGameFiltering:
         nearest_time = now() + timedelta(minutes=5)
         nearest_time = nearest_time.strftime("%Y-%m-%dT%H:%M:%SZ")
         game_data['start_time'] = nearest_time
+        game_data.pop('players')
+        game_data.pop('player_levels')
         Game.objects.create(
             **game_data
             )
@@ -277,9 +280,23 @@ class TestGameFiltering:
             'upcoming_game_time': nearest_time,
             'invites': 0
         }
-        # with no upcoming games
-        # with upcoming game
-        pass
+
+    def test_preview_with_invites(
+            self,
+            api_client_thailand,
+            player_thailand,
+            game_cyprus
+    ):
+        GameInvitation.objects.create(
+            game=game_cyprus,
+            host=game_cyprus.host,
+            invited=player_thailand
+        )
+        response = api_client_thailand.get(reverse('api:games-preview'))
+        assert response.json() == {
+            'upcoming_game_time': None,
+            'invites': 1
+        }
 
     def test_my_games_filtering(self):
         # only created by player

@@ -8,7 +8,6 @@ from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
 from apps.event.enums import EventIntEnums
 from apps.event.models import Game, GameInvitation
-from apps.locations.models import Country
 from apps.players.models import Payment, Player
 from apps.players.serializers import PlayerGameSerializer
 
@@ -84,9 +83,8 @@ class BaseGameSerializer(serializers.ModelSerializer):
                 value['payment_account'] = 'Not defined'
             else:
                 value['payment_account'] = payment.payment_account
-        country = Country.objects.get(name=player.country)
         currency_type = CurrencyType.objects.filter(
-                            country=country).first()
+                            country=player.country).first()
         value['currency_type'] = currency_type
         start_time = value.get('start_time')
         end_time = value.get('end_time')
@@ -96,6 +94,9 @@ class BaseGameSerializer(serializers.ModelSerializer):
         elif end_time < start_time:
             raise serializers.ValidationError(
                 'The end time of the game must be later than the start time.')
+        elif not start_time.tzinfo or not end_time.tzinfo:
+            raise serializers.ValidationError(
+                'Time must include timezone information')
         return value
 
 

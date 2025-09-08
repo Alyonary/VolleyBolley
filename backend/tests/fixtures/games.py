@@ -62,18 +62,20 @@ def game_data(
 
 @pytest.fixture
 def game_thailand(game_data):
-    game_data.pop('players')
-    levels = game_data.pop('player_levels')
-    game = Game.objects.create(**game_data)
+    working_data = game_data.copy()
+    working_data.pop('players')
+    levels = working_data.pop('player_levels')
+    game = Game.objects.create(**working_data)
     game.player_levels.set(levels)
     return game
 
 
 @pytest.fixture
 def game_thailand_with_players(game_data):
-    players = game_data.pop('players')
-    levels = game_data.pop('player_levels')
-    game = Game.objects.create(**game_data)
+    working_data = game_data.copy()
+    players = working_data.pop('players')
+    levels = working_data.pop('player_levels')
+    game = Game.objects.create(**working_data)
     game.players.set(players)
     game.player_levels.set(levels)
     return game
@@ -142,10 +144,15 @@ def api_client_cyprus(another_user, client):
 
 @pytest.fixture
 def game_cyprus(player_cyprus, game_data, court_cyprus):
-    game_data['court_id'] = court_cyprus.id
-    game_data['message'] = 'Test game in Cyprus'
-    game_data['host'] = player_cyprus
-    game = Game.objects.create(**game_data)
+    working_data = game_data.copy()
+    working_data['court_id'] = court_cyprus.id
+    working_data['message'] = 'Test game in Cyprus'
+    working_data['host'] = player_cyprus
+    players = working_data.pop('players')
+    levels = working_data.pop('player_levels')
+    game = Game.objects.create(**working_data)
+    game.players.set(players)
+    game.player_levels.set(levels)
     return game
 
 
