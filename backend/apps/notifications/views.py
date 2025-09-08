@@ -30,7 +30,7 @@ class NotificationsViewSet(
     """
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
-    http_method_names = ['get', 'put']
+    http_method_names = ['get', 'patch']
 
     def get_queryset(self):
         return Notifications.objects.filter(
@@ -51,7 +51,7 @@ class NotificationsViewSet(
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    def update(self, request, *args, **kwargs):
+    def partial_update(self, request, *args, **kwargs):
         """
         Marks notifications as read.
         Expects:
