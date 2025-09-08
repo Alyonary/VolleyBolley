@@ -23,17 +23,16 @@ class NotificationSerializer(serializers.ModelSerializer):
     title = serializers.SerializerMethodField()
     message = serializers.SerializerMethodField()
     screen = serializers.SerializerMethodField()
-    notification_id = serializers.IntegerField(required=False)
+    notification_id = serializers.IntegerField(source='id')
 
     class Meta:
         model = Notifications
         fields = [
-            'id',
+            'notification_id',
             'created_at',
             'title',
             'message',
             'screen',
-            'notification_id',
         ]
 
     def __init__(self, *args, **kwargs):

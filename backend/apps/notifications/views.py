@@ -44,12 +44,9 @@ class NotificationsViewSet(
         return NotificationSerializer
 
     def list(self, request, *args, **kwargs):
-        """
-        Returns all unread notifications for the current user.
-        """
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        return Response({"notifications": serializer.data})
 
     def partial_update(self, request, *args, **kwargs):
         """
@@ -87,14 +84,7 @@ class NotificationsViewSet(
         logger.info(
             f'Notifications marked as read: {updated}, not found: {not_found}'
         )
-        return Response(
-            {
-                'updated': updated,
-                'not_found': not_found,
-                'message': 'Notifications marked as read.'
-            },
-            status=status.HTTP_200_OK
-        )
+        return Response(status=status.HTTP_200_OK)
 
     @action(
         methods=['put'],
