@@ -6,7 +6,11 @@ class NotificationTypes:
     IN_GAME: str = 'joinGame'
     RATE: str = 'rate'
     REMOVED: str = 'removed'
-    CHOICES = (IN_GAME, RATE, REMOVED)
+    CHOICES = (
+        (IN_GAME, 'Join Game'),
+        (RATE, 'Rate'),
+        (REMOVED, 'Removed'),
+    )
 
 
 class Notification:

@@ -5,7 +5,10 @@ from rest_framework_simplejwt.views import TokenRefreshView, TokenVerifyView
 from apps.api.views import GoogleLogin, LogoutView
 from apps.courts.views import CourtViewSet
 from apps.locations.views import CountryListView
-from apps.notifications.views import FCMTokenView, test_notifications
+from apps.notifications.views import (
+    FCMTokenView,
+    NotificationsViewSet,
+)
 from apps.players.views import PlayerViewSet
 
 app_name = 'api'
@@ -13,11 +16,15 @@ app_name = 'api'
 api_v1 = DefaultRouter()
 api_v1.register(r'courts', CourtViewSet, basename='courts')
 api_v1.register(r'players', PlayerViewSet, basename='players')
+api_v1.register(
+    r'notifications',
+    NotificationsViewSet,
+    basename='notifications'
+)
 
 urlpatterns = [
     path('', include(api_v1.urls)),
     path('fcm-token/', FCMTokenView.as_view(), name='fcm_token'),
-    path('test-fcm/', test_notifications, name='test_fcm'), # DELETE IN PROD
     path('social-auth/', include('social_django.urls', namespace='social')),
     path('countries/', CountryListView.as_view(), name='countries'), 
     path('auth/logout/', LogoutView.as_view(), name='logout'),

@@ -1,36 +1,113 @@
-from rest_framework import status
-from rest_framework.decorators import api_view
+import logging
+
+from rest_framework import mixins, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.serializers import ValidationError
 
-from apps.notifications.models import Device
-from apps.notifications.notifications import (
-    Notification,
-    NotificationTypes,
-)
+from apps.notifications.models import Device, Notifications
+from apps.notifications.notifications import Notification, NotificationTypes
 from apps.notifications.push_service import PushService
-from apps.notifications.serializers import FCMTokenSerializer
+from apps.notifications.serializers import (
+    FCMTokenSerializer,
+    NotificationSerializer,
+)
+
+logger = logging.getLogger(__name__)
 
 
-class FCMTokenView(APIView):
+class NotificationsViewSet(
+    mixins.ListModelMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet
+):
     """
-    View for handling FCM device tokens.
-    Allows users to register or update their device tokens.
+    ViewSet for notifications:
+    - GET /notifications/ : list active notifications for current user
+    - PUT /notifications/ : mark notifications as read
+    - PUT /notifications/fcm-auth : register/update device FCM token
     """
     permission_classes = [IsAuthenticated]
-    http_method_names = ['put',]
+    serializer_class = NotificationSerializer
+    http_method_names = ['get', 'put']
 
-    def put(self, request):
-        '''
-        Handles PUT requests to update FCM device tokens.
-        If token already exists but belongs to another player,
-        updates the player association to the current user.
-        If token doesn't exist, creates a new device for the player.
-        '''
-        serializer = FCMTokenSerializer(data=request.data)
-        
-        if serializer.is_valid():
+    def get_queryset(self):
+        return Notifications.objects.filter(
+            player=self.request.user.player,
+            is_read=False
+        ).order_by('-created_at')
+
+    def get_serializer_class(self):
+        if self.request.method == 'PUT' and self.action == 'fcm_auth':
+            return FCMTokenSerializer
+        return NotificationSerializer
+
+    def list(self, request, *args, **kwargs):
+        """
+        Returns all unread notifications for the current user.
+        """
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Marks notifications as read.
+        Expects:
+        {
+            "notifications": [
+                {"notification_id": 1},
+                {"notification_id": 2}
+            ]
+        }
+        """
+        notifications_data = request.data.get('notifications', [])
+        updated: list[int] = []
+        not_found: list[int] = []
+        for item in notifications_data:
+            notification_id = item.get('notification_id')
+            try:
+                notification = Notifications.objects.get(
+                    id=notification_id,
+                    player=request.user.player
+                )
+                serializer = self.get_serializer(
+                    notification,
+                    data={},
+                    partial=True
+                )
+                serializer.is_valid(raise_exception=True)
+                serializer.save(is_read=True)
+                updated.append(notification_id)
+            except Notifications.DoesNotExist:
+                not_found.append(notification_id)
+            except ValidationError:
+                not_found.append(notification_id)
+        logger.info(
+            f'Notifications marked as read: {updated}, not found: {not_found}'
+        )
+        return Response(
+            {
+                'updated': updated,
+                'not_found': not_found,
+                'message': 'Notifications marked as read.'
+            },
+            status=status.HTTP_200_OK
+        )
+
+    @action(
+        methods=['put'],
+        detail=False,
+        url_path='fcm-auth',
+        serializer_class=FCMTokenSerializer
+    )
+    def fcm_auth(self, request):
+        """
+        Registers or updates FCM device token for current user.
+        """
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid(raise_exception=True):
             token = serializer.validated_data['token']
             current_player = request.user.player
             device, created = Device.objects.update_or_create_token(
@@ -39,7 +116,6 @@ class FCMTokenView(APIView):
                 platform=serializer.validated_data.get('platform', None),
             )
             if created:
-                
                 return Response(
                     {'message': 'New device token registered.'},
                     status=status.HTTP_201_CREATED
@@ -53,44 +129,50 @@ class FCMTokenView(APIView):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
-
-### TEST VIEW / DELETE IN PROD ###
-@api_view(['GET'])
-def test_notifications(request):
-    """
-    Test view to send all notification types for game ID 1.
-    Just creates notification tasks and returns response.
-    """
-    push_service = PushService()
-    if not push_service:
-        return Response(
-            {'error': 'Push service not available.'},
-            status=status.HTTP_503_SERVICE_UNAVAILABLE
-        )
-    all_tokens = list(
-        Device.objects.filter(is_active=True).values_list('token', flat=True)
+###TEST ACTION VIEW - DELETE IN PROD
+    @action(
+        methods=['post'],
+        detail=False,
+        url_path='fcm-test',
+        permission_classes=[IsAuthenticated]
     )
-    if not all_tokens:
-        return Response(
-            {'error': 'No active devices found.'},
-            status=status.HTTP_404_NOT_FOUND
+    def fcm_test(self, request):
+        """
+        Test view to send all notification types for game ID 1.
+        Just creates notification tasks and returns response.
+        """
+        push_service = PushService()
+        if not push_service:
+            return Response(
+                {'error': 'Push service not available.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+        all_tokens = list(
+            Device.objects.filter(
+                is_active=True
+            ).values_list('token', flat=True)
         )
-    for notification_type in NotificationTypes.CHOICES:
-        notification = Notification(notification_type=notification_type)
+        if not all_tokens:
+            return Response(
+                {'error': 'No active devices found.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        if notification_type == NotificationTypes.IN_GAME:
-            push_service.send_push_notifications(
-                tokens=all_tokens,
-                notification=notification,
-                game_id=1
-            )
-        else:
-            push_service.send_push_notifications(
-                tokens=all_tokens,
-                notification=notification,
-            )
-    return Response({
-        'status': 'Notification tasks created',
-        'notifications_types': NotificationTypes.CHOICES,
-        'devices_count': len(all_tokens)
-    }, status=status.HTTP_202_ACCEPTED)
+        for notification_type in NotificationTypes.CHOICES:
+            notification = Notification(notification_type=notification_type)
+            if notification_type == NotificationTypes.IN_GAME:
+                push_service.send_push_notifications(
+                    tokens=all_tokens,
+                    notification=notification,
+                    game_id=1
+                )
+            else:
+                push_service.send_push_notifications(
+                    tokens=all_tokens,
+                    notification=notification,
+                )
+        return Response({
+            'status': 'Notification tasks created',
+            'notifications_types': NotificationTypes.CHOICES,
+            'devices_count': len(all_tokens)
+        })

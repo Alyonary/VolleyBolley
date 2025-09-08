@@ -7,10 +7,13 @@ from apps.notifications.constants import (
     MAX_RETRIES,
     RETRY_PUSH_TIME,
 )
+from apps.notifications.models import Device
 from apps.notifications.notifications import Notification
 from apps.notifications.push_service import PushService
+from apps.notifications.utils import delete_old_devices
 
 logger = logging.getLogger('django.notifications')
+
 
 @shared_task
 def init_push_service():
@@ -94,8 +97,9 @@ def retry_notification_task(
         logger.info(f'Retrying notification to token {token[:8]}...')
         notification = Notification(notification_type)
         push_service = PushService()
-        result = push_service.send_notification_by_token(
-            token=token,
+        device = Device.objects.filter(token=token).first()
+        result = push_service.send_notification_by_device(
+            device=device,
             notification=notification,
             game_id=game_id
         )
@@ -112,7 +116,17 @@ def retry_notification_task(
             max_retries=MAX_RETRIES - 1
         )
 
+@shared_task
+def delete_old_devices_task():
+    """
+    Delete device records created more than 270 days ago.
+    """
+    return delete_old_devices()
+
+
 @worker_ready.connect
 def at_start(**kwargs):
     """Start the push service initialization task when the worker is ready."""
     init_push_service.apply_async()
+
+    

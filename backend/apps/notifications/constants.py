@@ -10,3 +10,4 @@ class DeviceType(models.TextChoices):
 DEVICE_TOKEN_MAX_LENGTH: int = 255
 RETRY_PUSH_TIME: int = 60
 MAX_RETRIES: int = 3
+NOTIFICATION_TYPE_MAX_LENGTH: int = 20

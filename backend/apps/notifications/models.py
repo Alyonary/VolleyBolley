@@ -1,7 +1,12 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.notifications.constants import DEVICE_TOKEN_MAX_LENGTH, DeviceType
+from apps.notifications.constants import (
+    DEVICE_TOKEN_MAX_LENGTH,
+    NOTIFICATION_TYPE_MAX_LENGTH,
+    DeviceType,
+)
+from apps.notifications.notifications import NotificationTypes
 
 
 class DeviceQuerySet(models.QuerySet):
@@ -99,3 +104,33 @@ class Device(models.Model):
 
     def __str__(self):
         return f'{self.player.user.username} - device {self.id}'
+
+
+class Notifications(models.Model):
+    """Model for storing notification messages."""
+    player = models.ForeignKey(
+        'players.Player',
+        related_name='notifications',
+        on_delete=models.CASCADE
+    )
+    type = models.CharField(
+        max_length=NOTIFICATION_TYPE_MAX_LENGTH,
+        verbose_name=_('Notification type'),
+        choices=NotificationTypes.CHOICES
+    )
+    is_read = models.BooleanField(
+        default=False,
+        verbose_name=_('Is read')
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name=_('Created at')
+    )
+
+    class Meta:
+        verbose_name = _('Notification')
+        verbose_name_plural = _('Notifications')
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'Notification {self.type} for {self.player.user.username}'
