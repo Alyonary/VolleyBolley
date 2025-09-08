@@ -1,5 +1,4 @@
 from django.db.models import Q
-from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
@@ -26,8 +25,10 @@ class GameViewSet(ModelViewSet):
         if (player is None or
                 player.country is None or
                 self.action in ('joining_game', 'delete_invitation')):
-            return Game.objects.all()
-        return Game.objects.player_located_games(player)
+            return Game.objects.all().select_related(
+                    'host', 'court').prefetch_related('players')
+        return Game.objects.player_located_games(player).select_related(
+                    'host', 'court').prefetch_related('players')
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action in (
@@ -121,15 +122,8 @@ class GameViewSet(ModelViewSet):
     def invited_games(self, request, *args, **kwargs):
         """Retrieving upcoming games to which the player has been invited."""
 
-        my_invitations = GameInvitation.objects.filter(
-            invited=request.user.player).select_related('game')
-        current_time = now()
-        my_games = [
-            invitation.game
-            for invitation in my_invitations
-            if invitation.game.start_time > current_time
-        ]
-        serializer = self.get_serializer(my_games, many=True)
+        invited_games = Game.objects.invited_games(request.user.player)
+        serializer = self.get_serializer(invited_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 

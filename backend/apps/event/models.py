@@ -24,14 +24,17 @@ class GameQuerySet(m.query.QuerySet):
 
     def player_related_games(self, player):
         return self.player_located_games(player).filter(
-            (m.Q(host=player) | m.Q(players=player)))
+            (m.Q(host=player) | m.Q(players=player))).distinct()
+
+    def invited_games(self, player):
+        return self.player_located_games(player
+                                         ).filter(game_invites__invited=player)
 
     def upcomming_games(self, player):
         current_time = now()
         return self.player_related_games(player).filter(
-            start_time__gt=current_time).order_by(
-                'start_time').select_related(
-                    'host', 'court').prefetch_related('players')
+            start_time__gt=current_time).distinct().order_by(
+                'start_time')
 
     def my_upcoming_games(self, player):
         return self.upcomming_games(player).filter(host=player)
@@ -41,10 +44,10 @@ class GameQuerySet(m.query.QuerySet):
 
     def archive_games(self, player):
         current_time = now()
-        return self.player_related_games(player).filter(
+        return self.player_related_games(
+            player).filter(
             end_time__lt=current_time).order_by(
-                '-end_time').select_related(
-                    'host', 'court').prefetch_related('players')
+                '-end_time')
 
 
 class GameManager(m.Manager):
@@ -68,6 +71,10 @@ class GameManager(m.Manager):
         """Returns games in which the user is a host or player."""
         return self.get_queryset().player_related_games(player)
 
+    def invited_games(self, player):
+        """Returns games in which the user was invited."""
+        return self.get_queryset().invited_games(player)
+
     def upcomming_games(self, player):
         """Returns upcoming games in which the user is a host or player."""
         return self.get_queryset().upcomming_games(player)
@@ -88,22 +95,22 @@ class GameManager(m.Manager):
 class GameInvitation(m.Model):
     """Invitation to game model."""
 
-    class StatusTypeChoices(m.TextChoices):
-        ACCEPTED = 'ACCEPTED', _('Accepted')
-        REJECTED = 'REJECTED', _('Rejected')
-        NOT_DECIDED = 'NOT_DECIDED', _('Not decided')
+    host = m.ForeignKey(
+        Player,
+        on_delete=m.CASCADE,
+        related_name='invite_host'
+    )
 
-    host = m.ForeignKey(Player, on_delete=m.CASCADE, related_name='host')
+    invited = m.ForeignKey(
+        Player,
+        on_delete=m.CASCADE,
+        related_name='invited'
+    )
 
-    invited = m.ForeignKey(Player, on_delete=m.CASCADE, related_name='invited')
-
-    game = m.ForeignKey('event.Game', on_delete=m.CASCADE)
-
-    status = m.CharField(
-        verbose_name=_('Invitation status'),
-        max_length=EventIntEnums.TITLE.value,
-        choices=StatusTypeChoices.choices,
-        default=StatusTypeChoices.NOT_DECIDED
+    game = m.ForeignKey(
+        'event.Game',
+        on_delete=m.CASCADE,
+        related_name='game_invites'
     )
 
     class Meta:
@@ -112,7 +119,7 @@ class GameInvitation(m.Model):
 
     def __str__(self):
         discription = str(_(
-            f'Invitation in {self.game} for {self.invited}: {self.status}'))
+            f'Invitation in {self.game} for {self.invited}'))
         return discription
 
 

@@ -232,7 +232,7 @@ class TourneySerializer(serializers.ModelSerializer):
 
 class GameShortSerializer(serializers.ModelSerializer):
 
-    game_id = serializers.IntegerField(source='pk', read_only=True)
+    game_id = serializers.IntegerField(source='pk')
 
     host = PlayerGameSerializer()
 
@@ -245,6 +245,14 @@ class GameShortSerializer(serializers.ModelSerializer):
     class Meta:
         model = Game
         fields = [
+            'game_id',
+            'host',
+            'court_location',
+            'message',
+            'start_time',
+            'end_time'
+        ]
+        read_only_fields = [
             'game_id',
             'host',
             'court_location',

@@ -8,6 +8,7 @@ from pytest_lazy_fixtures import lf
 from rest_framework import status
 
 from apps.event.models import Game, GameInvitation
+from apps.event.serializers import GameShortSerializer
 
 
 @pytest.mark.django_db
@@ -265,8 +266,32 @@ class TestGameSerializers:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert response.data.get('invited')
 
-    def test_game_short_serializer(self):
-        pass
+    def test_game_short_serializer(
+            self,
+            game_thailand,
+            game_thailand_with_players
+    ):
+        games = Game.objects.all()
+        serializer = GameShortSerializer(games, many=True)
+        result = serializer.data[0]
+        assert result['game_id'] == game_thailand.id
+        assert result['message'] == game_thailand.message
+        assert result['start_time'] == game_thailand.start_time
+        assert result['end_time'] == game_thailand.end_time
+
+        host = result['host']
+        assert host['player_id'] == game_thailand.host.id
+        assert host['first_name'] == game_thailand.host.user.first_name
+        assert host['last_name'] == game_thailand.host.user.last_name
+        assert host['avatar'] == game_thailand.host.avatar
+        assert host['level'] == game_thailand.host.level
+
+        court = result['court_location']
+        assert court['longitude'] == game_thailand.court.location.longitude
+        assert court['latitude'] == game_thailand.court.location.latitude
+        assert court['court_name'] == game_thailand.court.location.court_name
+        assert court['location_name'
+                     ] == game_thailand.court.location.location_name
 
 
 @pytest.mark.django_db()
@@ -311,18 +336,62 @@ class TestGameFiltering:
             'invites': 1
         }
 
-    def test_my_games_filtering(self):
-        # only created by player
-        pass
+    def test_my_games_filtering(
+            self,
+            api_client_thailand,
+            game_thailand,
+            game_thailand_with_players,
+            player_thailand_female_pro
+    ):
+        game_thailand_with_players.host = player_thailand_female_pro
+        game_thailand_with_players.save()
+        assert Game.objects.count() == 2
+        response = api_client_thailand.get(reverse('api:games-my-games'))
+        assert len(response.data['games']) == 1
+        assert response.data['games'][0]['game_id'] == game_thailand.id
 
-    def test_archive_filtering(self):
-        # only completed games with player or host
-        pass
+    def test_archive_filtering(
+            self,
+            player_thailand,
+            game_thailand,
+            game_thailand_with_players,
+    ):
+        game_thailand_with_players.end_time = now() - timedelta(weeks=520)
+        game_thailand_with_players.save()
+        assert Game.objects.count() == 2
+        result = Game.objects.archive_games(player_thailand)
+        assert len(result) == 1
+        assert result[0].id == game_thailand_with_players.id
 
-    def test_invites_filtering(self):
-        # only games where player invited
-        pass
+    def test_invites_filtering(
+            self,
+            game_thailand,
+            game_thailand_with_players,
+            player_thailand_female_pro
+    ):
+        games = Game.objects.invited_games(player_thailand_female_pro)
+        assert not games
 
-    def test_upcoming_filtering(self):
-        # only games where player participate
-        pass
+        GameInvitation.objects.create(
+            game=game_thailand,
+            host=game_thailand.host,
+            invited=player_thailand_female_pro
+        )
+        games = Game.objects.invited_games(player_thailand_female_pro)
+        assert len(games) == 1
+        assert games.first() == game_thailand
+
+    def test_upcoming_filtering(
+            self,
+            game_thailand,
+            game_thailand_with_players,
+            player_thailand_female_pro
+    ):
+        upcomming_games = Game.objects.upcomming_games(
+            player_thailand_female_pro)
+        assert not upcomming_games
+        game_thailand.players.add(player_thailand_female_pro)
+        upcomming_games = Game.objects.upcomming_games(
+            player_thailand_female_pro)
+        assert len(upcomming_games) == 1
+        assert upcomming_games.first() == game_thailand
