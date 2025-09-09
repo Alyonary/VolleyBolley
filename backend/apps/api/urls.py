@@ -25,10 +25,10 @@ api_v1.register(r'players', PlayerViewSet, basename='players')
 
 schema_view = get_schema_view(
     openapi.Info(
-        title="VolleyBolley API",
+        title='VolleyBolley API',
         default_version='v1',
-        description="API documentation for VolleyBolley project",
-        license=openapi.License(name="BSD License"),
+        description='API documentation for VolleyBolley project',
+        license=openapi.License(name='BSD License'),
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),
