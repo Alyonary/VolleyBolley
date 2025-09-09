@@ -118,7 +118,7 @@ class PushService:
 
     def _get_fcm_file_path(self) -> str:
         """Return path to fcm.json in BASE_DIR."""
-        return os.path.join(settings.BASE_DIR, 'service_acc.json')
+        return os.path.join(settings.BASE_DIR, 'fcm_service_account.json')
 
     def _fcm_file_exists(self) -> bool:
         """Check if fcm.json exists in BASE_DIR."""
