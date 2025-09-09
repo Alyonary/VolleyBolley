@@ -41,6 +41,18 @@ INSTALLED_APPS = [
 
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = False
+CSRF_TRUSTED_ORIGINS = [
+    'https://api.volleybolley.app',
+    'https://www.api.volleybolley.app',
+]
+CSRF_COOKIE_SECURE = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = False
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -137,8 +149,10 @@ AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
 )
 
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
+
 SOCIAL_AUTH_URL_NAMESPACE = 'api:social'
-SOCIAL_AUTH_RAISE_EXCEPTIONS = True  # Для дебага
+SOCIAL_AUTH_RAISE_EXCEPTIONS = False # set True if debag
 SOCIAL_AUTH_LOG_REDIRECTS = True
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_CLEAN_USERNAMES = False
@@ -167,6 +181,20 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
 ]
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
 SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'access_type': 'online'}
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'https://api.volleybolley.app/api/social-auth/complete/google-oauth2/'
+
+FIREBASE_SERVICE_ACCOUNT = {
+    'type': os.getenv('FIREBASE_TYPE', 'service_account'),
+    'project_id': os.getenv('FIREBASE_PROJECT_ID', ''),
+    'private_key_id': os.getenv('FIREBASE_PRIVATE_KEY_ID', ''),
+    'private_key': os.getenv('FIREBASE_PRIVATE_KEY', '').replace('\\n', '\n'),
+    'client_email': os.getenv('FIREBASE_CLIENT_EMAIL', ''),
+    'client_id': os.getenv('FIREBASE_CLIENT_ID', ''),
+    'auth_uri': os.getenv('FIREBASE_AUTH_URI', 'https://accounts.google.com/o/oauth2/auth'),
+    'token_uri': os.getenv('FIREBASE_TOKEN_URI', 'https://oauth2.googleapis.com/token'),
+    'auth_provider_x509_cert_url': os.getenv('FIREBASE_AUTH_PROVIDER_CERT_URL', 'https://www.googleapis.com/oauth2/v1/certs'),
+    'client_x509_cert_url': os.getenv('FIREBASE_CLIENT_CERT_URL', ''),
+}
 
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')
@@ -195,11 +223,13 @@ LOGGING = {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
+            'level': 'WARNING',
         },
         'file': {
             'class': 'logging.FileHandler',
             'filename': 'debug.log',
             'formatter': 'verbose',
+            'level': 'DEBUG',
             'encoding': 'utf-8',
         },
         'error_file': {
@@ -214,7 +244,7 @@ LOGGING = {
         'django': {
             'handlers': ['console', 'file', 'error_file'],
             'level': 'INFO',
-            'propagate': True,
+            'propagate': False,
         },
         'django.request': {
             'handlers': ['console', 'file', 'error_file'],
@@ -224,34 +254,51 @@ LOGGING = {
         'django.security': {
             'handlers': ['console', 'file', 'error_file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'django.db.backends': {
             'handlers': ['console'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'rest_framework': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'social_core': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'allauth': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'oauthlib': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
         'requests_oauthlib': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
+            'propagate': False,
         },
-        '': {
-            'handlers': ['console', 'file'],
-            'level': 'WARNING',
+        'apps.api': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
         },
+        'apps.api.views': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    #    'root': {
+    #        'handlers': ['console'],
+    #        'level': 'INFO',
+    #    },
     },
 }

@@ -7,14 +7,23 @@ from drf_yasg import openapi
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
+from social_core.exceptions import AuthForbidden
 from social_django.utils import load_backend, load_strategy
 
-from apps.api.serializers import GoogleUserDataSerializer
-from apps.api.utils import get_serialized_data
-from apps.players.models import Player
+from apps.api.serializers import (
+    FirebaseUserDataSerializer,
+    GoogleUserDataSerializer,
+)
+from apps.api.utils import (
+    firebase_auth,
+    get_or_create_user,
+    return_auth_response_or_raise_exception,
+)
 from volleybolley.settings import SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
 
 logger = logging.getLogger(__name__)
@@ -39,14 +48,25 @@ class LogoutView(APIView):
     )
     def post(self, request) -> Response:
         try:
-            refresh_token = request.data["refresh"]
+            refresh_token = request.data.get('refresh_token', None)
+            if not refresh_token:
+                raise ValidationError('No refresh token is provided.')
+
             token = RefreshToken(refresh_token)
             token.blacklist()
+            logger.info('Successful logout.')
 
             return Response(status=status.HTTP_205_RESET_CONTENT)
 
-        except Exception:
+        except (ValidationError, TokenError) as e:
+            logger.error(f'Logout failure: {e}.')
+
             return Response(status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            logger.error(f'Logout failure: {e}.')
+
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class GoogleLogin(APIView):
@@ -78,24 +98,65 @@ class GoogleLogin(APIView):
         tags=['auth'],
     )
     def post(self, request):
-        if 'access_token' in request.data:
-            user = self._auth_via_access_token(request.data['access_token'])
-        
-        elif 'id_token' in request.data:
-            user = self._auth_via_id_token(request.data['id_token'])
+        try:
+            data = request.data
+            if 'access_token' in data:
+                if data['access_token']:
+                    logger.info(
+                        'Starting authentication via google access_token.'
+                    )
 
-        else:
-            return redirect('api:social:begin', backend='google-oauth2')
+                    return self._auth_via_access_token(
+                        request.data['access_token']
+                    )
 
-        if user and user.is_active:
-            serializer = get_serialized_data(user)
+                else:
+                    raise ValidationError('Empty token.')
 
-            return Response(serializer.data, status=status.HTTP_200_OK)
+            elif 'id_token' in data:
+                if data['id_token']:
+                    logger.info(
+                        'Starting authentication via google id_token.'
+                    )
 
-        return Response(
-            {'error': 'Authentication failed'},
-            status=status.HTTP_401_UNAUTHORIZED,
-        )
+                    return self._auth_via_id_token(data['id_token'])
+
+                else:
+                    raise ValidationError('Empty token.')
+
+            else:
+                logger.info(
+                    'Redirected to authenticate via google without token.'
+                )
+
+                return redirect('api:social:begin', backend='google-oauth2')
+
+        except ValidationError as e:
+            error_msg = f'validation error: {e}.'
+            logger.error(error_msg)
+
+            return Response(
+                {'error': error_msg},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except (requests.exceptions.GoogleAuthError, AuthForbidden) as e:
+            error_msg = f'Failed to verify google id_token: {e}.'
+            logger.error(error_msg)
+
+            return Response(
+                {'error': error_msg},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+            error_msg = f'Unexpected error: {e}.'
+            logger.error(error_msg)
+
+            return Response(
+                {'error': error_msg},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
     @swagger_auto_schema(
         operation_summary="Redirect to Google OAuth2 social auth",
@@ -103,6 +164,10 @@ class GoogleLogin(APIView):
         tags=['auth'],
     )
     def get(self, request):
+        logger.info(
+            'Starting authentication via google without token.'
+        )
+
         return redirect('api:social:begin', backend='google-oauth2')
 
     def _auth_via_access_token(self, token):
@@ -111,32 +176,79 @@ class GoogleLogin(APIView):
         backend = load_backend(strategy, 'google-oauth2', None)
         strategy.session_set('via_access_token', True)
         strategy.request.via_access_token = True
+        user = backend.do_auth(token)
 
-        return backend.do_auth(token)
+        return return_auth_response_or_raise_exception(user)
 
     def _auth_via_id_token(self, token):
         """Authenticate via 'id_token'."""
-        
-        try:
-            user_data_verified = id_token.verify_oauth2_token(
-                token,
-                requests.Request(),
-                SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
-            )
-            serializer = GoogleUserDataSerializer(data=user_data_verified)
-            serializer.is_valid(raise_exception=True)
-            user_data_cleaned = serializer.save()
-            user = User.objects.filter(
-                email=user_data_cleaned['email']
-            ).first()
-            if user is None:
-                user = User.objects.create(**user_data_cleaned)
-            Player.objects.get_or_create(user=user)
-
-            return user
-
-        except ValueError as e:
-            return Response(
-            {'error': e},
-            status=status.HTTP_400_BAD_REQUEST,
+    
+        user_data_verified = id_token.verify_oauth2_token(
+            token,
+            requests.Request(),
+            SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
         )
+        if not user_data_verified:
+            raise ValidationError('Invalid or expired google id_token')
+
+        serializer = GoogleUserDataSerializer(data=user_data_verified)
+        serializer.is_valid(raise_exception=True)
+        user_data_cleaned = serializer.save()
+        user = User.objects.filter(
+            email=user_data_cleaned['email']
+        ).first()
+        user = get_or_create_user(user, user_data_cleaned)
+
+        return return_auth_response_or_raise_exception(user)
+
+
+class PhoneNumberLogin(APIView):
+    """Authenticate user via phone number.
+    
+    An id_token generated by the Firebase app should be provided
+    to authenticate a user.
+    """
+    
+    def post(self, request):
+
+        if 'id_token' in request.data:
+            try:
+                return self._auth_via_id_token(request.data['id_token'])
+
+            except ValidationError as e:
+                error_msg = f'validation error: {e}'
+                logger.error(error_msg)
+
+                return Response(
+                    {'error': error_msg},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            except Exception as e:
+                error_msg = f'unexpected error: {e}'
+                logger.error(error_msg)
+
+                return Response(
+                    {'error': error_msg},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+
+        else:
+            return Response(
+                {'error': 'firebase id_token was not provided.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    def _auth_via_id_token(self, id_token):
+        """Authenticate using Firebase ID token from frontend."""
+        serializer = FirebaseUserDataSerializer(
+            data=firebase_auth.verify_id_token(id_token)
+        )
+        serializer.is_valid(raise_exception=True)
+        user_data_cleaned = serializer.save()
+        user = User.objects.filter(
+            phone_number=user_data_cleaned['phone_number']
+        ).first()
+        user = get_or_create_user(user, user_data_cleaned)
+
+        return return_auth_response_or_raise_exception(user)
