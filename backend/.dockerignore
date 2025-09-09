@@ -48,7 +48,6 @@ local_settings.py
 db.sqlite3
 db.sqlite3-journal
 
-
 # ===== DEBUGGING & LOGS =====
 # Log files
 *.log
@@ -182,4 +181,3 @@ id_ed25519*
 # ===== CELERY =====
 celerybeat-schedule
 celerybeat.pid
-
