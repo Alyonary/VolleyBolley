@@ -83,11 +83,11 @@ class Court(models.Model):
         _('Description'),
         blank=True
     )
-
     photo_url = models.ImageField(
         upload_to='courts/images/',
         null=True,
-        blank=True
+        blank=True,
+        default=None
     )
     tag_list = models.ManyToManyField(
         Tag,

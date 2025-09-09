@@ -5,7 +5,13 @@ from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.models import Contact
 from apps.courts.models import Court, CourtLocation
+
+
+class ContactInline(admin.TabularInline):
+    model = Contact
+    extra = 1
 
 
 class CustomLocationAdmin(ModelForm):
@@ -56,6 +62,7 @@ class CourtAdmin(admin.ModelAdmin):
     list_display_links = ('location',)
     empty_value_display = _('Not defined')
     filter_horizontal = ('tag_list',)
+    inlines = [ContactInline]
 
     def loc_court_name(self, obj):
         return str(obj.location.location_name)

@@ -20,21 +20,30 @@ class LocationSerializer(serializers.ModelSerializer):
 class CourtSerializer(serializers.ModelSerializer):
     """Court model serializer."""
 
-    court_id = serializers.IntegerField(source='pk', read_only=True)
+    court_id = serializers.IntegerField(source='pk')
 
-    tag_list = serializers.StringRelatedField(many=True, read_only=True)
+    tag_list = serializers.StringRelatedField(many=True)
 
     contacts_list = ContactSerializer(
         many=True,
-        source='contacts',
-        read_only=True
+        source='contacts'
     )
+    photo_url = serializers.ImageField(use_url=True, required=False)
 
-    location = LocationSerializer(read_only=True)
+    location = LocationSerializer()
 
     class Meta:
         model = Court
         fields = (
+            'court_id',
+            'price_description',
+            'description',
+            'contacts_list',
+            'photo_url',
+            'tag_list',
+            'location'
+        )
+        read_only_fields = (
             'court_id',
             'price_description',
             'description',
