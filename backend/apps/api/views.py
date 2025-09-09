@@ -2,8 +2,8 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
-from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from rest_framework import status
@@ -13,7 +13,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from social_core.exceptions import AuthForbidden
-from social_django.utils import load_backend, load_strategy
+from social_django.utils import (
+    load_backend,
+    load_strategy,
+)
 
 from apps.api.serializers import (
     FirebaseUserDataSerializer,
@@ -39,7 +42,9 @@ class LogoutView(APIView):
             type=openapi.TYPE_OBJECT,
             required=['refresh'],
             properties={
-                'refresh': openapi.Schema(type=openapi.TYPE_STRING, description='Refresh token to blacklist'),
+                'refresh': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Refresh token to blacklist'),
             },
         ),
         responses={205: 'Reset Content', 400: 'Bad Request'},
@@ -82,8 +87,14 @@ class GoogleLogin(APIView):
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'access_token': openapi.Schema(type=openapi.TYPE_STRING, description='Google access token'),
-                'id_token': openapi.Schema(type=openapi.TYPE_STRING, description='Google ID token'),
+                'access_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Google access token'
+                    ),
+                'id_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Google ID token'
+                    ),
             },
             anyOf=[
                 {'required': ['access_token']},
@@ -91,10 +102,13 @@ class GoogleLogin(APIView):
             ],
         ),
         responses={
-            200: openapi.Response('Successful authentication', GoogleUserDataSerializer),
+            200: openapi.Response(
+                'Successful authentication',
+                GoogleUserDataSerializer
+                ),
             401: 'Authentication failed',
         },
-        operation_summary="Authenticate user via Google (access_token or id_token)",
+        operation_summary="Authenticate via Google (access_token or id_token)",
         tags=['auth'],
     )
     def post(self, request):
