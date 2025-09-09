@@ -48,7 +48,7 @@ class LogoutView(APIView):
             },
         ),
         responses={205: 'Reset Content', 400: 'Bad Request'},
-        operation_summary="Logout by blacklisting refresh token",
+        operation_summary='Logout by blacklisting refresh token',
         tags=['auth'],
     )
     def post(self, request) -> Response:
