@@ -1,5 +1,6 @@
 from threading import Thread
 
+import pytest
 from pyfcm.errors import FCMError
 
 from apps.notifications.notifications import NotificationTypes
@@ -141,92 +142,98 @@ class TestPushServiceStatusMethods:
         assert status['initialized'] is True
 
 
+@pytest.mark.django_db
 class TestPushServiceNotificationMethods:
     """Test notification sending methods."""
 
-    def test_send_notification_by_token_success(
+    def test_send_notification_by_device_success(
         self,
         push_service_enabled,
         sample_notification,
+        sample_device
     ):
-        """Test successful single token notification."""
+        """Test successful single device notification."""
         service = push_service_enabled
-        result = service.send_notification_by_token(
-            'test_token_123456789',
+        result = service.send_notification_by_device(
+            sample_device,
             sample_notification,
         )
 
         assert result is True
 
-    def test_send_notification_by_token_with_game_id(
+    def test_send_notification_by_device_with_game_id(
         self,
         push_service_enabled,
         sample_notification,
+        sample_device
     ):
-        """Test single token notification with game_id."""
+        """Test single device notification with game_id."""
         service = push_service_enabled
-        result = service.send_notification_by_token(
-            'test_token_123456789',
+        result = service.send_notification_by_device(
+            sample_device,
             sample_notification,
             game_id=4,
         )
 
         assert result is True
 
-    def test_send_notification_by_token_service_disabled(
+    def test_send_notification_by_device_service_disabled(
         self,
         push_service_disabled,
         sample_notification,
+        sample_device
     ):
         """Test notification when service is disabled."""
         service = push_service_disabled
-        result = service.send_notification_by_token(
-            'test_token',
+        result = service.send_notification_by_device(
+            sample_device,
             sample_notification,
         )
         assert result is None
 
-    def test_send_notification_by_token_fcm_error(
+    def test_send_notification_by_device_fcm_error(
         self,
         push_service_enabled,
         mock_fcm_service_fail,
         sample_notification,
-        mock_tasks_import
+        mock_tasks_import,
+        sample_device
     ):
         """Test notification with FCM error."""
         service = push_service_enabled
         service.push_service = mock_fcm_service_fail
 
-        result = service.send_notification_by_token(
-            'invalid_token',
+        result = service.send_notification_by_device(
+            sample_device,
             sample_notification,
         )
         assert result is False
 
-    def test_send_push_notifications_multiple_tokens(
+    def test_send_push_notifications_multiple_devices(
         self,
         push_service_enabled,
         sample_notification,
         mock_fcm_service_fail,
-        mock_tasks_import
+        mock_tasks_import,
+        devices
     ):
-        """Test sending to multiple tokens."""
+        """Test sending to multiple devices."""
         service = push_service_enabled
-        tokens = ['token1', 'token2', 'token3']
-        result = service.send_push_notifications(tokens, sample_notification)
+        devices = devices['active_devices']
+        result = service.send_push_notifications(devices, sample_notification)
 
         assert isinstance(result, dict)
-        assert result['total_tokens'] == 3
+        assert result['total_devices'] == 3
         assert result['successful'] == 3
         assert result['failed'] == 0
 
         service.push_service = mock_fcm_service_fail
         result_with_errors = service.send_push_notifications(
-            tokens,
+            devices,
             sample_notification
         )
         assert isinstance(result_with_errors, dict)
-        assert result_with_errors['total_tokens'] == 3
+        assert result_with_errors['total_devices'] == 3
         assert result_with_errors['successful'] == 0
         assert result_with_errors['failed'] == 3
 
@@ -235,70 +242,52 @@ class TestPushServiceNotificationMethods:
         push_service_enabled,
         sample_notification,
     ):
-        """Test sending to empty tokens list."""
+        """Test sending to empty devices list."""
         service = push_service_enabled
-        tokens = []
+        devices = []
 
-        result = service.send_push_notifications(tokens, sample_notification)
+        result = service.send_push_notifications(devices, sample_notification)
 
         assert isinstance(result, dict)
-        assert result['total_tokens'] == 0
+        assert result['total_devices'] == 0
         assert result['successful'] == 0
         assert result['failed'] == 0
 
 
+@pytest.mark.django_db
 class TestPushServiceInternalMethods:
     """Test internal helper methods."""
 
-    def test_send_notification_by_token_internal_success(
-        self, push_service_enabled, sample_notification
+    def test_send_notification_by_device_internal_success(
+        self, push_service_enabled, sample_notification, sample_device
     ):
         """Test internal notification method success."""
         service = push_service_enabled
-        result = service._send_notification_by_token_internal(
-            'test_token_123456789',
+        result = service._send_notification_by_device_internal(
+            sample_device,
             sample_notification,
         )
         assert result is True
 
-    def test_send_notification_by_token_internal_fcm_error(
+    def test_send_notification_by_device_internal_fcm_error(
         self,
         push_service_enabled,
         mock_fcm_service_token_fail,
         sample_notification,
+        sample_device,
         mock_tasks_import
     ):
         """Test internal notification method with FCM error."""
         service = push_service_enabled
         service.push_service = mock_fcm_service_token_fail
-        result = service._send_notification_by_token_internal(
-            'invalid_token',
+        result = service._send_notification_by_device_internal(
+            sample_device,
             sample_notification,
         )
         assert result is False
 
-    def test_token_masking(
-        self, push_service_enabled, sample_notification
-    ):
-        """Test that tokens are properly masked in logs."""
-        service = push_service_enabled
 
-        long_token = 'very_long_token_that_should_be_masked_12345'
-        short_token = 'short'
-
-        result1 = service._send_notification_by_token_internal(
-            long_token,
-            sample_notification,
-        )
-        assert result1 is True
-
-        result2 = service._send_notification_by_token_internal(
-            short_token,
-            sample_notification,
-        )
-        assert result2 is True
-
-
+@pytest.mark.django_db
 class TestPushServiceErrorHandling:
     """Test error handling scenarios."""
 
@@ -307,13 +296,14 @@ class TestPushServiceErrorHandling:
         push_service_enabled,
         mock_fcm_service_token_fail,
         sample_notification,
-        mock_tasks_import
+        mock_tasks_import,
+        sample_device
     ):
         """Test that retry tasks are scheduled on FCM errors."""
         service = push_service_enabled
         service.push_service = mock_fcm_service_token_fail
-        result = service._send_notification_by_token_internal(
-            'invalid_token',
+        result = service._send_notification_by_device_internal(
+            sample_device,
             sample_notification,
         )
         assert result is False
@@ -341,6 +331,7 @@ class TestPushServiceErrorHandling:
         )
 
 
+@pytest.mark.django_db
 class TestPushServiceEdgeCases:
     """Test edge cases and unusual scenarios."""
 
@@ -348,13 +339,14 @@ class TestPushServiceEdgeCases:
         self,
         push_service_enabled,
         sample_notification,
-        mock_tasks_import
+        mock_tasks_import,
+        sample_device
     ):
         """Test sending notification with an invalid token."""
         service = push_service_enabled
-        invalid_token = ''
-        result = service.send_notification_by_token(
-            invalid_token,
+        sample_device.token = ''
+        result = service.send_notification_by_device(
+            sample_device,
             sample_notification,
         )
         assert result is False
@@ -363,17 +355,20 @@ class TestPushServiceEdgeCases:
         self,
         push_service_enabled,
         sample_notification,
-        mock_tasks_import
+        mock_tasks_import,
+        sample_device
     ):
         """Test sending notification with a None token."""
         service = push_service_enabled
-        none_token = None
-        result = service.send_notification_by_token(
-            none_token,
+        sample_device.token = None
+        
+        result = service.send_notification_by_device(
+            sample_device,
             sample_notification,
         )
         assert result is False
 
+@pytest.mark.django_db
 class TestPushServiceWithTasksIntegration:
     """Test integration with Celery tasks."""
 
@@ -381,14 +376,15 @@ class TestPushServiceWithTasksIntegration:
         self,
         push_service_enabled,
         sample_notification,
+        sample_device,
         mock_tasks_import
     ):
         """Test successful FCM notification does not create retry task."""
         service = push_service_enabled
         service.push_service.notify.return_value = None
 
-        result = service._send_notification_by_token_internal(
-            'token123456789',
+        result = service._send_notification_by_device_internal(
+            sample_device,
             sample_notification
         )
         assert result is True
@@ -398,14 +394,15 @@ class TestPushServiceWithTasksIntegration:
         self,
         push_service_enabled,
         sample_notification,
+        sample_device,
         mock_tasks_import
     ):
         """Test FCMError triggers retry_notification_task creation."""
         service = push_service_enabled
         service.push_service.notify.side_effect = FCMError('FCM fail')
 
-        result = service._send_notification_by_token_internal(
-            'token987654321',
+        result = service._send_notification_by_device_internal(
+            sample_device,
             sample_notification
         )
         assert result is False

@@ -272,7 +272,7 @@ class PushService:
                 f'Error processing notification type {type}: {str(e)}'
             )
             logger.error(err_msg, exc_info=True)
-            return 
+            return {'status': f'Error: Notification creation failed: {str(e)}'}
 
     @service_required
     def send_push_notifications(
@@ -310,7 +310,7 @@ class PushService:
             result['failed'] += 1
         logger.info(
             f"Push notification '{notification.type}' results: "
-            f"{result['successful']}/{result['total_tokens']} successful, "
+            f"{result['successful']}/{result['total_devices']} successful, "
             f"{result['failed']} failed"
         )
         return result
@@ -351,13 +351,16 @@ class PushService:
         This method is NOT decorated with @service_required
         to avoid double checking.
         """
+        error_occurred = False
+        if not device.token:
+            logger.warning('Empty device token, skipping notification')
+            return False
         data_message = {'screen': notification.screen}
         if game_id:
             data_message['gameId'] = str(game_id)
-        error_occurred = False
 
+        masked_token = (device.token[:8] + '...' )
         try:
-            masked_token = (device.token[:8] + '...' )
             logger.debug(f'Sending notification to device {masked_token}')
             self.push_service.notify(
                 fcm_token=device.token,

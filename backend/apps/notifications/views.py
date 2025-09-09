@@ -30,7 +30,7 @@ class NotificationsViewSet(
     """
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
-    http_method_names = ['get', 'patch']
+    http_method_names = ['get', 'put', 'patch']
 
     def get_queryset(self):
         return Notifications.objects.filter(
@@ -106,15 +106,9 @@ class NotificationsViewSet(
                 platform=serializer.validated_data.get('platform', None),
             )
             if created:
-                return Response(
-                    {'message': 'New device token registered.'},
-                    status=status.HTTP_201_CREATED
-                )
+                return Response(status=status.HTTP_201_CREATED)
             else:
-                return Response(
-                    {'message': 'Device token updated.'},
-                    status=status.HTTP_200_OK
-                )
+                return Response(status=status.HTTP_200_OK)
         return Response(
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST

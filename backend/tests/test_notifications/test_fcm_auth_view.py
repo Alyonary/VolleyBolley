@@ -39,11 +39,7 @@ class TestFCMApi:
             'platform': DeviceType.ANDROID
         }
         response = client.put(fcm_token_url, token_data, format='json')
-
         assert response.status_code == status.HTTP_200_OK
-        assert 'message' in response.data
-        assert 'updated' in response.data['message'].lower()
-        
         device = Device.objects.get(token=existing_device.token)
         assert device.player.id == player.id
         assert device.platform == DeviceType.ANDROID
@@ -62,7 +58,6 @@ class TestFCMApi:
             format='json'
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        
         response = client.put(
             fcm_token_url, 
             invalid_fcm_token_data[1], 

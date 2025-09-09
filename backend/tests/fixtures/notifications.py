@@ -80,6 +80,12 @@ def devices(players):
     }
 
 @pytest.fixture
+def sample_device(devices):
+    """Returns a sample device for testing."""
+    return devices['device1']
+
+
+@pytest.fixture
 def device_tokens(devices):
     """Returns only device tokens for easier testing."""
     return {
@@ -98,7 +104,13 @@ def fcm_token_data():
 @pytest.fixture
 def fcm_token_url():
     """Returns the URL for FCM token API."""
-    return '/api/fcm-token/'
+    return '/api/notifications/fcm-auth/'
+
+
+@pytest.fixture
+def notifications_url():
+    """Returns the URL for notifications API."""
+    return '/api/notifications/'
 
 
 @pytest.fixture
@@ -111,6 +123,7 @@ def user_with_player():
         user=user,
     )
     return user, player
+
 
 @pytest.fixture
 def second_user_with_player():
@@ -137,6 +150,7 @@ def existing_device(second_user_with_player):
         platform=DeviceType.IOS
     )
     return device
+
 
 @pytest.fixture
 def invalid_fcm_token_data():
