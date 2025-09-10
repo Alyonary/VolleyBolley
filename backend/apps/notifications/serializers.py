@@ -1,0 +1,49 @@
+from rest_framework import serializers
+
+from apps.notifications.models import DeviceType, Notifications
+from apps.notifications.notifications import Notification
+
+
+class FCMTokenSerializer(serializers.Serializer):
+    """Serializer for handling FCM device tokens."""
+
+    token = serializers.CharField(required=True)
+    platform = serializers.ChoiceField(choices=DeviceType, required=False)
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    """
+    Serializer for Notification model.
+    - GET: returns full notification info.
+    - PUT: processes notification_id for marking as read.
+    """
+
+    title = serializers.SerializerMethodField()
+    message = serializers.SerializerMethodField()
+    screen = serializers.SerializerMethodField()
+    notification_id = serializers.IntegerField(source='id')
+
+    class Meta:
+        model = Notifications
+        fields = [
+            'notification_id',
+            'created_at',
+            'title',
+            'message',
+            'screen',
+        ]
+
+
+    def get_title(self, obj):
+        return Notification(obj.type).title
+
+    def get_message(self, obj):
+        return Notification(obj.type).body
+
+    def get_screen(self, obj):
+        return Notification(obj.type).screen
+
+    def update(self, instance, validated_data):
+        instance.is_read = True
+        instance.save()
+        return instance

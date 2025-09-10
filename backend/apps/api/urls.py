@@ -15,6 +15,7 @@ from apps.api.views import (
 )
 from apps.courts.views import CourtViewSet
 from apps.locations.views import CountryListView
+from apps.notifications.views import NotificationsViewSet
 from apps.players.views import PlayerViewSet
 
 app_name = 'api'
@@ -22,6 +23,11 @@ app_name = 'api'
 api_v1 = DefaultRouter()
 api_v1.register(r'courts', CourtViewSet, basename='courts')
 api_v1.register(r'players', PlayerViewSet, basename='players')
+api_v1.register(
+    r'notifications',
+    NotificationsViewSet,
+    basename='notifications'
+)
 
 schema_view = get_schema_view(
     openapi.Info(

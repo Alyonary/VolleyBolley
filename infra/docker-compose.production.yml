@@ -12,6 +12,31 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+
+  redis:
+    image: redis:7-alpine
+    container_name: volleybolley_redis
+    restart: unless-stopped
+    command: >
+      redis-server 
+      --requirepass ${REDIS_PASSWORD}
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    volumes:
+      - redis_data:/data
+    ports:
+      - "${REDIS_PORT}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--no-auth-warning", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   backend:
     container_name: volleybolley-backend
     image: dorofrik/volleybolley-backend
@@ -31,6 +56,49 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+
+  celery_worker:
+    container_name: volleybolley_celery_worker
+    image: dorofrik/volleybolley-backend
+    command: celery -A volleybolley worker -l info --concurrency=${CELERY_WORKER_CONCURRENCY:-2}
+    env_file: .env
+    environment:
+      - REDIS_HOST=redis
+    volumes:
+      - media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "celery"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  celery_beat:
+    container_name: volleybolley_celery_beat
+    image: dorofrik/volleybolley-backend
+    command: celery -A volleybolley beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    env_file: .env
+    environment:
+      - REDIS_HOST=redis
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "celery"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
   nginx:
     container_name: volleybolley-proxy
     image: dorofrik/volleybolley-proxy
@@ -46,5 +114,6 @@ services:
 
 volumes:
   pg_data_volleybolley:
+  redis_data:
   static:
   media:
