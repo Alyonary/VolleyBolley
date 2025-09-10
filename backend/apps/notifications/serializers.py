@@ -33,14 +33,6 @@ class NotificationSerializer(serializers.ModelSerializer):
             'screen',
         ]
 
-    def __init__(self, *args, **kwargs):
-        """
-        Custom init to handle different fields for GET and PUT requests.
-        """
-        super().__init__(*args, **kwargs)
-        if self.instance is None and self.initial_data is not None:
-            self.fields.clear()
-            self.fields['notification_id'] = serializers.IntegerField()
 
     def get_title(self, obj):
         return Notification(obj.type).title
