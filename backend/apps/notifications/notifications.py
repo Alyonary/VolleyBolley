@@ -3,6 +3,7 @@ from typing import TypeAlias
 
 class NotificationTypes:
     """Notification types constants."""
+
     IN_GAME: str = 'joinGame'
     RATE: str = 'rate'
     REMOVED: str = 'removed'
@@ -18,15 +19,16 @@ class Notification:
     Notification object with type, title, body, and screen.
     This class is used to create a notification object based on the type.
     """
+
     _instances = {}
-    
+
     def __init__(self, notification_type):
         if hasattr(self, '_initialized'):
             return
-        
+
         if not notification_type:
             raise ValueError('Notification type must be provided')
-        
+
         if self.__class__ is Notification:
             raise TypeError(
                 'Cannot instantiate Notification directly. '
@@ -37,7 +39,7 @@ class Notification:
         self.title = params['title']
         self.body = params['body']
         self.screen = params['screen']
-        
+
         self._initialized = True
 
     def __new__(cls, notification_type=None):
@@ -45,11 +47,11 @@ class Notification:
             if not notification_type:
                 raise ValueError('Notification type must be provided')
             return cls._get_singleton_instance(notification_type)
-        
+
         if cls not in cls._instances:
             cls._instances[cls] = super().__new__(cls)
         return cls._instances[cls]
-    
+
     @classmethod
     def _get_singleton_instance(cls, notification_type):
         """Get singleton instance based on notification type."""
@@ -61,7 +63,7 @@ class Notification:
             return RemovedNotification(notification_type)
         else:
             raise ValueError(f'Unknown notification type: {notification_type}')
-    
+
     @staticmethod
     def _get_params(notification_type):
         """Get notification parameters based on the type."""
@@ -89,21 +91,21 @@ class Notification:
 
 class InGameNotification(Notification):
     """In-game notification singleton."""
-    
+
     def __init__(self, notification_type=NotificationTypes.IN_GAME):
         super().__init__(notification_type)
 
 
 class RateNotification(Notification):
     """Rate notification singleton."""
-    
+
     def __init__(self, notification_type=NotificationTypes.RATE):
         super().__init__(notification_type)
 
 
 class RemovedNotification(Notification):
     """Removed notification singleton."""
-    
+
     def __init__(self, notification_type=NotificationTypes.REMOVED):
         super().__init__(notification_type)
 

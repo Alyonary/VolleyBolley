@@ -77,6 +77,7 @@ def test_notification_factory_unknown_type():
     with pytest.raises(ValueError):
         Notification('unknownType')
 
+
 def test_notification_requires_type():
     """Test Notification requires a type argument."""
     with pytest.raises(ValueError):

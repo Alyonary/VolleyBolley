@@ -1,16 +1,14 @@
-from backend.apps.notifications.notifications import Notification
 from rest_framework import serializers
 
 from apps.notifications.models import DeviceType, Notifications
+from apps.notifications.notifications import Notification
 
 
 class FCMTokenSerializer(serializers.Serializer):
     """Serializer for handling FCM device tokens."""
+
     token = serializers.CharField(required=True)
-    platform = serializers.ChoiceField(
-        choices=DeviceType,
-        required=False
-    )
+    platform = serializers.ChoiceField(choices=DeviceType, required=False)
 
 
 class NotificationSerializer(serializers.ModelSerializer):

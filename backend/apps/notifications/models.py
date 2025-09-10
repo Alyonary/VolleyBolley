@@ -52,11 +52,7 @@ class DeviceManager(models.Manager):
         return self.get_queryset().by_player(player_id)
 
     def update_or_create_token(
-        self,
-        token,
-        player,
-        platform=None,
-        is_active=True
+        self, token, player, platform=None, is_active=True
     ):
         """
         Update or create a device with the given token and player.
@@ -71,27 +67,21 @@ class DeviceManager(models.Manager):
             defaults={
                 'player': player,
                 'platform': platform,
-                'is_active': is_active
-            }
+                'is_active': is_active,
+            },
         )
         return device, created
 
 
 class Device(models.Model):
     """Model for storing device information for push notifications."""
-    token = models.CharField(
-        max_length=DEVICE_TOKEN_MAX_LENGTH,
-        unique=True
-    )
+
+    token = models.CharField(max_length=DEVICE_TOKEN_MAX_LENGTH, unique=True)
     platform = models.CharField(
-        max_length=10,
-        choices=DeviceType.choices,
-        default=DeviceType.ANDROID
+        max_length=10, choices=DeviceType.choices, default=DeviceType.ANDROID
     )
     player = models.ForeignKey(
-        'players.Player',
-        related_name='devices',
-        on_delete=models.CASCADE
+        'players.Player', related_name='devices', on_delete=models.CASCADE
     )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -108,23 +98,28 @@ class Device(models.Model):
 
 class Notifications(models.Model):
     """Model for storing notification messages."""
+
     player = models.ForeignKey(
         'players.Player',
         related_name='notifications',
-        on_delete=models.CASCADE
+        on_delete=models.CASCADE,
     )
     type = models.CharField(
         max_length=NOTIFICATION_TYPE_MAX_LENGTH,
         verbose_name=_('Notification type'),
-        choices=NotificationTypes.CHOICES
+        choices=NotificationTypes.CHOICES,
     )
-    is_read = models.BooleanField(
-        default=False,
-        verbose_name=_('Is read')
-    )
+    is_read = models.BooleanField(default=False, verbose_name=_('Is read'))
     created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_('Created at')
+        auto_now_add=True, verbose_name=_('Created at')
+    )
+    game = models.ForeignKey(
+        'event.Game',
+        related_name='notifications',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        verbose_name=_('Related game'),
     )
 
     class Meta:

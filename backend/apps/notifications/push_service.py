@@ -27,6 +27,7 @@ def service_required(func):
     If service is not available, attempts reconnection once.
     Returns None if service remains unavailable.
     """
+
     @wraps(func)
     def wrapper(self, *args, **kwargs):
         if not self.enable:
@@ -46,6 +47,7 @@ def service_required(func):
             )
             return None
         return func(self, *args, **kwargs)
+
     return wrapper
 
 
@@ -69,6 +71,7 @@ class PushService:
         process_notifications_by_type(type, player_id=None, game_id=None):
             Sends notifications to multiple devices using FCM.
     """
+
     _instance = None
     _lock = Lock()
 
@@ -111,8 +114,7 @@ class PushService:
             if error_msg:
                 self.enable = False
                 logger.error(
-                    f'Error initializing services: {error_msg}',
-                    exc_info=True
+                    f'Error initializing services: {error_msg}', exc_info=True
                 )
             self._initialized = True
 
@@ -132,7 +134,7 @@ class PushService:
                 settings.FIREBASE_SERVICE_ACCOUNT,
                 f,
                 indent=2,
-                ensure_ascii=False
+                ensure_ascii=False,
             )
         logger.info(f'FCM file created at {file_path}')
 
@@ -155,9 +157,7 @@ class PushService:
         except Exception as e:
             self.fb_admin = None
             self.push_service = None
-            logger.error(
-                f'Error initializing Firebase app: {str(e)}'
-            )
+            logger.error(f'Error initializing Firebase app: {str(e)}')
             return False
 
     def reconnect(self) -> bool:
@@ -197,7 +197,7 @@ class PushService:
         return all(
             [
                 getattr(self, 'fb_admin', False),
-                getattr(self, 'push_service', False)
+                getattr(self, 'push_service', False),
             ]
         )
 
@@ -213,9 +213,7 @@ class PushService:
             if not active_workers:
                 logger.warning('No active Celery workers found')
                 return False
-            logger.debug(
-                f'Found {len(active_workers)} active Celery workers'
-            )
+            logger.debug(f'Found {len(active_workers)} active Celery workers')
             return True
         except ImportError:
             logger.error('Celery is not installed')
@@ -223,7 +221,6 @@ class PushService:
         except Exception as e:
             logger.warning(f'Cannot connect to Celery: {str(e)}')
             return False
-
 
     @service_required
     def process_notifications_by_type(
@@ -239,7 +236,7 @@ class PushService:
             type (str): Type of notification to send.
             player_id (int, optional): Player ID for player-specific
                 notifications.
-            game_id (int, optional): 
+            game_id (int, optional):
                 Game ID to include in the notification data.
         Returns:
             dict: Statistics of notification sending.
@@ -248,29 +245,21 @@ class PushService:
             logger.info(f'Processing notification type: {type}')
             notification = Notification(type)
             if (
-                type == NotificationTypes.IN_GAME or
-                type == NotificationTypes.RATE
+                type == NotificationTypes.IN_GAME
+                or type == NotificationTypes.RATE
             ):
-                devices: list[Device] = Device.objects.in_game(
-                    game_id
-                )
+                devices: list[Device] = Device.objects.in_game(game_id)
             elif type == NotificationTypes.REMOVED:
-                devices: list[Device] = Device.objects.by_player(
-                    player_id
-                )
+                devices: list[Device] = Device.objects.by_player(player_id)
             else:
                 devices = []
                 logger.warning(f'Unknown notification type: {type}')
             return self.send_push_notifications(
-                devices=devices,
-                notification=notification,
-                game_id=game_id
+                devices=devices, notification=notification, game_id=game_id
             )
-            
+
         except Exception as e:
-            err_msg = (
-                f'Error processing notification type {type}: {str(e)}'
-            )
+            err_msg = f'Error processing notification type {type}: {str(e)}'
             logger.error(err_msg, exc_info=True)
             return {'status': f'Error: Notification creation failed: {str(e)}'}
 
@@ -300,9 +289,7 @@ class PushService:
             return result
         for d in devices:
             is_notify = self._send_notification_by_device_internal(
-                device=d,
-                notification=notification,
-                game_id=game_id
+                device=d, notification=notification, game_id=game_id
             )
             if is_notify:
                 result['successful'] += 1
@@ -318,7 +305,7 @@ class PushService:
     @service_required
     def send_notification_by_device(
         self,
-        token: str,
+        device: Device,
         notification: NotificationsClass,
         game_id: int | None = None,
     ) -> bool | None:
@@ -331,13 +318,11 @@ class PushService:
             game_id (int, optional): Game ID to include in the
                 notification data.
         """
-        if not token:
+        if not device.token:
             logger.warning('Empty token provided, skipping notification')
             return False
         return self._send_notification_by_device_internal(
-            token,
-            notification,
-            game_id
+            device, notification, game_id
         )
 
     def _send_notification_by_device_internal(
@@ -359,28 +344,23 @@ class PushService:
         if game_id:
             data_message['gameId'] = str(game_id)
 
-        masked_token = (device.token[:8] + '...' )
+        masked_token = device.token[:8] + '...'
         try:
             logger.debug(f'Sending notification to device {masked_token}')
             self.push_service.notify(
                 fcm_token=device.token,
                 notification_title=notification.title,
                 notification_body=notification.body,
-                data_payload=data_message
+                data_payload=data_message,
             )
             logger.debug(
                 f'Notification sent successfully to device {masked_token}'
             )
-            Notifications.objects.create(
-                player=device.player,
-                type=notification.type
-            )
+            self.create_db_model(device, notification.type, game_id)
             return True
         except FCMError as e:
             error_occurred = True
-            logger.warning(
-                f'FCM Error for token {masked_token}: {str(e)}'
-            )
+            logger.warning(f'FCM Error for token {masked_token}: {str(e)}')
             return False
         except Exception as e:
             error_occurred = True
@@ -394,9 +374,10 @@ class PushService:
                     from apps.notifications.tasks import (
                         retry_notification_task,
                     )
+
                     retry_notification_task.apply_async(
                         args=[device.token, notification.type, game_id],
-                        countdown=60
+                        countdown=60,
                     )
                     logger.info(
                         f'Scheduled retry task for token {masked_token} '
@@ -407,3 +388,34 @@ class PushService:
                         f'Failed to schedule retry task for {masked_token}: '
                         f'{str(celery_error)}'
                     )
+
+    def create_db_model(
+        self,
+        device: Device,
+        notification_type: str,
+        game_id: int | None = None,
+    ) -> bool:
+        """
+        Create a database model for storing notification.
+        Args:
+            device (Device): Device object to associate with the notification.
+            notification_type (str): Type of notification sent.
+            game_id (int, optional): Game ID for the notification data.
+        """
+        data = {'player': device.player, 'type': notification_type}
+        if game_id:
+            data['game_id'] = game_id
+        try:
+            Notifications.objects.create(**data)
+            logger.debug(
+                f'Notification DB model created for player '
+                f'{device.player.user.username}'
+            )
+        except Exception as e:
+            logger.error(
+                f'Error creating notification DB model for player '
+                f'{device.player.user.username}: {str(e)}',
+                exc_info=True,
+            )
+            return False
+        return True

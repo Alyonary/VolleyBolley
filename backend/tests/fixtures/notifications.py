@@ -1,13 +1,14 @@
 from random import choice
 
 import pytest
-from backend.apps.notifications.notifications import (
+from django.contrib.auth import get_user_model
+
+from apps.event.models import Game
+from apps.notifications.models import Device, DeviceType, Notifications
+from apps.notifications.notifications import (
     Notification,
     NotificationTypes,
 )
-from django.contrib.auth import get_user_model
-
-from apps.notifications.models import Device, DeviceType
 from apps.players.models import Player
 
 User = get_user_model()
@@ -188,3 +189,52 @@ def sample_notification(
         ]
     )
 
+@pytest.fixture
+def notifications_objs(
+    authenticated_client,
+    rate_notification,
+    in_game_notification,
+    remove_notification
+    ):
+    """Creates multiple notification objects for the authenticated user."""
+    client, user = authenticated_client
+    notif1 = Notifications.objects.create(
+        player=user.player, type=NotificationTypes.RATE
+    )
+    notif2 = Notifications.objects.create(
+        player=user.player, type=NotificationTypes.IN_GAME
+    )
+    notif3 = Notifications.objects.create(
+        player=user.player, type=NotificationTypes.REMOVED,
+    )
+    return {
+        'notif1': notif1,
+        'notif2': notif2,
+        'notif3': notif3,
+        'all_notifications': [notif1, notif2, notif3],
+        'unread_notifications': [notif1, notif2]
+    }
+    
+@pytest.fixture
+def game_for_notification():
+    import warnings
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            'ignore',
+            message=(
+                'DateTimeField .* received a naive datetime .* while '
+                'time zone support is active.'
+            )
+        )
+        game = Game.objects.create(
+            title='Test Game',
+            court=None,
+            host=None,
+            is_active=True,
+            is_private=False,
+            date='2024-12-31',
+            start_time='10:00:00',
+            end_time='12:00:00',
+            max_players=10,
+        )
+        return game

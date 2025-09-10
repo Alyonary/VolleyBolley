@@ -9,15 +9,11 @@ from apps.players.models import Player
 
 @pytest.mark.django_db
 class TestNotificationsModel:
-    def test_create_notification(
-        self,
-        in_game_notification,
-        players
-    ):
+    def test_create_notification(self, in_game_notification, players):
+        """Test creating a notification."""
         player = players['player1']
         notif = Notifications.objects.create(
-            player=player,
-            type=in_game_notification.type
+            player=player, type=in_game_notification.type
         )
         assert notif.id is not None
         assert notif.is_read is False
@@ -28,9 +24,7 @@ class TestNotificationsModel:
         """Test that is_read defaults to False."""
         player = players['player1']
         notif = Notifications.objects.create(
-            player=player,
-            type=NotificationTypes.RATE,
-            is_read=True
+            player=player, type=NotificationTypes.RATE, is_read=True
         )
         assert notif.id is not None
         assert notif.is_read is False
@@ -39,25 +33,15 @@ class TestNotificationsModel:
         """Test the string representation of the Notifications model."""
         user = users['user1']
         player = Player.objects.create(user=user)
-        notif = Notifications.objects.create(
-            player=player,
-            type='rate'
-        )
-        notif2 = Notifications.objects.create(
-            player=player,
-            type='removed'
-        )
-        notif3 = Notifications.objects.create(
-            player=player,
-            type='InGame'
-        )
+        notif = Notifications.objects.create(player=player, type='rate')
+        notif2 = Notifications.objects.create(player=player, type='removed')
+        notif3 = Notifications.objects.create(player=player, type='InGame')
         assert str(notif) == f'Notification rate for {user.username}'
         assert str(notif2) == f'Notification removed for {user.username}'
         assert str(notif3) == f'Notification InGame for {user.username}'
 
     @pytest.mark.parametrize(
-        "notif_type",
-        [choice for choice, _ in NotificationTypes.CHOICES]
+        'notif_type', [choice for choice, _ in NotificationTypes.CHOICES]
     )
     def test_notification_type_choices_param(self, players, notif_type):
         """Test that all notification types can be created."""
@@ -69,8 +53,7 @@ class TestNotificationsModel:
         """Test a notification with an invalid type raises an error."""
         player = players['player1']
         notif = Notifications.objects.create(
-            player=player,
-            type='invalid_type'
+            player=player, type='invalid_type'
         )
         with pytest.raises(ValidationError):
             notif.full_clean()
@@ -79,10 +62,7 @@ class TestNotificationsModel:
         """Test that created_at is automatically set on creation."""
         player = players['player1']
         notif = Notifications.objects.create(
-            player=player,
-            type=NotificationTypes.RATE
+            player=player, type=NotificationTypes.RATE
         )
         assert notif.created_at is not None
-        assert abs(
-            (timezone.now() - notif.created_at).total_seconds()
-        ) < 5
+        assert abs((timezone.now() - notif.created_at).total_seconds()) < 5

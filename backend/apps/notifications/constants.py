@@ -3,6 +3,7 @@ from django.db import models
 
 class DeviceType(models.TextChoices):
     """Device type choices for push notifications."""
+
     IOS = 'ios', 'ios'
     ANDROID = 'android', 'android'
 
