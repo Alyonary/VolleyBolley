@@ -132,5 +132,11 @@ class Notifications(models.Model):
         verbose_name_plural = _('Notifications')
         ordering = ['-created_at']
 
+    def save(self, *args, **kwargs):
+        """Ensure is_read is False on creation."""
+        if self._state.adding:
+            self.is_read = False
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f'Notification {self.type} for {self.player.user.username}'

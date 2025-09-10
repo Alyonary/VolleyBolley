@@ -24,7 +24,17 @@ class TestNotificationsModel:
         assert notif.type == in_game_notification.type
         assert notif.player == player
 
-    @pytest.mark.django_db
+    def test_is_read_default_false(self, players):
+        """Test that is_read defaults to False."""
+        player = players['player1']
+        notif = Notifications.objects.create(
+            player=player,
+            type=NotificationTypes.RATE,
+            is_read=True
+        )
+        assert notif.id is not None
+        assert notif.is_read is False
+
     def test_str_representation(self, users):
         """Test the string representation of the Notifications model."""
         user = users['user1']

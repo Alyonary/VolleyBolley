@@ -4,7 +4,6 @@ from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.serializers import ValidationError
 
 from apps.notifications.models import Device, Notifications
 from apps.notifications.notifications import Notification, NotificationTypes
@@ -78,8 +77,6 @@ class NotificationsViewSet(
                 serializer.save(is_read=True)
                 updated.append(notification_id)
             except Notifications.DoesNotExist:
-                not_found.append(notification_id)
-            except ValidationError:
                 not_found.append(notification_id)
         logger.info(
             f'Notifications marked as read: {updated}, not found: {not_found}'
