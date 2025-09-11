@@ -29,7 +29,8 @@ class PlayerStrEnums(Enum):
     DEFAULT_BIRTHDAY = '2000-01-01'
     DEFAULT_GENDER = Genders.MALE.value
     DEFAULT_LEVEL = Levels.LIGHT.value
-
+    DEFAULT_FIRST_NAME = 'Anonym'
+    DEFAULT_LAST_NAME = 'Anonym'
 
 class Payments(models.TextChoices):
     """Payments types."""
