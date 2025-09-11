@@ -1,4 +1,5 @@
 from django.shortcuts import get_object_or_404
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -78,6 +79,33 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         return super().get_object()
 
+    @swagger_auto_schema(
+        tags=['players'],
+        operation_summary="List all players excluding current user",
+        responses={200: PlayerListSerializer(many=True)},
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        method='get',
+        responses={200: PlayerBaseSerializer()},
+        tags=['players'],
+        operation_summary="Get current player info",
+    )
+    @swagger_auto_schema(
+        method='patch',
+        request_body=PlayerBaseSerializer,
+        responses={200: PlayerBaseSerializer()},
+        tags=['players'],
+        operation_summary="Update current player info",
+    )
+    @swagger_auto_schema(
+        method='delete',
+        responses={204: 'No Content'},
+        tags=['players'],
+        operation_summary="Delete current player",
+    )
     @action(['GET', 'PATCH', 'DELETE'], detail=False)
     def me(self, request):
         """Get, patch or delete current player."""
@@ -113,13 +141,19 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             status=status.HTTP_200_OK, data=serializer.data
         )
 
+    @swagger_auto_schema(
+        method='put',
+        request_body=AvatarSerializer,
+        responses={200: AvatarSerializer},
+        tags=['players'],
+        operation_summary="Update or delete avatar",
+    )
     @action(
         detail=False, methods=['PUT'], url_path='me/avatar',
         url_name='me-avatar'
     )
     def put_delete_avatar(self, request):
         """Update avatar.
-        
         To delete avatar set its value to null.
         """
         instance = self.get_object()
@@ -133,6 +167,19 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @swagger_auto_schema(
+        method='get',
+        responses={200: PaymentsSerializer()},
+        tags=['players'],
+        operation_summary="Get payment data of player"
+    )
+    @swagger_auto_schema(
+        method='put',
+        request_body=PaymentSerializer,
+        responses={200: ''},
+        tags=['players'],
+        operation_summary="Update payment data of player"
+    )
     @action(
         detail=False, methods=['PUT', 'GET'], url_path='me/payments',
         url_name='me-payments'
@@ -153,6 +200,19 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         return Response(status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(
+        method='post',
+        request_body=FavoriteSerializer,
+        responses={201: FavoriteSerializer()},
+        tags=['players'],
+        operation_summary="Add player to favorite list",
+    )
+    @swagger_auto_schema(
+        method='delete',
+        responses={204: 'No Content'},
+        tags=['players'],
+        operation_summary="Delete player from favorite list",
+    )
     @action(
         detail=True, methods=['POST', 'DELETE']
     )
@@ -181,6 +241,12 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @swagger_auto_schema(
+        request_body=PlayerRegisterSerializer,
+        responses={200: PlayerBaseSerializer()},
+        tags=['players'],
+        operation_summary="Register new player"
+    )
     @action(
         detail=False,
         methods=['POST'],

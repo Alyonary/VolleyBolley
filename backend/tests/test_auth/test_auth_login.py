@@ -81,6 +81,171 @@ class TestGoogleAuth:
         assert player_json['country'] is None
         assert player_json['city'] is None
         assert player_json['is_registered'] is False
+
+    @pytest.mark.parametrize(
+        'token_type, token_value, expected_status',
+        [
+            ('access_token', 'invalid-google-token',
+             status.HTTP_400_BAD_REQUEST),
+            ('id_token', 'invalid-google-id-token',
+             status.HTTP_400_BAD_REQUEST),
+            ('access_token', '', status.HTTP_400_BAD_REQUEST),
+            ('id_token', '', status.HTTP_400_BAD_REQUEST),
+            (None, None, status.HTTP_302_FOUND)
+        ]
+    )
+    def test_auth_with_invalid_google_token(
+        self, api_client, token_type, token_value, expected_status
+    ):
+        data = {}
+        if token_type:
+            data[token_type] = token_value
         
+        response = api_client.post(
+            self.url,
+            data,
+            format='json'
+        )
+        assert response.status_code == expected_status
+
+    @pytest.mark.parametrize(
+        'invalid_google_response, expected_status',
+        [
+            ({'email': None}, status.HTTP_400_BAD_REQUEST),
+            ({'given_name': None, 'family_name': None},
+             status.HTTP_400_BAD_REQUEST),
+            ({'email': 'invalid-email'}, status.HTTP_400_BAD_REQUEST)
+        ]
+    )
+    def test_auth_with_invalid_google_response(
+        self, api_client, invalid_google_response, expected_status
+    ):
+        with patch(
+            'google.oauth2.id_token.verify_oauth2_token',
+            return_value=invalid_google_response
+        ):
+            response = api_client.post(
+                self.url,
+                {'id_token': 'fake-google-id-token'},
+                format='json'
+            )
+            assert response.status_code == expected_status
+
+    def test_auth_with_valid_google_response(
+        self, api_client, google_response
+    ):
+        with patch(
+            'google.oauth2.id_token.verify_oauth2_token',
+            return_value=google_response
+        ):
+            response = api_client.post(
+                self.url,
+                {'id_token': 'fake-google-id-token'},
+                format='json'
+            )
+            assert response.status_code == status.HTTP_200_OK
+            assert 'access_token' in response.data
+            assert 'refresh_token' in response.data
+            assert 'player' in response.data
+
+
+@pytest.mark.django_db
+class TestPhoneNumberAuth:
+    """Test auth with moke firebase answer."""
+
+    url = reverse_lazy('api:phone-number-login')
+
+    def test_auth_with_moke_firebase_response(
+        self, api_client, firebase_response
+    ):
+        with patch(
+            'apps.api.utils.firebase_auth.verify_id_token', 
+            return_value=firebase_response
+        ):
+            response = api_client.post(
+                self.url,
+                {'id_token': 'fake-firebase-id-token'},
+                format='json'
+            )
             
-            
+            self._check_response(response)
+
+    def _check_response(self, response):
+        
+        assert response.status_code == status.HTTP_200_OK
+        access_token = response.data.get('access_token', None)
+        refresh_token = response.data.get('refresh_token', None)
+        player_json = response.data.get('player', None)
+        assert isinstance(access_token, str)
+        assert isinstance(refresh_token, str)
+        expected_keys = {
+            'player_id',
+            'avatar',
+            'first_name',
+            'last_name',
+            'gender',
+            'date_of_birth',
+            'level',
+            'country',
+            'city',
+            'is_registered'
+        }
+        for key in expected_keys:
+            assert key in player_json
+        assert player_json['avatar'] is None
+        assert player_json['first_name'] == 'Anonym'
+        assert player_json['last_name'] == 'Anonym'
+        assert player_json['gender'] == 'MALE'
+        assert player_json['date_of_birth'] == '2000-01-01'
+        assert player_json['level'] == 'LIGHT'
+        assert player_json['country'] is None
+        assert player_json['city'] is None
+        assert player_json['is_registered'] is False
+
+    @pytest.mark.parametrize(
+        'invalid_token_fixture,expected_status',
+        [
+            ('firebase_response_no_user_id', status.HTTP_400_BAD_REQUEST),
+            ('firebase_response_no_phone_number', status.HTTP_400_BAD_REQUEST),
+            ('firebase_response_bad_phone_number',
+             status.HTTP_400_BAD_REQUEST),
+            ('empty_token', status.HTTP_400_BAD_REQUEST)
+        ]
+    )
+    def test_auth_with_invalid_firebase_token_and_moke_response(
+        self, request, api_client, invalid_token_fixture, expected_status
+    ):
+        invalid_token = request.getfixturevalue(invalid_token_fixture)
+        with patch(
+            'apps.api.utils.firebase_auth.verify_id_token', 
+            return_value=invalid_token
+        ):
+            response = api_client.post(
+                self.url,
+                {'id_token': 'fake-firebase-id-token'},
+                format='json'
+            )
+            assert response.status_code == expected_status
+
+    @pytest.mark.skip(reason="skipped until fresh token will be provided")
+    def test_auth_with_real_firebase_token(
+        self, api_client, real_firebase_token
+    ):
+        
+        response = api_client.post(
+                self.url,
+                {'id_token': real_firebase_token},
+                format='json'
+            )
+
+        self._check_response(response)
+
+    def test_auth_with_invalid_firebase_token(
+        self, api_client, invalid_firebase_token
+    ):
+        response = api_client.post(
+            self.url,
+            {'id_token': invalid_firebase_token},
+            format='json'
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
