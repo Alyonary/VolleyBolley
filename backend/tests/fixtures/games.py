@@ -99,10 +99,14 @@ def api_client_thailand(active_user, client):
 
 
 @pytest.fixture
-def another_user(user_data):
-    user_data['username'] = 'AnotherUser'
-    user_data['phone_number'] = '88005555535'
-    return User.objects.create_user(**user_data)
+def another_user():
+    return User.objects.create(
+        first_name='Test user for Cyprus 1',
+        last_name='Test user for Cyprus 1',
+        username='Test user for Cyprus 1',
+        email='test4@cyprus.com',
+        password='test4@cyprus.com'
+    )
 
 
 @pytest.fixture

@@ -56,7 +56,6 @@ class TestGameAPI:
 
     @pytest.mark.parametrize(
         'name, args', (
-            ('api:games-list', None),
             ('api:games-detail', lf('game_for_args')),
             ('api:games-preview', None),
             ('api:games-my-games', None),
@@ -144,9 +143,9 @@ class TestGameAPI:
             api_client_thailand,
     ):
         assert Game.objects.count() == 2
-        response = api_client_thailand.get(reverse('api:games-list'))
+        response = api_client_thailand.get(reverse('api:games-upcoming-games'))
         assert len(response.data) == 1
-        assert response.data[0]['game_id'] == game_thailand.id
+        assert response.data['games'][0]['game_id'] == game_thailand.id
 
 
 @pytest.mark.django_db(transaction=False)
@@ -207,7 +206,6 @@ class TestGameSerializers:
             assert level.name in levels
         assert response_data == {
             'game_id': game_thailand_with_players.id,
-            'game_type': 'MY GAMES',
             'host': {
                 'player_id': player_thailand.id,
                 'first_name': player_thailand.user.first_name,

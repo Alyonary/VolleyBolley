@@ -67,25 +67,6 @@ class BaseGameSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, value):
-        request = self.context.get('request', None)
-        player = request.user.player
-        if value.get('payment_type') == 'CASH':
-            value['payment_account'] = 'Cash money'
-        else:
-            payment = Payment.objects.filter(
-                player=player,
-                payment_type=value.get('payment_type')
-            ).last()
-            if not payment:
-                raise serializers.ValidationError(
-                    'No payment account found for this payment type')
-            if payment.payment_account is None:
-                value['payment_account'] = 'Not defined'
-            else:
-                value['payment_account'] = payment.payment_account
-        currency_type = CurrencyType.objects.filter(
-                            country=player.country).first()
-        value['currency_type'] = currency_type
         start_time = value.get('start_time')
         end_time = value.get('end_time')
         if start_time < timezone.now():
@@ -120,12 +101,48 @@ class GameSerializer(BaseGameSerializer):
             'players'
         ]
 
+    def get_currency_type(self):
+        """Returns the type of currency by the player's country."""
+        host = self.context['request'].user.player
+        try:
+            currency_type = CurrencyType.objects.get(
+                        country=host.country)
+        except CurrencyType.DoesNotExist:
+            raise serializers.ValidationError(
+                f"Валюта для страны {host.country} не найдена.")
+        return currency_type
+
+    def get_payment_account(self, payment_type):
+        """Returns the payment account to the player's payment type."""
+        player = self.context['request'].user.player
+        if payment_type == 'CASH':
+            return 'Cash money'
+        payment = Payment.objects.filter(
+            player=player,
+            payment_type=payment_type
+        ).last()
+        if payment is None:
+            raise serializers.ValidationError(
+                'No payment account found for this payment type')
+        elif payment.payment_account is None:
+            return 'Not defined'
+        else:
+            return payment.payment_account
+
     def create(self, validated_data):
         host = self.context['request'].user.player
         validated_data['host'] = host
         players = validated_data.pop('players')
         levels = validated_data.pop('player_levels')
-        game = Game.objects.create(**validated_data)
+
+        game = Game.objects.create(
+            currency_type=self.get_currency_type(),
+
+            payment_account=self.get_payment_account(
+                validated_data['payment_type']
+            ),
+            **validated_data)
+
         game.players.add(host)
         game.player_levels.set(levels)
         for player in players:
@@ -157,8 +174,6 @@ class GameDetailSerializer(BaseGameSerializer):
 
     host = PlayerGameSerializer()
 
-    game_type = serializers.SerializerMethodField(read_only=True)
-
     court_location = LocationSerializer(source='court.location')
 
     players = PlayerGameSerializer(many=True)
@@ -166,29 +181,10 @@ class GameDetailSerializer(BaseGameSerializer):
     class Meta(BaseGameSerializer.Meta):
         model = BaseGameSerializer.Meta.model
         fields = BaseGameSerializer.Meta.fields + [
-            'game_type',
             'host',
             'court_location',
             'players'
         ]
-
-    def get_game_type(self, obj):
-        """Assigns a type to the game.
-        Returning values:
-        MY GAMES, UPCOMING, ARCHIVE, INVITES, ACTIVE.
-        """
-        request = self.context.get('request', None)
-        if obj.host == request.user.player:
-            return 'MY GAMES'
-        elif GameInvitation.objects.filter(
-                invited=request.user.player, game=obj).exists():
-            return 'INVITES'
-        elif obj.end_time < timezone.now():
-            return 'ARCHIVE'
-        elif obj.start_time > timezone.now():
-            return 'UPCOMING'
-        else:
-            return 'ACTIVE'
 
 
 class GameInviteSerializer(serializers.ModelSerializer):
