@@ -147,6 +147,32 @@ class TestGameAPI:
         assert len(response.data) == 1
         assert response.data['games'][0]['game_id'] == game_thailand.id
 
+    def test_deleting_game_by_host(
+            self,
+            api_client_thailand,
+            game_thailand,
+            game_for_args
+    ):
+        assert Game.objects.count() == 1
+        response = api_client_thailand.delete(
+            reverse('api:games-detail', args=game_for_args))
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert Game.objects.count() == 0
+
+    def test_deleting_game_by_non_host(
+            self,
+            player_thailand_female_pro,
+            game_thailand,
+            game_for_args,
+            client
+    ):
+        client.force_authenticate(player_thailand_female_pro.user)
+        assert Game.objects.count() == 1
+        response = client.delete(
+            reverse('api:games-detail', args=game_for_args))
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Game.objects.count() == 1
+
 
 @pytest.mark.django_db(transaction=False)
 class TestGameSerializers:

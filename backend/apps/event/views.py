@@ -2,7 +2,11 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin
+from rest_framework.mixins import (
+    CreateModelMixin,
+    DestroyModelMixin,
+    RetrieveModelMixin,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -17,7 +21,10 @@ from apps.event.serializers import (
 )
 
 
-class GameViewSet(GenericViewSet, CreateModelMixin, RetrieveModelMixin):
+class GameViewSet(GenericViewSet,
+                  CreateModelMixin,
+                  RetrieveModelMixin,
+                  DestroyModelMixin):
     """Provides CRUD operations for the Game model."""
     permission_classes = (IsHostOrReadOnly, IsAuthenticated)
     http_method_names = ['get', 'post', 'delete']
