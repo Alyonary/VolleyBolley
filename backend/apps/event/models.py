@@ -26,15 +26,18 @@ class GameQuerySet(m.query.QuerySet):
         return self.player_located_games(player).filter(
             (m.Q(host=player) | m.Q(players=player))).distinct()
 
+    def future_games(self):
+        current_time = now()
+        return self.filter(
+            start_time__gt=current_time).order_by('start_time')
+
     def invited_games(self, player):
-        return self.player_located_games(player
-                                         ).filter(game_invites__invited=player)
+        return self.player_located_games(
+            player).future_games().filter(
+                game_invites__invited=player)
 
     def upcomming_games(self, player):
-        current_time = now()
-        return self.player_related_games(player).filter(
-            start_time__gt=current_time).distinct().order_by(
-                'start_time')
+        return self.player_related_games(player).future_games()
 
     def my_upcoming_games(self, player):
         return self.upcomming_games(player).filter(host=player)
