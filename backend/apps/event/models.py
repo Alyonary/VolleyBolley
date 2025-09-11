@@ -46,7 +46,7 @@ class GameQuerySet(m.query.QuerySet):
         current_time = now()
         return self.player_related_games(
             player).filter(
-            end_time__lt=current_time).order_by(
+            start_time__lt=current_time).order_by(
                 '-end_time')
 
 

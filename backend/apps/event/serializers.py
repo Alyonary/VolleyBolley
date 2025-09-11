@@ -107,9 +107,9 @@ class GameSerializer(BaseGameSerializer):
         try:
             currency_type = CurrencyType.objects.get(
                         country=host.country)
-        except CurrencyType.DoesNotExist:
+        except CurrencyType.DoesNotExist as e:
             raise serializers.ValidationError(
-                f"Валюта для страны {host.country} не найдена.")
+                f"{e}: Валюта для страны {host.country} не найдена.") from e
         return currency_type
 
     def get_payment_account(self, payment_type):

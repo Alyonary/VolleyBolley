@@ -2,10 +2,10 @@ from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import CreateModelMixin, RetrieveModelMixin
 
 from apps.event.models import Game, GameInvitation
 from apps.event.permissions import IsHostOrReadOnly
