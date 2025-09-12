@@ -6,6 +6,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import (
     TokenRefreshView,
     TokenVerifyView,
+    TokenObtainPairView,
 )
 
 from apps.api.views import (
@@ -14,7 +15,7 @@ from apps.api.views import (
     PhoneNumberLogin,
 )
 from apps.courts.views import CourtViewSet
-from apps.event.views import GameViewSet
+from apps.event.views import GameViewSet, TourneyViewSet
 from apps.locations.views import CountryListView
 from apps.players.views import PlayerViewSet
 
@@ -24,6 +25,7 @@ api_v1 = DefaultRouter()
 api_v1.register(r'courts', CourtViewSet, basename='courts')
 api_v1.register(r'players', PlayerViewSet, basename='players')
 api_v1.register(r'games', GameViewSet, basename='games')
+api_v1.register(r'tournaments', TourneyViewSet, basename='tournaments')
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -38,6 +40,7 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('', include(api_v1.urls)),
+    path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('social-auth/', include('social_django.urls', namespace='social')),
     path('countries/', CountryListView.as_view(), name='countries'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
@@ -56,16 +59,16 @@ urlpatterns = [
         r'^swagger(?P<format>\.json|\.yaml)$',
         schema_view.without_ui(cache_timeout=0),
         name='schema-json'
-        ),
+    ),
     path(
         'swagger/',
         schema_view.with_ui('swagger', cache_timeout=0),
         name='schema-swagger-ui'
-        ),
+    ),
     # ReDoc UI (alternative API docs UI)
     path(
         'redoc/',
         schema_view.with_ui('redoc', cache_timeout=0),
         name='schema-redoc'
-        ),
+    ),
 ]
