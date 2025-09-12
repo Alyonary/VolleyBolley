@@ -8,7 +8,9 @@ from .serializers import CourtSerializer
 
 class CourtViewSet(ModelViewSet):
     http_method_names = ['get',]
-    queryset = Court.objects.prefetch_related('contacts').all()
+    queryset = Court.objects.select_related(
+        'location').prefetch_related('contacts', 'tag_list').all()
+
     serializer_class = CourtSerializer
     filter_backends = [filters.DjangoFilterBackend]
     filterset_class = CourtFilter

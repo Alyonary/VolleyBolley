@@ -1,8 +1,12 @@
+from django.contrib.auth import get_user_model
 from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.enums import CoreFieldLength
 from apps.core.mixins.name_title import NameMixin, TitleMixin
+from apps.locations.models import Country
+
+User = get_user_model()
 
 
 class Tag(NameMixin):
@@ -42,51 +46,18 @@ class Contact(m.Model):
         return f'{self.contact_type} {self.contact}'
 
 
-class PaymentType(NameMixin):
-    """Модель типа оплаты."""
-
-    class Meta:
-        verbose_name = _('Тип оплаты')
-        verbose_name_plural = _('Типы оплаты')
-        default_related_name = 'payment_types'
-
-
-class Gender(m.Model):
-    """Модель гендера."""
-
-    class GenderChoices(m.TextChoices):
-        MIX = 'mix', _('Смешанный')
-        MEN = 'men', _('Мужской')
-        WOMEN = 'women', _('Женский')
-
-    name = m.CharField(
-        verbose_name=_('Пол'),
-        max_length=CoreFieldLength.NAME.value,
-        choices=GenderChoices.choices,
-        unique=True,
-    )
-
-    def __str__(self):
-        return self.get_name_display()
-
-    class Meta:
-        verbose_name = _('Пол')
-        verbose_name_plural = _('Пола')
-        default_related_name = 'genders'
-        ordering = ('name',)
-
-
 class GameLevel(m.Model):
-    """Модель игрового уровня."""
+    """Game level model."""
 
     class GameLevelChoices(m.TextChoices):
-        LIGHT = 'light', _('Новичок')
-        MEDIUM = 'medium', _('Средний')
-        HARD = 'hard', _('Продвинутый')
-        PRO = 'pro', _('Профессионал')
+        """Game levels enum for game."""
+        LIGHT = 'LIGHT', _('Beginner')
+        MEDIUM = 'MEDIUM', _('Intermediate')
+        HARD = 'HARD', _('Advanced')
+        PRO = 'PRO', _('Professional')
 
     name = m.CharField(
-        verbose_name=_('Уровень'),
+        verbose_name=_('Game level'),
         max_length=CoreFieldLength.NAME.value,
         choices=GameLevelChoices.choices,
         unique=True,
@@ -96,45 +67,84 @@ class GameLevel(m.Model):
         return self.get_name_display()
 
     class Meta:
-        verbose_name = _('Уровень игры')
-        verbose_name_plural = _('Уровни игры')
+        verbose_name = _('Game level')
+        verbose_name_plural = _('Game levels')
         default_related_name = 'game_levels'
         ordering = ('name',)
 
 
 class InfoPage(TitleMixin):
-    """Страница с информацией (FAQ, правила, контакты и т.д.)."""
+    """Information page (FAQ, rules, contacts, etc.)."""
     tag = m.ForeignKey(
         Tag,
-        verbose_name=_('Тег'),
+        verbose_name=_('Tag'),
         on_delete=m.CASCADE,
         related_name='info_pages',
     )
 
     class Meta(TitleMixin.Meta):
-        verbose_name = _('Информационная страница')
-        verbose_name_plural = _('Информационные страницы')
+        verbose_name = _('Info page')
+        verbose_name_plural = _('Info pages')
         default_related_name = 'info_pages'
 
 
 class InfoSection(TitleMixin):
-    """Раздел информационной страницы."""
+    """Section of the information page."""
     page = m.ForeignKey(
         InfoPage,
-        verbose_name=_('Страница'),
+        verbose_name=_('Page'),
         on_delete=m.CASCADE,
         related_name='sections',
     )
     content = m.TextField(
-        verbose_name=_('Содержимое'),
+        verbose_name=_('Content'),
     )
     order = m.PositiveIntegerField(
-        verbose_name=_('Сортировка'),
+        verbose_name=_('Ordering'),
         default=0
     )
 
     class Meta(TitleMixin.Meta):
-        verbose_name = _('Раздел информационной страницы')
-        verbose_name_plural = _('Разделы информационных страниц')
+        verbose_name = _('Section of the information page')
+        verbose_name_plural = _('Sections of the information page')
         default_related_name = 'sections'
         ordering = ('page', 'order')
+
+
+class CurrencyType(m.Model):
+    """Currency type model."""
+
+    class CurrencyTypeChoices(m.TextChoices):
+        EUR = 'EUR', _('Euro')
+        THB = 'THB', _('THB')
+
+    class CurrencyNameChoices(m.TextChoices):
+        EUR = '€', _('Euro')
+        THB = '฿', _('THB')
+
+    currency_type = m.CharField(
+        verbose_name=_('Currency type'),
+        max_length=CoreFieldLength.NAME.value,
+        choices=CurrencyTypeChoices.choices,
+        unique=True,
+    )
+
+    currency_name = m.CharField(
+        verbose_name=_('Currency label'),
+        max_length=CoreFieldLength.NAME.value,
+        choices=CurrencyNameChoices.choices,
+        unique=True,
+    )
+    country = m.ForeignKey(
+        Country,
+        on_delete=m.SET_NULL,
+        null=True,
+        blank=True)
+
+    def __str__(self):
+        return self.currency_type
+
+    class Meta:
+        verbose_name = _('Currency type')
+        verbose_name_plural = _('Currency types')
+        default_related_name = 'currency_types'

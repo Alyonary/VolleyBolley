@@ -97,7 +97,7 @@ class Player(models.Model):
             if not isinstance(self.date_of_birth, date):
                 raise ValidationError(
                     {'date_of_birth': _('Invalid date format.')}
-                )                
+                )
             if self.date_of_birth > timezone.now().date():
                 raise ValidationError(
                     {'date_of_birth': _('Birthday cannot be in the future')}
@@ -114,7 +114,7 @@ class Payment(models.Model):
         on_delete=models.CASCADE,
         null=False,
         blank=False,
-        
+
     )
     payment_type = models.CharField(
         verbose_name=_('Type of payment'),
