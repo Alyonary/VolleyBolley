@@ -7,13 +7,12 @@ from apps.core.models import CurrencyType, GameLevel
 from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
 from apps.event.enums import EventIntEnums
-from apps.event.models import Game, GameInvitation
+from apps.event.models import Game, GameInvitation, Tourney
 from apps.players.models import Payment, Player
 from apps.players.serializers import PlayerGameSerializer
 
 
 class BaseGameSerializer(serializers.ModelSerializer):
-
     game_id = serializers.IntegerField(source='pk', read_only=True)
 
     start_time = serializers.DateTimeField(format='iso-8601')
@@ -106,7 +105,7 @@ class GameSerializer(BaseGameSerializer):
         host = self.context['request'].user.player
         try:
             currency_type = CurrencyType.objects.get(
-                        country=host.country)
+                country=host.country)
         except CurrencyType.DoesNotExist as e:
             raise serializers.ValidationError(
                 f"{e}: Валюта для страны {host.country} не найдена.") from e
@@ -147,12 +146,12 @@ class GameSerializer(BaseGameSerializer):
         game.player_levels.set(levels)
         for player in players:
             serializer = GameInviteSerializer(
-                    data={
-                        'host': game.host.id,
-                        'invited': player.id,
-                        'game': game.id
-                    },
-                    context=self.context
+                data={
+                    'host': game.host.id,
+                    'invited': player.id,
+                    'game': game.id
+                },
+                context=self.context
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -188,7 +187,6 @@ class GameDetailSerializer(BaseGameSerializer):
 
 
 class GameInviteSerializer(serializers.ModelSerializer):
-
     invited = serializers.PrimaryKeyRelatedField(
         write_only=True, queryset=Player.objects.all())
 
@@ -217,17 +215,12 @@ class GameInviteSerializer(serializers.ModelSerializer):
         elif invited.level not in levels:
             raise serializers.ValidationError(
                 {'invited': f'Level of the player {invited.level} '
-                 'not allowed in this game. '
-                 f'Allowed levels: {", ".join(levels)}'})
+                            'not allowed in this game. '
+                            f'Allowed levels: {", ".join(levels)}'})
         return attrs
 
 
-class TourneySerializer(serializers.ModelSerializer):
-    pass
-
-
 class GameShortSerializer(serializers.ModelSerializer):
-
     game_id = serializers.IntegerField(source='pk')
 
     host = PlayerGameSerializer()
@@ -256,3 +249,144 @@ class GameShortSerializer(serializers.ModelSerializer):
             'start_time',
             'end_time'
         ]
+
+
+class BaseTourneySerializer(serializers.ModelSerializer):
+    tournament_id = serializers.IntegerField(source='pk', read_only=True)
+    start_time = serializers.DateTimeField(format='iso-8601')
+    end_time = serializers.DateTimeField(format='iso-8601')
+    levels = serializers.SlugRelatedField(
+        slug_field='name',
+        queryset=GameLevel.objects.all(),
+        source='player_levels',
+        many=True
+    )
+    gender = serializers.ChoiceField(choices=GenderChoices.choices)
+    currency_type = serializers.CharField(required=False)
+    payment_account = serializers.CharField(required=False)
+    maximum_players = serializers.IntegerField(source='max_players')
+
+    class Meta:
+        model = Tourney
+        fields = [
+            'tournament_id',
+            'message',
+            'start_time',
+            'end_time',
+            'is_individual',
+            'gender',
+            'levels',
+            'maximum_players',
+            'maximum_teams',
+            'price_per_person',
+            'currency_type',
+            'payment_type',
+            'payment_account',
+        ]
+
+
+class TourneySerializer(BaseTourneySerializer):
+    """Used for tournament creation."""
+
+    players = serializers.PrimaryKeyRelatedField(
+        queryset=Player.objects.all(),
+        many=True,
+        required=False
+    )
+    court_id = serializers.PrimaryKeyRelatedField(
+        source='court',
+        queryset=Court.objects.all()
+    )
+
+    class Meta(BaseTourneySerializer.Meta):
+        model = BaseTourneySerializer.Meta.model
+        fields = BaseTourneySerializer.Meta.fields + [
+            'court_id',
+            'players'
+        ]
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+
+        if not request or not hasattr(request.user, 'player'):
+            from apps.players.models import Player
+            host = Player.objects.first()
+        else:
+            host = request.user.player
+
+        validated_data['host'] = host
+        players = validated_data.pop('players', [])
+        levels = validated_data.pop('player_levels', [])
+        validated_data.pop('currency_type', None)
+        validated_data.pop('payment_account', None)
+
+        tourney = Tourney.objects.create(
+            currency_type=self.get_currency_type(host),
+            payment_account=self.get_payment_account(
+                host, validated_data['payment_type']
+            ),
+            **validated_data
+        )
+
+        tourney.players.add(host, *players)
+        tourney.player_levels.set(levels)
+        return tourney
+
+    def get_currency_type(self, host):
+        try:
+            return CurrencyType.objects.get(country=host.country)
+        except CurrencyType.DoesNotExist as e:
+            raise serializers.ValidationError(
+                f'{e}: Currency for country {host.country} was not found.'
+            ) from e
+
+    def get_payment_account(self, host, payment_type):
+        if payment_type == 'CASH':
+            return 'Cash money'
+        payment = Payment.objects.filter(
+            player=host, payment_type=payment_type
+        ).last()
+        if payment is None:
+            raise serializers.ValidationError(
+                'No payment account found for this payment type'
+            )
+        elif payment.payment_account is None:
+            return 'Not defined'
+        else:
+            return payment.payment_account
+
+
+class TourneyDetailSerializer(BaseTourneySerializer):
+    """Serializer for viewing tournament details."""
+
+    host = PlayerGameSerializer()
+    court_location = LocationSerializer(source='court.location')
+    players = PlayerGameSerializer(many=True)
+
+    class Meta(BaseTourneySerializer.Meta):
+        model = BaseTourneySerializer.Meta.model
+        fields = BaseTourneySerializer.Meta.fields + [
+            'host',
+            'court_location',
+            'players'
+        ]
+
+
+class TourneyShortSerializer(serializers.ModelSerializer):
+    tournament_id = serializers.IntegerField(source='pk')
+    host = PlayerGameSerializer()
+    court_location = LocationSerializer(source='court.location')
+    start_time = serializers.DateTimeField(format='iso-8601')
+    end_time = serializers.DateTimeField(format='iso-8601')
+
+    class Meta:
+        model = Tourney
+        fields = [
+            'tournament_id',
+            'host',
+            'court_location',
+            'message',
+            'start_time',
+            'end_time'
+        ]
+        read_only_fields = fields
