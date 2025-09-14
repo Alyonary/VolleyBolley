@@ -4,7 +4,7 @@ from apps.core.models import Contact, Tag
 
 
 class TagSerializer(serializers.ModelSerializer):
-    """Сериализатор всех полей модели Tag."""
+    """Serializer for all fields of the Tag model."""
 
     class Meta:
         exclude = ('id',)
@@ -12,7 +12,7 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class ContactSerializer(serializers.ModelSerializer):
-    """Сериализатор всех полей модели Contact."""
+    """Serializer for all fields of the Contact model."""
 
     class Meta:
         exclude = ('id', 'court')

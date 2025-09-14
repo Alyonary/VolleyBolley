@@ -2,85 +2,74 @@ from django.core.validators import MaxLengthValidator
 from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
-from apps.event.enums import EventFieldLength
+from apps.core.constants import GenderChoices
+from apps.event.enums import EventIntEnums
+from apps.players.constants import Payments
 
 
 class EventMixin(m.Model):
-    """Миксин события."""
+    """Event mixin."""
 
-    title = m.CharField(
-        verbose_name=_('Название'),
-        max_length=EventFieldLength.TITLE.value,
-    )
     message = m.TextField(
-        verbose_name=_('Описание'),
-        validators=[MaxLengthValidator(EventFieldLength.MESSAGE.value)]
+        verbose_name=_('Description'),
+        validators=[MaxLengthValidator(EventIntEnums.MESSAGE.value)]
     )
-    date = m.DateTimeField(
-        verbose_name=_('Дата и время')
+    start_time = m.DateTimeField(
+        verbose_name=_('Start date and time')
     )
-    start_time = m.TimeField(
-        verbose_name=_('Время начала')
-    )
-    end_time = m.TimeField(
-        verbose_name=_('Время окончания')
+    end_time = m.DateTimeField(
+        verbose_name=_('End date and time')
     )
     court = m.ForeignKey(
         'courts.Court',
-        verbose_name=_('Площадка'),
-        on_delete=m.SET_NULL,
-        null=True,
-        blank=True,
+        verbose_name=_('Court'),
+        on_delete=m.CASCADE,
+        null=False,
+        blank=False,
     )
-    gender = m.ForeignKey(
-        'core.Gender',
-        verbose_name=_('Пол участников'),
-        on_delete=m.SET_NULL,
+    gender = m.CharField(
+        verbose_name=_('Gender of players'),
+        choices=GenderChoices.choices,
         null=True,
-        blank=True,
+        blank=True
     )
     player_levels = m.ManyToManyField(
         'core.GameLevel',
-        verbose_name=_('Уровень игры участников'),
+        verbose_name=_('Game level'),
     )
     max_players = m.PositiveIntegerField(
-        verbose_name=_('Максимальное количество игроков'),
+        verbose_name=_('Maximum of players'),
     )
     price_per_person = m.DecimalField(
-        verbose_name=_('Стоимость с человека'),
+        verbose_name=_('Price per person'),
         max_digits=8,
         decimal_places=2,
         default=0,
         null=False,
         blank=True,
     )
-    payment_type = m.ForeignKey(
-        'core.PaymentType',
-        verbose_name=_('Тип оплаты'),
-        on_delete=m.SET_NULL,
-        null=True,
-        blank=True,
+    payment_type = m.CharField(
+        verbose_name=_('Payment type'),
+        max_length=EventIntEnums.PAYMENT_VALUE.value,
+        choices=Payments.choices
     )
-    payment_value = m.CharField(
-        verbose_name=_('Описание оплаты'),
-        max_length=EventFieldLength.PAYMENT_VALUE.value,
+    payment_account = m.CharField(
+        verbose_name=_('Payment account'),
+        max_length=EventIntEnums.PAYMENT_VALUE.value
     )
-    tag_list = m.ManyToManyField(
-        'core.Tag',
-        verbose_name=_('Теги'),
-        blank=True,
+    currency_type = m.ForeignKey(
+        'core.CurrencyType',
+        verbose_name=_('Currency type'),
+        on_delete=m.CASCADE
     )
     is_private = m.BooleanField(
-        verbose_name=_('Приватное событие'),
+        verbose_name=_('Private event'),
         default=False,
     )
     is_active = m.BooleanField(
-        verbose_name=_('Активно'),
+        verbose_name=_('Active'),
         default=True,
     )
-
-    def __str__(self):
-        return self.title[:EventFieldLength.STR_MAX_LEN.value]
 
     class Meta:
         abstract = True

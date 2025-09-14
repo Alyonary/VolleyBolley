@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'apps.locations.apps.LocationsConfig',
     'django_filters',
+    'drf_yasg',
 ]
 
 CSRF_COOKIE_HTTPONLY = True
@@ -83,7 +84,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'volleybolley.wsgi.application'
 
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -94,7 +94,6 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', 5432)
     }
 }
-
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -133,8 +132,8 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15000),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=700),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
     'UPDATE_LAST_LOGIN': True,
@@ -301,3 +300,5 @@ LOGGING = {
     #    },
     },
 }
+
+SWAGGER_USE_COMPAT_RENDERERS = False

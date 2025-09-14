@@ -2,6 +2,8 @@ import logging
 
 from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from google.auth.transport import requests
 from google.oauth2 import id_token
 from rest_framework import status
@@ -11,7 +13,10 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from social_core.exceptions import AuthForbidden
-from social_django.utils import load_backend, load_strategy
+from social_django.utils import (
+    load_backend,
+    load_strategy,
+)
 
 from apps.api.serializers import (
     FirebaseUserDataSerializer,
@@ -32,6 +37,20 @@ User = get_user_model()
 class LogoutView(APIView):
     """Logout view class."""
 
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['refresh'],
+            properties={
+                'refresh': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Refresh token to blacklist'),
+            },
+        ),
+        responses={205: 'Reset Content', 400: 'Bad Request'},
+        operation_summary='Logout by blacklisting refresh token',
+        tags=['auth'],
+    )
     def post(self, request) -> Response:
         try:
             refresh_token = request.data.get('refresh_token', None)
@@ -64,6 +83,34 @@ class GoogleLogin(APIView):
     Redirect client to base social-auth url ('api:social:begin')
     if there is no data in request or request method is 'GET'.
     """
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'access_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Google access token'
+                    ),
+                'id_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Google ID token'
+                    ),
+            },
+            anyOf=[
+                {'required': ['access_token']},
+                {'required': ['id_token']}
+            ],
+        ),
+        responses={
+            200: openapi.Response(
+                'Successful authentication',
+                GoogleUserDataSerializer
+                ),
+            401: 'Authentication failed',
+        },
+        operation_summary="Authenticate via Google (access_token or id_token)",
+        tags=['auth'],
+    )
     def post(self, request):
         try:
             data = request.data
@@ -125,6 +172,11 @@ class GoogleLogin(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
+    @swagger_auto_schema(
+        operation_summary="Redirect to Google OAuth2 social auth",
+        responses={302: 'Redirect'},
+        tags=['auth'],
+    )
     def get(self, request):
         logger.info(
             'Starting authentication via google without token.'
