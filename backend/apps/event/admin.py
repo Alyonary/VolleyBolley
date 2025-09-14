@@ -1,28 +1,28 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from .enums import EventFieldLength
-from .models import Game, Tourney
+from apps.event.enums import EventIntEnums
+from apps.event.models import Game, GameInvitation, Tourney
 
 
 class BaseEventAdmin(admin.ModelAdmin):
     list_display = (
         'id',
-        'title',
-        'date',
         'court',
         'host',
         'is_active',
         'is_private',
+        'gender'
     )
-    list_display_links = ('title',)
-    search_fields = ('title', 'message')
-    list_filter = ('court', 'is_active', 'is_private', 'date')
-    filter_horizontal = ('tag_list', 'player_levels', 'players')
-    empty_value_display = _('Не задано',)
-    autocomplete_fields = ('court', 'host', 'gender', 'payment_type')
+    list_display_links = ('id',)
+    search_fields = ('message',)
+    list_filter = ('court', 'is_active', 'is_private')
+    filter_horizontal = ('player_levels', 'players')
+    empty_value_display = _('Not defined',)
+    autocomplete_fields = ('court', 'host',)
     readonly_fields = ('created_at', 'updated_at')
-    list_per_page = EventFieldLength.ADMIN_LIST_PER_PAGE.value
+    ordering = ('id',)
+    list_per_page = EventIntEnums.ADMIN_LIST_PER_PAGE.value
 
 
 @admin.register(Game)
@@ -39,3 +39,12 @@ class TourneyAdmin(BaseEventAdmin):
     list_filter = BaseEventAdmin.list_filter + (
         'is_individual',
     )
+
+
+@admin.register(GameInvitation)
+class GameInvitationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'game', 'host', 'invited')
+    search_fields = ('game', 'host', 'invited')
+    ordering = ('game',)
+    empty_value_display = _('Not defined')
+    list_per_page = EventIntEnums.ADMIN_LIST_PER_PAGE.value

@@ -5,7 +5,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 class CoreFieldLength(int, Enum):
-    """Константы для приложения Core."""
+    """Constants for Core app."""
 
     NAME = 70
     NAME_STR = 30

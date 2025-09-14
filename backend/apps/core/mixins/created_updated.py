@@ -3,7 +3,7 @@ from django.utils.translation import gettext_lazy as _
 
 
 class CreatedUpdatedMixin(m.Model):
-    """Миксин с полями времени создания и изменения."""
+    """Mixin with creation and updating time fields."""
 
     created_at = m.DateTimeField(
         verbose_name=_('Дата создания'),
