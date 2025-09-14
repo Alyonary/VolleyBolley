@@ -5,8 +5,8 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.notifications.models import Device, Notifications
-from apps.notifications.notifications import Notification, NotificationTypes
+from apps.notifications.constants import NotificationTypes
+from apps.notifications.models import Device, Notifications, NotificationsBase
 from apps.notifications.push_service import PushService
 from apps.notifications.serializers import (
     FCMTokenSerializer,
@@ -128,7 +128,9 @@ class NotificationsViewSet(
             )
 
         for notification_type in NotificationTypes.CHOICES:
-            notification = Notification(notification_type=notification_type)
+            notification = NotificationsBase(
+                notification_type=notification_type
+            )
             if notification_type == NotificationTypes.IN_GAME:
                 push_service.send_push_notifications(
                     tokens=all_tokens, notification=notification, game_id=1

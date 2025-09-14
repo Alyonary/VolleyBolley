@@ -1,8 +1,8 @@
 import pytest
 from rest_framework import status
 
+from apps.notifications.constants import NotificationTypes
 from apps.notifications.models import Notifications
-from apps.notifications.notifications import NotificationTypes
 
 
 @pytest.mark.django_db
@@ -15,17 +15,30 @@ class TestNotificationsViewSet:
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_get_notifications(
-        self, authenticated_client, notifications_url
+        self,
+        authenticated_client,
+        notifications_url,
+        all_notification_types
     ):
         client, user = authenticated_client
         notif1 = Notifications.objects.create(
-            player=user.player, type=NotificationTypes.RATE
+            player=user.player,
+            notification_type=all_notification_types[
+                NotificationTypes.RATE
+            ]
         )
         notif2 = Notifications.objects.create(
-            player=user.player, type=NotificationTypes.IN_GAME
+            player=user.player,
+            notification_type=all_notification_types[
+                NotificationTypes.IN_GAME
+            ]
         )
         notif3 = Notifications.objects.create(
-            player=user.player, type=NotificationTypes.REMOVED, is_read=True
+            player=user.player,
+            notification_type=all_notification_types[
+                NotificationTypes.REMOVED_GAME
+            ],
+            is_read=True
         )
         response = client.get(notifications_url)
         assert response.status_code == status.HTTP_200_OK
@@ -76,10 +89,10 @@ class TestNotificationsViewSet:
     ):
         client, user = authenticated_client
         notif1 = Notifications.objects.create(
-            player=user.player, type=NotificationTypes.RATE
+            player=user.player, notification_type=NotificationTypes.RATE
         )
         notif2 = Notifications.objects.create(
-            player=user.player, type=NotificationTypes.IN_GAME
+            player=user.player, notification_type=NotificationTypes.IN_GAME
         )
         data = {
             'notifications': [
@@ -99,7 +112,7 @@ class TestNotificationsViewSet:
     ):
         client, user = authenticated_client
         notif1 = Notifications.objects.create(
-            player=user.player, type=NotificationTypes.RATE
+            player=user.player, notification_type=NotificationTypes.RATE
         )
         data = {
             "notifications": [

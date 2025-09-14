@@ -7,8 +7,7 @@ from apps.notifications.constants import (
     MAX_RETRIES,
     RETRY_PUSH_TIME,
 )
-from apps.notifications.models import Device
-from apps.notifications.notifications import Notification
+from apps.notifications.models import Device, NotificationsBase
 from apps.notifications.push_service import PushService
 from apps.notifications.utils import delete_old_devices
 
@@ -85,7 +84,9 @@ def retry_notification_task(self, token, notification_type, game_id=None):
     """
     try:
         logger.info(f'Retrying notification to token {token[:8]}...')
-        notification = Notification(notification_type)
+        notification = NotificationsBase.objects.get(
+            notification_type=notification_type
+        )
         push_service = PushService()
         device = Device.objects.filter(token=token).first()
         result = push_service.send_notification_by_device(
@@ -110,8 +111,23 @@ def delete_old_devices_task():
     """
     return delete_old_devices()
 
+@shared_task
+def create_notification_type_tables():
+    """
+    Create initial notification types in the database if they do not exist.
+    """
+    try:
+        NotificationsBase.create_initial_types()
+        logger.info('Notification types initialized successfully.')
+        return True
+    except Exception as e:
+        logger.error(
+            f'Error initializing notification types: {str(e)}', exc_info=True
+        )
+        return False
 
 @worker_ready.connect
 def at_start(**kwargs):
     """Start the push service initialization task when the worker is ready."""
     init_push_service.apply_async()
+    create_notification_type_tables.apply_async()

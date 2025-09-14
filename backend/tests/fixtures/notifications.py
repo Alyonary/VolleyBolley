@@ -4,10 +4,15 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from apps.event.models import Game
-from apps.notifications.models import Device, DeviceType, Notifications
-from apps.notifications.notifications import (
-    Notification,
+from apps.notifications.constants import (
+    NOTIFICATION_INIT_DATA,
     NotificationTypes,
+)
+from apps.notifications.models import (
+    Device,
+    DeviceType,
+    Notifications,
+    NotificationsBase,
 )
 from apps.players.models import Player
 
@@ -160,19 +165,46 @@ def invalid_fcm_token_data():
         {'platform': DeviceType.ANDROID},
         {'token': 'some-token', 'platform': 'invalid'}
     ]
-@pytest.fixture
-def rate_notification():
-    return Notification(NotificationTypes.RATE)
-
 
 @pytest.fixture
-def remove_notification():
-    return Notification(NotificationTypes.REMOVED)
+def all_notification_types(db):
+    """Creates all notification types in the database."""
+    notifications_objs = {}
+    for notif_type, data in NOTIFICATION_INIT_DATA.items():
+        obj, was_created = NotificationsBase.objects.get_or_create(
+            type=notif_type,
+            defaults={
+                'title': data['title'],
+                'body': data['body'],
+                'screen': data['screen']
+            }
+        )
+        if was_created:
+            notifications_objs[notif_type] = obj
+    return notifications_objs
+
+@pytest.fixture
+def rate_notification_type(
+    db,
+    all_notification_types: dict[NotificationsBase]
+):
+    return all_notification_types.get(NotificationTypes.RATE)
 
 
 @pytest.fixture
-def in_game_notification():
-    return Notification(NotificationTypes.IN_GAME)
+def remove_game_notification_type(
+    db,
+    notifications_objs: dict[NotificationsBase]
+):
+    return all_notification_types.get(NotificationTypes.REMOVED_GAME)
+
+
+@pytest.fixture
+def in_game_notification_type(
+    db,
+    notifications_objs: dict[NotificationsBase]
+):
+    return all_notification_types.get(type=NotificationTypes.IN_GAME)
 
 
 @pytest.fixture
@@ -192,20 +224,20 @@ def sample_notification(
 @pytest.fixture
 def notifications_objs(
     authenticated_client,
-    rate_notification,
-    in_game_notification,
-    remove_notification
+    rate_notification_type,
+    in_game_notification_type,
+    remove_game_notification_type
     ):
     """Creates multiple notification objects for the authenticated user."""
     client, user = authenticated_client
     notif1 = Notifications.objects.create(
-        player=user.player, type=NotificationTypes.RATE
+        player=user.player, notification_type=rate_notification_type
     )
     notif2 = Notifications.objects.create(
-        player=user.player, type=NotificationTypes.IN_GAME
+        player=user.player, notification_type=in_game_notification_type
     )
     notif3 = Notifications.objects.create(
-        player=user.player, type=NotificationTypes.REMOVED,
+        player=user.player, notification_type=remove_game_notification_type,
     )
     return {
         'notif1': notif1,

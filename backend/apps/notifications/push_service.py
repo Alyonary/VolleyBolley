@@ -11,11 +11,13 @@ from firebase_admin import credentials
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
 
-from apps.notifications.models import Device, Notifications
-from apps.notifications.notifications import (
-    Notification,
-    NotificationsClass,
+from apps.notifications.constants import (
     NotificationTypes,
+)
+from apps.notifications.models import (
+    Device,
+    Notifications,
+    NotificationsBase,
 )
 
 logger = logging.getLogger(__name__)
@@ -225,9 +227,9 @@ class PushService:
     @service_required
     def process_notifications_by_type(
         self,
-        type: str,
+        notification_type: str,
         player_id: int | None = None,
-        game_id: int | None = None,
+        event_id: int | None = None,
     ) -> dict | None:
         """
         Send notifications to multiple devices using FCM.
@@ -242,32 +244,49 @@ class PushService:
             dict: Statistics of notification sending.
         """
         try:
-            logger.info(f'Processing notification type: {type}')
-            notification = Notification(type)
+            logger.info(f'Processing notification type: {notification_type}')
+            notification = NotificationsBase.objects.get(
+                type=notification_type
+            )
+            if not notification:
+                logger.error(
+                    f'Notification type {notification_type} not found'
+                )
+                return {
+                    'status': False,
+                    'message': f'Error: Notification type {notification_type} '
+                    f'not found'
+                }
             if (
-                type == NotificationTypes.IN_GAME
-                or type == NotificationTypes.RATE
+                notification_type == NotificationTypes.IN_GAME
+                or notification_type == NotificationTypes.RATE
             ):
-                devices: list[Device] = Device.objects.in_game(game_id)
-            elif type == NotificationTypes.REMOVED:
+                devices: list[Device] = Device.objects.in_game(event_id)
+            elif notification_type == NotificationTypes.REMOVED:
                 devices: list[Device] = Device.objects.by_player(player_id)
             else:
                 devices = []
                 logger.warning(f'Unknown notification type: {type}')
-            return self.send_push_notifications(
-                devices=devices, notification=notification, game_id=game_id
+            stats_msg = self.send_push_notifications(
+                devices=devices, notification=notification, event_id=event_id
             )
-
+            return {
+                'status': True,
+                'message':stats_msg,
+            }     
         except Exception as e:
             err_msg = f'Error processing notification type {type}: {str(e)}'
             logger.error(err_msg, exc_info=True)
-            return {'status': f'Error: Notification creation failed: {str(e)}'}
+            return {
+                'status': False,
+                'message': f'Error: Notification creation failed: {str(e)}'
+            }
 
     @service_required
     def send_push_notifications(
         self,
         devices: list[Device],
-        notification: NotificationsClass,
+        notification: NotificationsBase,
         game_id: int | None = None,
     ) -> bool | None:
         """
@@ -296,9 +315,9 @@ class PushService:
                 continue
             result['failed'] += 1
         logger.info(
-            f"Push notification '{notification.type}' results: "
-            f"{result['successful']}/{result['total_devices']} successful, "
-            f"{result['failed']} failed"
+            f'Push notification "{notification.type}" results: '
+            f'{result["successful"]}/{result["total_devices"]} successful, '
+            f'{result["failed"]} failed'
         )
         return result
 
@@ -306,8 +325,8 @@ class PushService:
     def send_notification_by_device(
         self,
         device: Device,
-        notification: NotificationsClass,
-        game_id: int | None = None,
+        notification: NotificationsBase,
+        event_id: int | None = None,
     ) -> bool | None:
         """
         Public method to send push notification to a single device.
@@ -322,13 +341,13 @@ class PushService:
             logger.warning('Empty token provided, skipping notification')
             return False
         return self._send_notification_by_device_internal(
-            device, notification, game_id
+            device, notification, event_id
         )
 
     def _send_notification_by_device_internal(
         self,
         device: Device,
-        notification: NotificationsClass,
+        notification: NotificationsBase,
         game_id: int | None = None,
     ) -> bool | None:
         """
@@ -356,7 +375,7 @@ class PushService:
             logger.debug(
                 f'Notification sent successfully to device {masked_token}'
             )
-            self.create_db_model(device, notification.type, game_id)
+            self.create_db_model(device, notification, game_id)
             return True
         except FCMError as e:
             error_occurred = True
@@ -392,8 +411,8 @@ class PushService:
     def create_db_model(
         self,
         device: Device,
-        notification_type: str,
-        game_id: int | None = None,
+        notification: NotificationsBase,
+        event_id: int | None = None,
     ) -> bool:
         """
         Create a database model for storing notification.
@@ -402,9 +421,15 @@ class PushService:
             notification_type (str): Type of notification sent.
             game_id (int, optional): Game ID for the notification data.
         """
-        data = {'player': device.player, 'type': notification_type}
-        if game_id:
-            data['game_id'] = game_id
+        data = {
+            'player': device.player,
+            'notification_type': NotificationsBase
+        }
+        if event_id:
+            if notification.type == NotificationTypes.IN_GAME:
+                data['game'] = event_id
+            elif notification.type == NotificationTypes.IN_TOURNEY:
+                data['tourney'] = event_id
         try:
             Notifications.objects.create(**data)
             logger.debug(

@@ -1,9 +1,9 @@
-from backend.apps.notifications.notifications import NotificationTypes
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
 from apps.event.models import Game, Tourney
+from apps.notifications.constants import NotificationTypes
 from apps.notifications.push_service import PushService
 
 
@@ -12,6 +12,10 @@ def schedule_notifications_for_event(instance, event_type):
     Schedule notifications for the event (Game or Tourney).
     Sends notifications 1 hour and 1 day before the event start time.
     """
+    if event_type == 'game':
+        notification_type = NotificationTypes.IN_GAME
+    elif event_type == 'tourney':
+        notification_type = NotificationTypes.IN_TOURNEY
     now = timezone.now()
     start_time = instance.start_time
     push_service = PushService()
@@ -21,9 +25,9 @@ def schedule_notifications_for_event(instance, event_type):
     if notify_hour > now:
         PushService.process_notifications_by_type.apply_async(
             kwargs={
-                'type': NotificationTypes.IN_GAME,
+                'type': notification_type,
                 'player_id': None,
-                'game_id': instance.id
+                'event_id': instance.id
             },
             eta=notify_hour
         )
@@ -32,9 +36,9 @@ def schedule_notifications_for_event(instance, event_type):
     if notify_day > now:
         PushService.process_notifications_by_type.apply_async(
             kwargs={
-                'type': NotificationTypes.IN_GAME,
+                'type': notification_type,
                 'player_id': None,
-                'game_id': instance.id
+                'event_id': instance.id
             },
             eta=notify_day
         )

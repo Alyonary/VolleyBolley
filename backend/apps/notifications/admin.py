@@ -1,6 +1,7 @@
 from django.contrib import admin
+from django.utils.translation import gettext_lazy as _
 
-from apps.notifications.models import Device
+from apps.notifications.models import Device, NotificationsBase
 
 
 @admin.register(Device)
@@ -56,3 +57,14 @@ class DeviceAdmin(admin.ModelAdmin):
         'created_at',
         'updated_at',
     ]
+
+
+@admin.register(NotificationsBase)
+class NotificationsBaseAdmin(admin.ModelAdmin):
+    list_display = ['id', 'type', 'title', 'screen']
+    search_fields = ['type', 'title', 'screen']
+    ordering = ['type']
+    readonly_fields = ['id']
+    empty_value_display = _('-empty-')
+    list_display_links = ['id', 'type']
+    fields = ['type', 'title', 'body', 'screen', 'id']

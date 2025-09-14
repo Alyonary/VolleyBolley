@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
 from apps.notifications.models import DeviceType, Notifications
-from apps.notifications.notifications import Notification
 
 
 class FCMTokenSerializer(serializers.Serializer):
@@ -18,10 +17,20 @@ class NotificationSerializer(serializers.ModelSerializer):
     - PUT: processes notification_id for marking as read.
     """
 
-    title = serializers.SerializerMethodField()
-    message = serializers.SerializerMethodField()
-    screen = serializers.SerializerMethodField()
+    title = serializers.CharField(
+        source='notification_type.title',
+        read_only=True
+    )
+    message = serializers.CharField(
+        source='notification_type.body',
+        read_only=True
+    )
+    screen = serializers.CharField(
+        source='notification_type.screen',
+        read_only=True
+    )
     notification_id = serializers.IntegerField(source='id')
+    event_id = serializers.SerializerMethodField()
 
     class Meta:
         model = Notifications
@@ -31,17 +40,15 @@ class NotificationSerializer(serializers.ModelSerializer):
             'title',
             'message',
             'screen',
+            'event_id',
         ]
 
-
-    def get_title(self, obj):
-        return Notification(obj.type).title
-
-    def get_message(self, obj):
-        return Notification(obj.type).body
-
-    def get_screen(self, obj):
-        return Notification(obj.type).screen
+    def get_event_id(self, obj):
+        if obj.game_id:
+            return obj.game_id
+        if obj.tourney_id:
+            return obj.tourney_id
+        return None
 
     def update(self, instance, validated_data):
         instance.is_read = True

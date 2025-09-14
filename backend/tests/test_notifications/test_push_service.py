@@ -3,8 +3,8 @@ from threading import Thread
 import pytest
 from pyfcm.errors import FCMError
 
+from apps.notifications.constants import NotificationTypes
 from apps.notifications.models import Notifications
-from apps.notifications.notifications import NotificationTypes
 from apps.notifications.push_service import PushService
 
 
