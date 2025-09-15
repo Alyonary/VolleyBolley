@@ -55,11 +55,11 @@ class TestNotificationsModel:
         assert notif.notification_type == notification_type_obj
         assert notif.notification_type.type == notif_type
 
-    def test_created_at_auto_now_add(self, players):
+    def test_created_at_auto_now_add(self, players, rate_notification_type):
         """Test created_at is set on creation."""
         player = players['player1']
         notif = Notifications.objects.create(
-            player=player, notification_type=NotificationTypes.RATE
+            player=player, notification_type=rate_notification_type
         )
         assert notif.created_at is not None
         assert abs((timezone.now() - notif.created_at).total_seconds()) < 5
@@ -68,38 +68,41 @@ class TestNotificationsModel:
 @pytest.mark.django_db
 class TestNotificationsBaseModel:
     def test_fields_from_fixture(
-        self, rate_notification, remove_notification, in_game_notification
+        self,
+        rate_notification_type,
+        remove_notification_type,
+        in_game_notification_type
     ):
         """Test NotificationsBase fields from fixtures."""
-        assert rate_notification.type == NotificationTypes.RATE
-        assert rate_notification.title == NOTIFICATION_INIT_DATA[
+        assert rate_notification_type.type == NotificationTypes.RATE
+        assert rate_notification_type.title == NOTIFICATION_INIT_DATA[
             NotificationTypes.RATE]['title']
-        assert rate_notification.body == NOTIFICATION_INIT_DATA[
+        assert rate_notification_type.body == NOTIFICATION_INIT_DATA[
             NotificationTypes.RATE]['body']
-        assert rate_notification.screen == NOTIFICATION_INIT_DATA[
+        assert rate_notification_type.screen == NOTIFICATION_INIT_DATA[
             NotificationTypes.RATE]['screen']
 
-        assert remove_notification.type == NotificationTypes.REMOVED_GAME
-        assert remove_notification.title == NOTIFICATION_INIT_DATA[
+        assert remove_notification_type.type == NotificationTypes.REMOVED_GAME
+        assert remove_notification_type.title == NOTIFICATION_INIT_DATA[
             NotificationTypes.REMOVED_GAME]['title']
-        assert remove_notification.body == NOTIFICATION_INIT_DATA[
+        assert remove_notification_type.body == NOTIFICATION_INIT_DATA[
             NotificationTypes.REMOVED_GAME]['body']
-        assert remove_notification.screen == NOTIFICATION_INIT_DATA[
+        assert remove_notification_type.screen == NOTIFICATION_INIT_DATA[
             NotificationTypes.REMOVED_GAME]['screen']
 
-        assert in_game_notification.type == NotificationTypes.IN_GAME
-        assert in_game_notification.title == NOTIFICATION_INIT_DATA[
+        assert in_game_notification_type.type == NotificationTypes.IN_GAME
+        assert in_game_notification_type.title == NOTIFICATION_INIT_DATA[
             NotificationTypes.IN_GAME]['title']
-        assert in_game_notification.body == NOTIFICATION_INIT_DATA[
+        assert in_game_notification_type.body == NOTIFICATION_INIT_DATA[
             NotificationTypes.IN_GAME]['body']
-        assert in_game_notification.screen == NOTIFICATION_INIT_DATA[
+        assert in_game_notification_type.screen == NOTIFICATION_INIT_DATA[
             NotificationTypes.IN_GAME]['screen']
 
-    def test_unique_type_constraint(self, rate_notification):
+    def test_unique_type_constraint(self, rate_notification_type):
         """Test unique constraint on type field."""
         with pytest.raises(IntegrityError):
             NotificationsBase.objects.create(
-                notification_type=NotificationTypes.RATE,
+                type=NotificationTypes.RATE,
                 title='Duplicate Rate',
                 body='Duplicate body',
                 screen='rate'
@@ -112,7 +115,7 @@ class TestNotificationsBaseModel:
         NotificationsBase.create_initial_types()
         assert NotificationsBase.objects.count() == len(NOTIFICATION_INIT_DATA)
         for notif_type, data in NOTIFICATION_INIT_DATA.items():
-            obj = NotificationsBase.objects.get(notification_type=notif_type)
+            obj = NotificationsBase.objects.get(type=notif_type)
             assert obj.title == data['title']
             assert obj.body == data['body']
             assert obj.screen == data['screen']

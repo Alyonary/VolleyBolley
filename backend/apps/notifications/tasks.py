@@ -34,63 +34,65 @@ def init_push_service():
 
 
 @shared_task(bind=True)
-def send_push_notifications(self, game_id, notification_type):
+def send_push_notifications(self, event_id, notification_type):
     """
-    Send notifications about a specific game.
+    Send notifications about a specific event.
 
     Args:
-        game_id: Game ID
+        event_id: Game ID
         notification_type: Type of notification (IN_GAME, RATE, REMOVED)
 
     """
     try:
         push_service = PushService()
         logger.info(
-            f'Executing task: send_game_notification for game {game_id}, '
+            f'Executing task: send_event_notification for event {event_id}, '
             f'type: {notification_type}'
         )
 
         result = push_service.process_notifications_by_type(
             type=notification_type,
-            game_id=game_id,
+            event_id=event_id,
         )
 
         if result:
-            logger.info(f'Successfully sent notifications for game {game_id}')
+            logger.info(
+                f'Successfully sent notifications for event {event_id}'
+            )
         else:
-            logger.warning(f'No notifications sent for game {game_id}')
+            logger.warning(f'No notifications sent for event {event_id}')
 
         return (
-            f'Notification task for game {game_id} '
+            f'Notification task for event {event_id} '
             f'completed with result: {result}'
         )
     except Exception as e:
         logger.error(
-            f'Error sending notification for game {game_id}: {str(e)}',
+            f'Error sending notification for event {event_id}: {str(e)}',
             exc_info=True,
         )
         self.retry(exc=e, countdown=RETRY_PUSH_TIME, max_retries=MAX_RETRIES)
 
 
 @shared_task(bind=True)
-def retry_notification_task(self, token, notification_type, game_id=None):
+def retry_notification_task(self, token, notification_type, event_id=None):
     """
     Retry sending notification to a specific token.
 
     Args:
         token: Device token to retry
         notification_type: Type of notification
-        game_id: Game ID if applicable
+        event_id: Game ID if applicable
     """
     try:
         logger.info(f'Retrying notification to token {token[:8]}...')
         notification = NotificationsBase.objects.get(
-            notification_type=notification_type
+            type=notification_type
         )
         push_service = PushService()
         device = Device.objects.filter(token=token).first()
         result = push_service.send_notification_by_device(
-            device=device, notification=notification, game_id=game_id
+            device=device, notification=notification, event_id=event_id
         )
         if result:
             logger.info(f'Retry successful for token {token[:8]}...')

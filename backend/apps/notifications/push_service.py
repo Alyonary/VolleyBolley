@@ -11,6 +11,7 @@ from firebase_admin import credentials
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
 
+from apps.event.models import Game, Tourney
 from apps.notifications.constants import (
     NotificationTypes,
 )
@@ -70,7 +71,7 @@ class PushService:
     Methods:
         reconnect(): Attempts to reconnect to FCM and Celery services.
         get_status(): Returns current status of services.
-        process_notifications_by_type(type, player_id=None, game_id=None):
+        process_notifications_by_type(type, player_id=None, event_id=None):
             Sends notifications to multiple devices using FCM.
     """
 
@@ -238,7 +239,7 @@ class PushService:
             type (str): Type of notification to send.
             player_id (int, optional): Player ID for player-specific
                 notifications.
-            game_id (int, optional):
+            event_id (int, optional):
                 Game ID to include in the notification data.
         Returns:
             dict: Statistics of notification sending.
@@ -262,7 +263,7 @@ class PushService:
                 or notification_type == NotificationTypes.RATE
             ):
                 devices: list[Device] = Device.objects.in_game(event_id)
-            elif notification_type == NotificationTypes.REMOVED:
+            elif notification_type == NotificationTypes.REMOVED_GAME:
                 devices: list[Device] = Device.objects.by_player(player_id)
             else:
                 devices = []
@@ -287,7 +288,7 @@ class PushService:
         self,
         devices: list[Device],
         notification: NotificationsBase,
-        game_id: int | None = None,
+        event_id: int | None = None,
     ) -> bool | None:
         """
         Send push notifications to multiple devices.
@@ -295,7 +296,7 @@ class PushService:
             tokens (list): List of device tokens to send the notification to.
             notification (Notification): Notification object containing title,
                 body, and screen.
-            game_id (int, optional): Game ID to include in the
+            event_id (int, optional): Game ID to include in the
                 notification data.
         """
         result = {
@@ -308,7 +309,7 @@ class PushService:
             return result
         for d in devices:
             is_notify = self._send_notification_by_device_internal(
-                device=d, notification=notification, game_id=game_id
+                device=d, notification=notification, event_id=event_id
             )
             if is_notify:
                 result['successful'] += 1
@@ -334,7 +335,7 @@ class PushService:
             token (str): Device token to send the notification to.
             notification (Notification): Notification object containing title,
                 body, and screen.
-            game_id (int, optional): Game ID to include in the
+            event_id (int, optional): Game ID to include in the
                 notification data.
         """
         if not device.token:
@@ -348,7 +349,7 @@ class PushService:
         self,
         device: Device,
         notification: NotificationsBase,
-        game_id: int | None = None,
+        event_id: int | None = None,
     ) -> bool | None:
         """
         Internal method to send push notification to a single device.
@@ -360,8 +361,8 @@ class PushService:
             logger.warning('Empty device token, skipping notification')
             return False
         data_message = {'screen': notification.screen}
-        if game_id:
-            data_message['gameId'] = str(game_id)
+        if event_id:
+            data_message['gameId'] = str(event_id)
 
         masked_token = device.token[:8] + '...'
         try:
@@ -375,7 +376,7 @@ class PushService:
             logger.debug(
                 f'Notification sent successfully to device {masked_token}'
             )
-            self.create_db_model(device, notification, game_id)
+            self.create_db_model(device, notification, event_id)
             return True
         except FCMError as e:
             error_occurred = True
@@ -395,7 +396,7 @@ class PushService:
                     )
 
                     retry_notification_task.apply_async(
-                        args=[device.token, notification.type, game_id],
+                        args=[device.token, notification.type, event_id],
                         countdown=60,
                     )
                     logger.info(
@@ -419,17 +420,21 @@ class PushService:
         Args:
             device (Device): Device object to associate with the notification.
             notification_type (str): Type of notification sent.
-            game_id (int, optional): Game ID for the notification data.
+            event_id (int, optional): Game ID for the notification data.
         """
         data = {
             'player': device.player,
-            'notification_type': NotificationsBase
+            'notification_type': notification
         }
         if event_id:
             if notification.type == NotificationTypes.IN_GAME:
-                data['game'] = event_id
+                game_obj = Game.objects.filter(id=event_id).first()
+                if game_obj:
+                    data['game'] = game_obj
             elif notification.type == NotificationTypes.IN_TOURNEY:
-                data['tourney'] = event_id
+                tourney_obj = Tourney.objects.filter(id=event_id).first()
+                if tourney_obj:
+                    data['tourney'] = tourney_obj
         try:
             Notifications.objects.create(**data)
             logger.debug(

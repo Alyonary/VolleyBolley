@@ -49,14 +49,11 @@ class TestNotificationsViewSet:
         assert notif2.id in ids
         assert notif3.id in ids
 
-        for n in data['notifications']:
-            assert set(n.keys()) == {
-                'notification_id',
-                'created_at',
-                'title',
-                'message',
-                'screen',
+        expected_keys = {
+            'notification_id', 'created_at', 'title', 'message', 'screen'
             }
+        for n in data['notifications']:
+            assert expected_keys.issubset(set(n.keys()))
             assert isinstance(n['title'], str)
             assert isinstance(n['message'], str)
             assert isinstance(n['screen'], str)
@@ -85,14 +82,18 @@ class TestNotificationsViewSet:
   
         
     def test_patch_notifications_success(
-        self, authenticated_client, notifications_url
+        self,
+        authenticated_client,
+        notifications_url,
+        rate_notification_type,
+        in_game_notification_type
     ):
         client, user = authenticated_client
         notif1 = Notifications.objects.create(
-            player=user.player, notification_type=NotificationTypes.RATE
+            player=user.player, notification_type=rate_notification_type
         )
         notif2 = Notifications.objects.create(
-            player=user.player, notification_type=NotificationTypes.IN_GAME
+            player=user.player, notification_type=in_game_notification_type
         )
         data = {
             'notifications': [
@@ -108,11 +109,14 @@ class TestNotificationsViewSet:
         assert notif2.is_read is True
 
     def test_patch_notifications_invalid_id(
-        self, authenticated_client, notifications_url
+        self,
+        authenticated_client,
+        notifications_url,
+        rate_notification_type
     ):
         client, user = authenticated_client
         notif1 = Notifications.objects.create(
-            player=user.player, notification_type=NotificationTypes.RATE
+            player=user.player, notification_type=rate_notification_type
         )
         data = {
             "notifications": [

@@ -147,7 +147,7 @@ class TestPushServiceNotificationMethods:
         self, push_service_enabled, sample_notification, sample_device
     ):
         """Test successful single device notification."""
-        service = push_service_enabled
+        service: PushService = push_service_enabled
         result = service.send_notification_by_device(
             sample_device,
             sample_notification,
@@ -158,7 +158,7 @@ class TestPushServiceNotificationMethods:
     def test_send_notification_by_device_with_game_id(
         self,
         push_service_enabled,
-        sample_notification,
+        in_game_notification_type,
         sample_device,
         game_for_notification
         
@@ -175,8 +175,8 @@ class TestPushServiceNotificationMethods:
 
         result = service.send_notification_by_device(
             sample_device,
-            sample_notification,
-            game_id=game_for_notification.id,
+            in_game_notification_type,
+            event_id=game_for_notification.id,
         )
         assert result is True
         #check that notification was created in DB
@@ -319,20 +319,21 @@ class TestPushServiceErrorHandling:
         """Test exception handling in process_notifications_by_type."""
         service = push_service_enabled
 
-        def mock_notification(*args, **kwargs):
+        def mock_send_push_notifications(*args, **kwargs):
             raise Exception('Notification creation failed')
 
         monkeypatch.setattr(
-            'apps.notifications.push_service.Notification', mock_notification
+            service,
+            'send_push_notifications',
+            mock_send_push_notifications
         )
 
         result = service.process_notifications_by_type(
-            NotificationTypes.IN_GAME, game_id=1
+            NotificationTypes.IN_GAME, event_id=1
         )
 
-        assert result['status'].startswith(
-            'Error: Notification creation failed'
-        )
+        assert result['status'] is False
+        assert 'Notification creation failed' in result['message']
 
 
 @pytest.mark.django_db

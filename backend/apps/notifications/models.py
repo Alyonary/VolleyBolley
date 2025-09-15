@@ -142,7 +142,8 @@ class NotificationsBase(models.Model):
     def __str__(self):
         return f'Notification Type: {self.type}'
 
-    def create_initial_types(self):
+    @classmethod
+    def create_initial_types(cls):
         """
         Create initial notification types in the database.
         This method checks if the notification types defined in
@@ -150,7 +151,7 @@ class NotificationsBase(models.Model):
         """
 
         for notif_type, data in NOTIFICATION_INIT_DATA.items():
-            self.objects.get_or_create(
+            cls.objects.get_or_create(
                 type=notif_type,
                 defaults={
                     'title': data['title'],

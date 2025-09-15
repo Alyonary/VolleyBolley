@@ -22,7 +22,7 @@ class TestNotificationTasks:
             Mock(return_value={'successful': 2}),
         )
         result = send_push_notifications.run(
-            game_id=1, notification_type=sample_notification.type
+            event_id=1, notification_type=sample_notification.type
         )
         assert 'completed with result:' in result
         assert push_service_enabled.process_notifications_by_type.called
@@ -37,7 +37,7 @@ class TestNotificationTasks:
             Mock(return_value=None),
         )
         result = send_push_notifications.run(
-            game_id=2, notification_type=sample_notification.type
+            event_id=2, notification_type=sample_notification.type
         )
         assert 'completed with result: None' in result
         assert push_service_enabled.process_notifications_by_type.called
@@ -53,7 +53,7 @@ class TestNotificationTasks:
         )
         with pytest.raises(Exception) as exc_info:
             send_push_notifications.run(
-                game_id=3, notification_type=sample_notification.type
+                event_id=3, notification_type=sample_notification.type
             )
         assert 'fail' in str(exc_info.value)
 
@@ -69,7 +69,7 @@ class TestNotificationTasks:
         result = retry_notification_task.run(
             token='token123',
             notification_type=sample_notification.type,
-            game_id=42,
+            event_id=42,
         )
         assert result is True
         assert push_service_enabled.send_notification_by_device.called
@@ -86,7 +86,7 @@ class TestNotificationTasks:
         result = retry_notification_task.run(
             token='token456',
             notification_type=sample_notification.type,
-            game_id=99,
+            event_id=99,
         )
         assert result is False
         assert push_service_enabled.send_notification_by_device.called
@@ -104,6 +104,6 @@ class TestNotificationTasks:
             retry_notification_task.run(
                 token='token789',
                 notification_type=sample_notification.type,
-                game_id=77,
+                event_id=77,
             )
         assert 'fail' in str(exc_info.value)
