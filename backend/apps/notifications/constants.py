@@ -37,7 +37,7 @@ NOTIFICATION_INIT_DATA = {
     },
     NotificationTypes.RATE: {
         'title': 'Rate the game',
-        'body': 'Please rate the game!',
+        'body': 'Rate players after the game.',
         'screen': 'rate',
     },
     NotificationTypes.REMOVED_GAME: {

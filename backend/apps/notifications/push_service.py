@@ -265,6 +265,8 @@ class PushService:
                 devices: list[Device] = Device.objects.in_game(event_id)
             elif notification_type == NotificationTypes.REMOVED_GAME:
                 devices: list[Device] = Device.objects.by_player(player_id)
+            elif notification_type == NotificationTypes.IN_TOURNEY:
+                devices: list[Device] = Device.objects.in_tourney(event_id)
             else:
                 devices = []
                 logger.warning(f'Unknown notification type: {type}')

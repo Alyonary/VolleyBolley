@@ -2,7 +2,7 @@ import logging
 
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.notifications.constants import NotificationTypes
@@ -28,7 +28,7 @@ class NotificationsViewSet(
 
     permission_classes = [IsAuthenticated]
     serializer_class = NotificationSerializer
-    http_method_names = ['get', 'put', 'patch']
+    http_method_names = ['get', 'put', 'patch',]
 
     def get_queryset(self):
         return Notifications.objects.filter(
@@ -48,7 +48,7 @@ class NotificationsViewSet(
         return Response({"notifications": serializer.data})
 
     @action(
-        methods=['put', 'patch'],
+        methods=['put', 'patch',],
         detail=False,
         url_path='fcm-auth',
         serializer_class=FCMTokenSerializer,
@@ -72,7 +72,9 @@ class NotificationsViewSet(
                 return Response(status=status.HTTP_201_CREATED)
             else:
                 return Response(status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            serializer.errors, status=status.HTTP_400_BAD_REQUEST
+        )
 
     def patch(self, request, *args, **kwargs):
         """
@@ -98,12 +100,12 @@ class NotificationsViewSet(
         )
         return Response(status=status.HTTP_200_OK)
 
-    ###TEST ACTION VIEW - DELETE IN PROD
+    # TEST ACTION VIEW - DELETE IN PROD
     @action(
-        methods=['post'],
+        methods=['get'],
         detail=False,
         url_path='fcm-test',
-        permission_classes=[IsAuthenticated],
+        permission_classes=[AllowAny],
     )
     def fcm_test(self, request):
         """
@@ -112,10 +114,12 @@ class NotificationsViewSet(
         """
         push_service = PushService()
         if not push_service:
-            return Response(
-                {'error': 'Push service not available.'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
+            push_service.reconnect()
+            if not push_service:
+                return Response(
+                    {'error': 'Push service not available.'},
+                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
+                )
         all_tokens = list(
             Device.objects.filter(is_active=True).values_list(
                 'token', flat=True
@@ -126,14 +130,20 @@ class NotificationsViewSet(
                 {'error': 'No active devices found.'},
                 status=status.HTTP_404_NOT_FOUND,
             )
-
         for notification_type in NotificationTypes.CHOICES:
+            if notification_type in [
+                NotificationTypes.REMOVED_TOURNEY,
+                NotificationTypes.IN_TOURNEY,
+            ]:
+                continue
             notification = NotificationsBase(
                 notification_type=notification_type
             )
             if notification_type == NotificationTypes.IN_GAME:
                 push_service.send_push_notifications(
-                    tokens=all_tokens, notification=notification, game_id=1
+                    tokens=all_tokens,
+                    notification=notification,
+                    game_id=1
                 )
             else:
                 push_service.send_push_notifications(
@@ -143,7 +153,6 @@ class NotificationsViewSet(
         return Response(
             {
                 'status': 'Notification tasks created',
-                'notifications_types': NotificationTypes.CHOICES,
                 'devices_count': len(all_tokens),
             }
         )
