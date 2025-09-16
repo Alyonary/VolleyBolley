@@ -57,6 +57,7 @@ def player_data_for_registration(countries_cities):
         ).first().id,
     }
 
+
 @pytest.fixture
 def player_not_default_data(countries_cities, active_user):
     return {

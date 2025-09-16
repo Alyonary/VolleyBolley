@@ -59,7 +59,7 @@ class PaymentsSerializer(serializers.Serializer):
         """Create or update payments for player."""
         errors = []
         updated_payments = []
-        
+
         with transaction.atomic():
             for payment_data in self.validated_data['payments']:
                 try:
@@ -75,18 +75,18 @@ class PaymentsSerializer(serializers.Serializer):
                         'payment_type': payment_data['payment_type'],
                         'error': str(e)
                     })
-        
+
         if errors:
             raise serializers.ValidationError(
                 {'errors': errors}
             )
-            
+
         return updated_payments
 
 
 class PlayerBaseSerializer(serializers.ModelSerializer):
     """Serialize data for model Player.
-    
+
     Use only for actions with already registered player.
     """
     first_name = serializers.CharField(
@@ -121,15 +121,15 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         user_data = validated_data.pop('user', {})
         for attr, value in user_data.items():
             setattr(instance.user, attr, value)
-            
+
         instance.user.save()
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.is_registered = True
-        
+
         instance.save()
-        
+
         return instance
 
 
@@ -282,6 +282,27 @@ class FavoriteSerializer(PlayerListSerializer):
                     'in your favorite list.'
                 )
         return data
+
+
+class PlayerGameSerializer(PlayerAuthSerializer):
+    """Player data for retrieve in event serializer."""
+
+    class Meta:
+        model = Player
+        fields = (
+            'player_id',
+            'first_name',
+            'last_name',
+            'avatar',
+            'level'
+        )
+        read_only_fields = (
+            'player_id',
+            'first_name',
+            'last_name',
+            'avatar',
+            'level'
+        )
 
 
 class PlayerRateItemSerializer(serializers.Serializer):

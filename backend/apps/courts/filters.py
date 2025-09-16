@@ -4,11 +4,11 @@ from .models import Court
 
 
 class CourtFilter(filters.FilterSet):
-    '''Filter for the Court model.
+    """Filter for the Court model.
 
     Filtering is performed by partial match of the court_name field
-    in the related Location model.
-    '''
+    in the related CourtLocation model.
+    """
 
     search = filters.CharFilter(
         field_name='location__court_name',

@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class CoreFieldLength(int, Enum):
-    """Константы для приложения Core."""
+    """Constants for Core app."""
 
     NAME = 70
     NAME_STR = 30
