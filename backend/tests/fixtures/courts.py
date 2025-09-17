@@ -20,12 +20,13 @@ def location_for_court_thailand(
         country_thailand,
         city_in_thailand
 ):
-    location_for_court_data.update({
+    thailand_court_data = location_for_court_data.copy()
+    thailand_court_data.update({
                 'court_name': 'Test court in Thailand',
                 'country': country_thailand,
                 'city': city_in_thailand
     })
-    return CourtLocation.objects.create(**location_for_court_data)
+    return CourtLocation.objects.create(**thailand_court_data)
 
 
 @pytest.fixture
@@ -34,13 +35,14 @@ def location_for_court_cyprus(
     country_cyprus,
     city_in_cyprus
 ):
+    cyprus_court_data = location_for_court_data.copy()
     another_country = {
         'country': country_cyprus,
         'city': city_in_cyprus,
         'court_name': 'Test court in Cyprus'
     }
-    location_for_court_data.update(another_country)
-    return CourtLocation.objects.create(**location_for_court_data)
+    cyprus_court_data.update(another_country)
+    return CourtLocation.objects.create(**cyprus_court_data)
 
 
 @pytest.fixture
