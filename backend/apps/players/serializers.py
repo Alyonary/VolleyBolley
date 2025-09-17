@@ -8,7 +8,7 @@ from rest_framework import serializers
 from apps.event.models import Game, Tourney
 from apps.players.constants import PlayerIntEnums
 from apps.players.models import Favorite, Payment, Player, PlayerRatingVote
-from apps.players.rating import PlayerGradeLevel
+from apps.players.rating import GradeSystem
 
 
 class Base64ImageField(serializers.ImageField):
@@ -318,9 +318,9 @@ class PlayerRateItemSerializer(serializers.Serializer):
     player_id = serializers.IntegerField()
     level_changed = serializers.ChoiceField(
         choices=[
-            PlayerGradeLevel.UP,
-            PlayerGradeLevel.DOWN,
-            PlayerGradeLevel.CONFIRM]
+            GradeSystem.UP,
+            GradeSystem.DOWN,
+            GradeSystem.CONFIRM]
     )
 
     def validate(self, data):
@@ -337,7 +337,6 @@ class PlayerRateItemSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 f"Player with id {data['player_id']} does not exist."
             ) from e
-        # мб убрать?
         two_months_ago = timezone.now() - timedelta(days=60)
         last_votes = PlayerRatingVote.objects.filter(
             rater=rater_player,
@@ -349,7 +348,7 @@ class PlayerRateItemSerializer(serializers.Serializer):
                 f"You have already rated player {rated_player.user.username} "
                 "2 times in the last 2 months."
             )
-        value = PlayerGradeLevel.get_value(
+        value = GradeSystem.get_value(
             rater = rater_player,
             rated = rated_player,
             level_change = data['level_changed']

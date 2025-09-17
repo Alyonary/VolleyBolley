@@ -1,13 +1,12 @@
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from apps.event.models import Game
 from apps.locations.models import City, Country
 from apps.players.constants import (
     Genders,
@@ -95,6 +94,18 @@ class Player(models.Model):
                 raise ValidationError(
                     {'date_of_birth': _('Birthday cannot be in the future')}
                 )
+
+    def was_active_recently(self, days=60):
+        """
+        Checks if the player was active in the last N days.
+        Returns True if the player participated in any games in last 60 days.
+        """
+
+        games_qs = Game.objects.filter(
+            players=self,
+            end_time__gte=timezone.now() - timedelta(days=days)
+        )
+        return games_qs.exists()
 
 
 class Payment(models.Model):
@@ -245,28 +256,3 @@ class PlayerRatingVote(models.Model):
             f'Vote {self.value} from {self.rater} to {self.rated} '
             f'on {self.created_at}'
         )
-
-
-class PlayerEventRate(models.Model):
-    """
-    Tracks how many times a player has skipped rating for a specific event
-    (Game or Tourney). If skip < 3, player can still be reminded to rate.
-    """
-
-    player = models.ForeignKey(
-        'players.Player',
-        on_delete=models.CASCADE,
-        related_name='game_rates'
-    )
-    content_type = models.ForeignKey(
-        ContentType,
-        on_delete=models.CASCADE
-    )
-    object_id = models.PositiveIntegerField()
-    event = GenericForeignKey('content_type', 'object_id')
-    skip = models.PositiveSmallIntegerField(default=0)
-
-    class Meta:
-        unique_together = ('player', 'content_type', 'object_id')
-        verbose_name = _('Player rates skip')
-        verbose_name_plural = _('Player rates skip')

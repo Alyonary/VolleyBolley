@@ -1,3 +1,4 @@
+from backend.apps.event.utils import procces_rate_players_request
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
@@ -190,3 +191,17 @@ class GameViewSet(GenericViewSet,
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(
+        methods=['get', 'post'],
+        detail=True,
+        url_path='rate-players',
+        permission_classes=[IsAuthenticated]
+    )
+    def rate_players(self, request, *args, **kwargs):
+        """
+        Allows a player to rate other players in a game.
+        POST: Submits ratings for the specified players.
+        GET: Retrieves a list of players available for rating.
+        """
+        return procces_rate_players_request(self, request, *args, **kwargs)

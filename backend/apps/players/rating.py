@@ -5,9 +5,26 @@ from django.utils import timezone
 from apps.players.models import Player, PlayerRating, PlayerRatingVote
 
 
-class PlayerGradeLevel:
+class GradeSystem:
     """
-    Represents a player's level and grade node for a doubly linked list.
+    GradeSystem manages player grade levels and rating logic.
+
+    Concepts:
+    - Grade: LIGHT (L), MEDIUM (M), HARD (H), PRO (P)
+    - Level: 1, 2, 3 (within each grade)
+    - Code: string like 'L:1' for Light grade, level 1
+    - Rating coefficients: depend on rater and rated grades
+    - Level change: UP, DOWN, CONFIRM
+    - Methods for updating player ratings based on votes and inactivity
+    - Utility methods for retrieving grade objects by code, grade, or level
+    - Handles mass rating updates and inactivity downgrades
+
+    Example:
+        obj = GradeSystem('L:1')
+        next_obj = obj.next
+        prev_obj = obj.prev
+        coefficient = GradeSystem.get_rating_coefficient('LIGHT', 'MEDIUM')
+        value = GradeSystem.get_value(rater, rated, GradeSystem.UP)
     """
 
     PLAYER_LEVEL_GRADE_CODES: tuple[str] = (
@@ -85,7 +102,7 @@ class PlayerGradeLevel:
     @classmethod
     def get_obj_by_level_grade(cls, grade: str, level: int):
         """
-        Returns the PlayerGradeLevel object by grade and level.
+        Returns the GradeSystem object by grade and level.
         """
         return cls.get_by_code(f'{grade[0]}:{level}')
 
@@ -188,11 +205,19 @@ class PlayerGradeLevel:
         Downgrade player level by one step inside current grade if no activity
         for `days`. Grade (Pro, Hard, etc.) does not change, only level_mark
         decreases. Returns the number of downgraded players.
+        If level_mark is already 1, it stays at 1.
+        A player is considered inactive if they have not participated in any
+        games in the last `60` days.
+        A player's rating value is reset to 6 upon downgrade or upgrade.
         """
+
         inactive_ratings = PlayerRating.objects.filter(
             updated_at__lt=timezone.now() - timedelta(days=days)
         )
         for rating in inactive_ratings:
+            player: Player = rating.player
+            if player.was_active_recently():
+                continue
             new_level_mark = rating.level_mark - 1
             if new_level_mark < 1:
                 new_level_mark = 1
@@ -201,4 +226,4 @@ class PlayerGradeLevel:
             rating.save()
         return len(inactive_ratings)
     
-PlayerGradeLevel.setup()
+GradeSystem.setup()
