@@ -28,8 +28,8 @@ class TestLocationTagModel:
         assert location.court_name == location_for_court_data['court_name']
         assert location.country == country_thailand
         assert location.city == city_in_thailand
-        assert location.location_name == f'{
-            country_thailand.name}, {city_in_thailand.name}'
+        location_name = f'{country_thailand.name}, {city_in_thailand.name}'
+        assert location.location_name == location_name
 
         assert CourtLocation.objects.all().count() == 1
 
