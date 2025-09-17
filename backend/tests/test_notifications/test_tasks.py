@@ -4,7 +4,7 @@ import pytest
 
 from apps.notifications.tasks import (
     retry_notification_task,
-    send_push_notifications,
+    send_push_notifications_on_upcoming_events,
 )
 
 
@@ -21,7 +21,7 @@ class TestNotificationTasks:
             'process_notifications_by_type',
             Mock(return_value={'successful': 2}),
         )
-        result = send_push_notifications.run(
+        result = send_push_notifications_on_upcoming_events.run(
             event_id=1, notification_type=sample_notification.type
         )
         assert 'completed with result:' in result
@@ -36,7 +36,7 @@ class TestNotificationTasks:
             'process_notifications_by_type',
             Mock(return_value=None),
         )
-        result = send_push_notifications.run(
+        result = send_push_notifications_on_upcoming_events.run(
             event_id=2, notification_type=sample_notification.type
         )
         assert 'completed with result: None' in result
@@ -52,7 +52,7 @@ class TestNotificationTasks:
             Mock(side_effect=Exception('fail')),
         )
         with pytest.raises(Exception) as exc_info:
-            send_push_notifications.run(
+            send_push_notifications_on_upcoming_events.run(
                 event_id=3, notification_type=sample_notification.type
             )
         assert 'fail' in str(exc_info.value)

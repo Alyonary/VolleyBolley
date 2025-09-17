@@ -6,6 +6,7 @@ from celery.signals import worker_ready
 from apps.notifications.constants import (
     MAX_RETRIES,
     RETRY_PUSH_TIME,
+    NotificationTypes,
 )
 from apps.notifications.models import Device, NotificationsBase
 from apps.notifications.push_service import PushService
@@ -34,7 +35,11 @@ def init_push_service():
 
 
 @shared_task(bind=True)
-def send_push_notifications(self, event_id, notification_type):
+def send_push_notifications_on_upcoming_events(
+    self,
+    event_id,
+    notification_type
+):
     """
     Send notifications about a specific event.
 
@@ -105,6 +110,28 @@ def retry_notification_task(self, token, notification_type, event_id=None):
             exc=e, countdown=RETRY_PUSH_TIME, max_retries=MAX_RETRIES - 1
         )
 
+@shared_task
+def inform_removed_players(event_id: int, player_id: int, event_type: str):
+    """
+    Inform players that they have been removed from an event.
+    """
+    notification_type = {
+        'game': NotificationTypes.REMOVED_GAME,
+        'tourney': NotificationTypes.REMOVED_TOURNEY
+    }.get(event_type)
+    if not notification_type:
+        logger.error(f'Invalid event type: {event_type}')
+        return False
+    push_service = PushService()
+    if not push_service:
+        logger.error('Push service is not enabled. Check configuration.')
+        return False
+    return push_service.process_notifications_by_type(
+        notification_type=notification_type,
+        player_id=player_id,
+        event_id=event_id
+    )
+
 
 @shared_task
 def delete_old_devices_task():
@@ -112,6 +139,7 @@ def delete_old_devices_task():
     Delete device records created more than 270 days ago.
     """
     return delete_old_devices()
+
 
 @shared_task
 def create_notification_type_tables():
