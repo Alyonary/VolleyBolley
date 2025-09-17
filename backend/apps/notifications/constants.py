@@ -48,9 +48,9 @@ NOTIFICATION_INIT_DATA = {
     NotificationTypes.IN_TOURNEY: {
         'title': 'Tournament Invitation',
         'body': 'You are invited to a tournament!',
-        'screen': 'inGame',
+        'screen': 'inTourney',
     },
-    NotificationTypes.REMOVED_GAME: {
+    NotificationTypes.REMOVED_TOURNEY: {
         'title': 'You have been removed from the tournament',
         'body': 'See details in the app.',
         'screen': 'removed',
