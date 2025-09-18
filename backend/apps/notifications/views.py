@@ -132,14 +132,14 @@ class NotificationsViewSet(
             )
         for notification_type in NotificationTypes.CHOICES:
             if notification_type in [
-                NotificationTypes.REMOVED_TOURNEY,
-                NotificationTypes.IN_TOURNEY,
+                NotificationTypes.GAME_REMINDER,
+                NotificationTypes.TOURNEY_REMINDER,
             ]:
                 continue
             notification = NotificationsBase(
                 notification_type=notification_type
             )
-            if notification_type == NotificationTypes.IN_GAME:
+            if notification_type == NotificationTypes.GAME_REMINDER:
                 push_service.send_push_notifications(
                     tokens=all_tokens,
                     notification=notification,

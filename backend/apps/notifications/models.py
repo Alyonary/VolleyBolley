@@ -143,7 +143,7 @@ class NotificationsBase(models.Model):
         return f'Notification Type: {self.type}'
 
     @classmethod
-    def create_initial_types(cls):
+    def create_db_model_types(cls):
         """
         Create initial notification types in the database.
         This method checks if the notification types defined in

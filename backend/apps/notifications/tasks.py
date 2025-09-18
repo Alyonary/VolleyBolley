@@ -42,11 +42,6 @@ def send_push_notifications_on_upcoming_events(
 ):
     """
     Send notifications about a specific event.
-
-    Args:
-        event_id: Game ID
-        notification_type: Type of notification (IN_GAME, RATE, REMOVED)
-
     """
     try:
         push_service = PushService()
@@ -110,14 +105,14 @@ def retry_notification_task(self, token, notification_type, event_id=None):
             exc=e, countdown=RETRY_PUSH_TIME, max_retries=MAX_RETRIES - 1
         )
 
-@shared_task
+@shared_task(bind=True)
 def inform_removed_players(event_id: int, player_id: int, event_type: str):
     """
     Inform players that they have been removed from an event.
     """
     notification_type = {
-        'game': NotificationTypes.REMOVED_GAME,
-        'tourney': NotificationTypes.REMOVED_TOURNEY
+        'game': NotificationTypes.GAME_REMOVED,
+        'tourney': NotificationTypes.TOURNEY_REMOVED
     }.get(event_type)
     if not notification_type:
         logger.error(f'Invalid event type: {event_type}')
@@ -147,7 +142,7 @@ def create_notification_type_tables():
     Create initial notification types in the database if they do not exist.
     """
     try:
-        NotificationsBase.create_initial_types()
+        NotificationsBase.create_db_model_types()
         logger.info('Notification types initialized successfully.')
         return True
     except Exception as e:

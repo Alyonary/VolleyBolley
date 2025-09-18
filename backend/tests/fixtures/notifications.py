@@ -183,16 +183,17 @@ def all_notification_types(db):
 
 @pytest.fixture
 def rate_notification_type(all_notification_types):
-    return all_notification_types.get(NotificationTypes.RATE)
+    return all_notification_types.get(NotificationTypes.GAME_RATE)
 
 @pytest.fixture
 def remove_notification_type(all_notification_types):
-    return all_notification_types.get(NotificationTypes.REMOVED_GAME)
+    return all_notification_types.get(NotificationTypes.GAME_REMOVED)
 
 @pytest.fixture
 def in_game_notification_type(all_notification_types):
-    return all_notification_types.get(NotificationTypes.IN_GAME)
-
+    obj = all_notification_types.get(NotificationTypes.GAME_REMINDER)
+    assert obj is not None, "GAME_REMINDER notification type not found in DB"
+    return obj
 
 @pytest.fixture
 def sample_notification(

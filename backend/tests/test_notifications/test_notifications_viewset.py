@@ -24,19 +24,19 @@ class TestNotificationsViewSet:
         notif1 = Notifications.objects.create(
             player=user.player,
             notification_type=all_notification_types[
-                NotificationTypes.RATE
+                NotificationTypes.GAME_RATE
             ]
         )
         notif2 = Notifications.objects.create(
             player=user.player,
             notification_type=all_notification_types[
-                NotificationTypes.IN_GAME
+                NotificationTypes.GAME_REMINDER
             ]
         )
         notif3 = Notifications.objects.create(
             player=user.player,
             notification_type=all_notification_types[
-                NotificationTypes.REMOVED_GAME
+                NotificationTypes.GAME_REMOVED
             ],
             is_read=True
         )

@@ -329,7 +329,7 @@ class TestPushServiceErrorHandling:
         )
 
         result = service.process_notifications_by_type(
-            NotificationTypes.IN_GAME, event_id=1
+            NotificationTypes.GAME_REMINDER, event_id=1
         )
 
         assert result['status'] is False
