@@ -19,12 +19,12 @@ class TestNotificationTasks:
         monkeypatch.setattr(
             push_service_enabled,
             'process_notifications_by_type',
-            Mock(return_value={'successful': 2}),
+            Mock(return_value={'status': True,}),
         )
         result = send_push_notifications_on_upcoming_events.run(
             event_id=1, notification_type=sample_notification.type
         )
-        assert 'completed with result:' in result
+        assert result['status'] is True
         assert push_service_enabled.process_notifications_by_type.called
 
     def test_send_push_notifications_none(
@@ -34,12 +34,12 @@ class TestNotificationTasks:
         monkeypatch.setattr(
             push_service_enabled,
             'process_notifications_by_type',
-            Mock(return_value=None),
+            Mock(return_value={'status': False}),
         )
         result = send_push_notifications_on_upcoming_events.run(
             event_id=2, notification_type=sample_notification.type
         )
-        assert 'completed with result: None' in result
+        assert result['status'] is False
         assert push_service_enabled.process_notifications_by_type.called
 
     def test_send_push_notifications_exception(

@@ -55,23 +55,20 @@ def send_push_notifications_on_upcoming_events(
             event_id=event_id,
         )
 
-        if result:
+        if result['status']:
             logger.info(
                 f'Successfully sent notifications for event {event_id}'
             )
         else:
             logger.warning(f'No notifications sent for event {event_id}')
-
-        return (
-            f'Notification task for event {event_id} '
-            f'completed with result: {result}'
-        )
+        return result
     except Exception as e:
         logger.error(
             f'Error sending notification for event {event_id}: {str(e)}',
             exc_info=True,
         )
         self.retry(exc=e, countdown=RETRY_PUSH_TIME, max_retries=MAX_RETRIES)
+        return {'status': False, 'message': str(e)}
 
 
 @shared_task(bind=True)
