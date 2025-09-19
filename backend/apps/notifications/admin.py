@@ -6,6 +6,11 @@ from apps.notifications.models import Device, NotificationsBase
 
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
+    """
+    Admin interface for managing user devices for push notifications.
+    Provides read-only access to device details and allows deletion only.
+    """
+
     list_display = [
         'id',
         'player',
@@ -31,6 +36,7 @@ class DeviceAdmin(admin.ModelAdmin):
 
     def masked_token(self, obj):
         """Show only first and last 4 characters of the token."""
+
         if obj.token and len(obj.token) > 8:
             return f'{obj.token[:4]}...{obj.token[-4:]}'
         return '****'
@@ -61,6 +67,11 @@ class DeviceAdmin(admin.ModelAdmin):
 
 @admin.register(NotificationsBase)
 class NotificationsBaseAdmin(admin.ModelAdmin):
+    """
+    Admin interface for managing notification templates.
+    Allows full CRUD operations on notification templates.
+    """
+
     list_display = ['id', 'type', 'title', 'screen']
     search_fields = ['type', 'title', 'screen']
     ordering = ['type']
