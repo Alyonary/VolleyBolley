@@ -12,6 +12,8 @@ pytest_plugins = [
     'tests.fixtures.players',
     'tests.fixtures.users',
     'tests.fixtures.notifications',
+    "tests.fixtures.games",
+    "tests.fixtures.core",
     'tests.fixtures.auth',
     'tests.fixtures.push_service',
 ]

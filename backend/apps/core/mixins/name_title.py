@@ -5,7 +5,7 @@ from apps.core.enums import CoreFieldLength
 
 
 class NameMixin(m.Model):
-    """Миксин с полем Name."""
+    """Mixin with 'name' field."""
 
     name = m.CharField(
         max_length=CoreFieldLength.NAME.value,
@@ -21,7 +21,7 @@ class NameMixin(m.Model):
 
 
 class TitleMixin(m.Model):
-    """Миксин с полем 'title'."""
+    """Mixin with 'title' field."""
 
     title = m.CharField(
         verbose_name=_('Заголовок'),
