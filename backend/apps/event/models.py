@@ -124,7 +124,6 @@ class GameInvitation(m.Model):
         discription = str(_(
             f'Invitation in {self.game} for {self.invited}'))
         return discription
-from apps.players.models import Player
 
 
 class Game(EventMixin, CreatedUpdatedMixin):

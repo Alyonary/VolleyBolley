@@ -3,7 +3,6 @@ from random import choice
 import pytest
 from django.contrib.auth import get_user_model
 
-from apps.event.models import Game
 from apps.notifications.constants import (
     NOTIFICATION_INIT_DATA,
     NotificationTypes,
@@ -22,18 +21,18 @@ User = get_user_model()
 @pytest.fixture
 def users():
     """Creates test users."""
-    user1 = User.objects.create_user(
-        username='testuser1',
+    user1 = User.objects.create(
+        username='test_user1',
         email='test1@example.com',
         password='testpass123'
     )
-    user2 = User.objects.create_user(
-        username='testuser2',
+    user2 = User.objects.create(
+        username='test_user2',
         email='test2@example.com',
         password='testpass123'
     )
-    user3 = User.objects.create_user(
-        username='testuser3',
+    user3 = User.objects.create(
+        username='test_user3',
         email='test3@example.com',
         password='testpass123'
     )
@@ -236,25 +235,5 @@ def notifications_objs(
     }
     
 @pytest.fixture
-def game_for_notification():
-    import warnings
-    with warnings.catch_warnings():
-        warnings.filterwarnings(
-            'ignore',
-            message=(
-                'DateTimeField .* received a naive datetime .* while '
-                'time zone support is active.'
-            )
-        )
-        game = Game.objects.create(
-            title='Test Game',
-            court=None,
-            host=None,
-            is_active=True,
-            is_private=False,
-            date='2024-12-31',
-            start_time='10:00:00',
-            end_time='12:00:00',
-            max_players=10,
-        )
-        return game
+def game_for_notification(game_thailand):
+    return game_thailand

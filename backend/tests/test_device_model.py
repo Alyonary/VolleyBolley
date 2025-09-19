@@ -1,9 +1,7 @@
 
 import pytest
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 
-from apps.event.models import Game
 from apps.notifications.models import Device, DeviceType
 
 User = get_user_model()
@@ -99,7 +97,7 @@ class TestDeviceModel:
         assert player1_devices.count() == 1
         assert self.devices['device1'] in player1_devices
 
-    def test_device_manager_in_game(self):
+    def test_device_manager_in_game(self, game_for_notification):
         """Test in_game() method of Device manager."""
         import warnings
         with warnings.catch_warnings():
@@ -110,14 +108,7 @@ class TestDeviceModel:
                     'time zone support is active.'
                 )
             )
-            now = timezone.now()
-            game = Game.objects.create(
-                host=self.players['player1'],
-                date=now.date(),
-                start_time=now.time(),
-                end_time=now.time(),
-                max_players=10,
-            )
+            game = game_for_notification
             game.players.add(self.players['player1'], self.players['player2'])
             qs = Device.objects.in_game(game.id)
             tokens = [d.token for d in qs]
