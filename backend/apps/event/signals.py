@@ -1,9 +1,10 @@
-from backend.apps.event.tasks import send_event_notification_task
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
 from apps.event.models import Game, Tourney
+from apps.event.tasks import send_event_notification_task
+from apps.notifications.constants import NotificationTypes
 
 
 def schedule_event_notifications(instance, event_type):
@@ -13,9 +14,11 @@ def schedule_event_notifications(instance, event_type):
     """
     now = timezone.now()
     notification_type = {
-        'game': 'InGame',
-        'tourney': 'InTourney'
-    }.get(event_type.lower(), 'InGame')
+        'game': NotificationTypes.GAME_INVITE,
+        'tourney': NotificationTypes.TOURNEY_INVITE
+    }.get(event_type.lower(),)
+    if not notification_type:
+        return False
     start_time = instance.start_time
     notify_hour = start_time - timezone.timedelta(hours=1)
     if notify_hour > now:

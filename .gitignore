@@ -31,7 +31,9 @@ backend/apps/*/migrations/0*
 .env.local
 .env.*.local
 
+# Fcm Service Account
 fcm_service_account.json
+
 # ========================
 # IDE и редакторы
 # ========================
@@ -41,6 +43,7 @@ fcm_service_account.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+VolleyBolley.code-workspace
 
 # PyCharm
 .idea/
@@ -81,3 +84,6 @@ yarn-error.log*
 
 # Файлы линтера
 .ruff_cache
+
+# Файлы pytest
+.coverage

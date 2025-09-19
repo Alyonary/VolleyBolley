@@ -19,22 +19,22 @@ class TestCountriesAPI:
     def test_response_structure(self, api_client):
         '''Test response has correct JSON structure.
     
-    Expected structure:
-    {
-        "countries": [
-            {
-                "country_id": 0,
-                "country_name": "country_name",
-                "cities": [
-                    {
-                        "city_id": 0,
-                        "city_name": "city_name"
-                    }
-                ]
-            }
-        ]
-    }
-    '''
+        Expected structure:
+        {
+            "countries": [
+                {
+                    "country_id": 0,
+                    "country_name": "country_name",
+                    "cities": [
+                        {
+                            "city_id": 0,
+                            "city_name": "city_name"
+                        }
+                    ]
+                }
+            ]
+        }
+        '''
         url = reverse('api:countries')
         response = api_client.get(url)
         

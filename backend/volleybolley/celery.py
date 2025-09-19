@@ -12,6 +12,10 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 CELERY_BEAT_SCHEDULE = {
+     'delete-old-devices-every-day': {
+        'task': 'apps.notifications.tasks.delete_old_devices_task',
+        'schedule': crontab(hour=0, minute=0),
+    },
     'downgrade-inactive-players-every-day': {
         'task': 'apps.players.tasks.downgrade_inactive_players_task',
         'schedule': crontab(hour=2, minute=0),

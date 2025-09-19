@@ -101,3 +101,5 @@ def user_with_registered_player(user_generated_after_login):
 @pytest.fixture
 def bulk_create_users(bulk_users_data):
     return [User.objects.create(**user) for user in bulk_users_data]
+
+

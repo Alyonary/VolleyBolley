@@ -1,16 +1,17 @@
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
-import sys
-
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR_OUT = Path(__file__).resolve().parents[2]
-ENV_FILE_PATH = BASE_DIR_OUT / 'infra' / '.env'
 
-load_dotenv(dotenv_path=ENV_FILE_PATH)
+
+load_dotenv()
+
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
@@ -28,14 +29,16 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'social_django',
+    'django_celery_beat',
     'apps.users.apps.UsersConfig',
     'apps.api.apps.ApiConfig',
     'apps.players.apps.PlayersConfig',
     'apps.courts.apps.CourtsConfig',
     'apps.event.apps.EventConfig',
     'apps.core.apps.CoreConfig',
-    'phonenumber_field',
     'apps.locations.apps.LocationsConfig',
+    'apps.notifications.apps.NotificationsConfig',
+    'phonenumber_field',
     'django_filters',
     'drf_yasg',
 ]
@@ -92,10 +95,7 @@ DATABASES = {
         'USER': os.getenv('POSTGRES_USER', 'postgres'),
         'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'postgres'),
         'HOST': os.getenv('DB_HOST', 'localhost'),
-        'PORT': os.getenv('DB_PORT', 5432),
-        'OPTIONS': {
-            'client_encoding': 'UTF8',
-        },
+        'PORT': os.getenv('DB_PORT', 5432)
     }
 }
 
@@ -196,6 +196,7 @@ FIREBASE_SERVICE_ACCOUNT = {
     'token_uri': os.getenv('FIREBASE_TOKEN_URI', 'https://oauth2.googleapis.com/token'),
     'auth_provider_x509_cert_url': os.getenv('FIREBASE_AUTH_PROVIDER_CERT_URL', 'https://www.googleapis.com/oauth2/v1/certs'),
     'client_x509_cert_url': os.getenv('FIREBASE_CLIENT_CERT_URL', ''),
+    'universe_domain': os.getenv('FIREBASE_UNIVERSE_DOMAIN', 'googleapis.com'),
 }
 
 STATIC_URL = '/static/'
@@ -241,6 +242,12 @@ LOGGING = {
             'level': 'ERROR',
             'encoding': 'utf-8',
         },
+        'notifications_file': {
+            'class': 'logging.FileHandler',
+            'filename': 'notifications.log',
+            'formatter': 'verbose',
+            'encoding': 'utf-8',
+        }
     },
     'loggers': {
         'django': {
@@ -286,7 +293,6 @@ LOGGING = {
         'requests_oauthlib': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
-            'propagate': False,
         },
         'apps.api': {
             'handlers': ['console', 'file', 'error_file'],
@@ -304,5 +310,25 @@ LOGGING = {
     #    },
     },
 }
+
+# Redis Configuration
+REDIS_HOST = os.environ.get('REDIS_HOST', 'redis')
+REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+REDIS_DB = os.environ.get('REDIS_DB', '0')
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', 'redis_pass')
+REDIS_URL = f"redis://:{REDIS_PASSWORD}@{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}"
+
+# Celery Configuration Options
+CELERY_BROKER_URL = REDIS_URL
+CELERY_RESULT_BACKEND = REDIS_URL
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 1800  # 30 minutes
+CELERY_TASK_SOFT_TIME_LIMIT = 1500  # 25 minutes
+
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 SWAGGER_USE_COMPAT_RENDERERS = False
