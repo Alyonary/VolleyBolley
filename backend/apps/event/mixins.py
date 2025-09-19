@@ -73,4 +73,4 @@ class EventMixin(m.Model):
 
     class Meta:
         abstract = True
-        ordering = ('date',)
+        ordering = ('start_time',)
