@@ -1,4 +1,3 @@
-from datetime import timedelta, timezone
 from django.db import models as m
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -94,15 +93,6 @@ class GameManager(m.Manager):
         """Returns nearest upcoming game where user is a host or player."""
         return self.get_queryset().nearest_game(player)
 
-    # def player_has_games(
-    #     self, player,
-    #     inactive_days=PlayerIntEnums.PLAYER_INACTIVE_DAYS.value
-    # ) -> bool:
-    #     """Checks if the player has any games in some days."""
-    #     return self.get_queryset().filter(
-    #         players=player,
-    #         end_time__gte=timezone.now() - timedelta(days=inactive_days)
-    #     ).exists()
 
 class GameInvitation(m.Model):
     """Invitation to game model."""

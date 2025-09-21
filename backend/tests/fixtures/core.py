@@ -13,6 +13,12 @@ def game_levels_medium():
     return GameLevel.objects.create(name=GameLevel.GameLevelChoices.MEDIUM)
 
 
+@pytest.fixture
+def game_levels_pro():
+    from apps.core.models import GameLevel
+    return GameLevel.objects.create(name='PRO')
+
+
 @pytest.fixture()
 def currency_type_thailand(country_thailand):
     return CurrencyType.objects.create(

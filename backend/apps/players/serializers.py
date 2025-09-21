@@ -286,7 +286,9 @@ class FavoriteSerializer(PlayerListSerializer):
 
 class PlayerGameSerializer(PlayerAuthSerializer):
     """Player data for retrieve in event serializer."""
-
+    level = serializers.CharField(
+        source='rating.grade', read_only=True
+    )
     class Meta:
         model = Player
         fields = (
