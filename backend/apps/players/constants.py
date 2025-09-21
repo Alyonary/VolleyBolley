@@ -29,6 +29,7 @@ class PlayerIntEnums(IntEnum):
     DEFAULT_RATING = 6
     MIN_RATING_VALUE = 0
     MAX_RATING_VALUE = 12
+    PLAYER_INACTIVE_DAYS = 60
 
 
 

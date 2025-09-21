@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+
 from apps.event.models import Game
 from apps.locations.models import City, Country
 from apps.players.constants import (
@@ -95,7 +96,7 @@ class Player(models.Model):
                     {'date_of_birth': _('Birthday cannot be in the future')}
                 )
 
-    def was_active_recently(self, days=60):
+    def was_active_recently(self, days=PlayerIntEnums.PLAYER_INACTIVE_DAYS):
         """
         Checks if the player was active in the last N days.
         Returns True if the player participated in any games in last 60 days.
