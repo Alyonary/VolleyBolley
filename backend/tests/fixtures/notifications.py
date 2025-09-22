@@ -36,8 +36,26 @@ def users():
         email='test3@example.com',
         password='testpass123'
     )
-    
-    return {'user1': user1, 'user2': user2, 'user3': user3}
+    user4 = User.objects.create(
+        username='test_user4',
+        email='test4@example.com',
+        password='testpass123'
+    )
+    user5 = User.objects.create(
+        username='test_user5',
+        email='test5@example.com',
+        password='testpass123'
+    )
+    user6 = User.objects.create(
+        username='test_user6',
+        email='test6@example.com',
+        password='testpass123'
+    )
+
+    return {
+        'user1': user1, 'user2': user2, 'user3': user3,
+        'user4': user4, 'user5': user5, 'user6': user6
+    }
 
 @pytest.fixture
 def players(users):
@@ -45,7 +63,14 @@ def players(users):
     player1 = Player.objects.create(user=users['user1'])
     player2 = Player.objects.create(user=users['user2'])
     player3 = Player.objects.create(user=users['user3'])
-    return {'player1': player1, 'player2': player2, 'player3': player3}
+    player4 = Player.objects.create(user=users['user4'])
+    player5 = Player.objects.create(user=users['user5'])
+    player6 = Player.objects.create(user=users['user6'])
+    
+    return {
+        'player1': player1, 'player2': player2, 'player3': player3,
+        'player4': player4, 'player5': player5, 'player6': player6
+    }
 
 
 @pytest.fixture

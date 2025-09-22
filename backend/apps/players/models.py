@@ -245,11 +245,38 @@ class PlayerRatingVote(models.Model):
         default=False,
         verbose_name=_('Is vote counted in rating calculation')
     )
+    game = models.ForeignKey(
+        Game,
+        on_delete=models.SET_NULL,
+        related_name='rating_votes',
+        verbose_name=_('Game where the rating vote was made'),
+        null=True,
+        blank=True,
+    )
+    tourney = models.ForeignKey(
+        'event.Tourney',
+        on_delete=models.SET_NULL,
+        related_name='rating_votes',
+        verbose_name=_('Tourney where the rating vote was made'),
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         verbose_name = _('Player rating vote')
         verbose_name_plural = _('Player rating votes')
-        unique_together = ('rater', 'rated', 'created_at')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['rater', 'rated', 'game'],
+                name='unique_rating_vote_per_game',
+                condition=models.Q(game__isnull=False)
+            ),
+            models.UniqueConstraint(
+                fields=['rater', 'rated', 'tourney'],
+                name='unique_rating_vote_per_tourney',
+                condition=models.Q(tourney__isnull=False)
+            ),
+        ]
 
     def __str__(self) -> str:
         return (

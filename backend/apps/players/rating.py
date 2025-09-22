@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from django.utils import timezone
 
+from apps.players.constants import PlayerIntEnums
 from apps.players.models import Player, PlayerRating, PlayerRatingVote
 
 
@@ -59,10 +60,30 @@ class GradeSystem:
     def __init__(self, code: str):
         self.next = None
         self.prev = None
-        self.code = code
-        self.grade, self.level = code.split(':')
-        self.grade = self.GRADES[self.grade]
-        self.level = int(self.level)
+        self.code = code.upper()
+        
+        try:
+            grade_code, level_str = code.split(':')
+        except ValueError as e:
+            raise ValueError(f"Invalid code format: {code}") from e
+        
+        if grade_code not in self.GRADES:
+            raise ValueError(f"Invalid grade code: {grade_code}")
+        
+        try:
+            level = int(level_str)
+        except ValueError as e:
+            raise ValueError(
+                f"Invalid level, it has to be a number: {level_str}"
+            ) from e
+        
+        if level not in [1, 2, 3]:
+            raise ValueError(
+                f"Level must be 1, 2, or 3, got: {level}"
+            )
+        
+        self.grade = self.GRADES[grade_code]
+        self.level = level
 
     def get_level_grade(self) -> tuple[str, int]:
         return self.level, self.grade
@@ -112,7 +133,7 @@ class GradeSystem:
         rater: Player,
         rated: Player,
         level_change: str
-    ) -> int:
+    ) -> float:
         """
         Returns the rating value for player based on level change.
         level_change can be UP, DOWN or CONFIRM.
@@ -126,9 +147,9 @@ class GradeSystem:
             rated_level=rated.rating.grade
         )
         if level_change == cls.UP:
-            return int(1 * coefficient)
+            return 1 * coefficient
         elif level_change == cls.DOWN:
-            return int(-1 * coefficient)
+            return -1 * coefficient
         return 0
 
     @classmethod
@@ -144,6 +165,7 @@ class GradeSystem:
             "downgraded": 0,
             "unchanged": 0,
         }
+        
         for player in players:
             player_rating: PlayerRating = player.rating
             last_day_rates = PlayerRatingVote.objects.filter(
@@ -151,18 +173,18 @@ class GradeSystem:
                 is_counted=False
             )
             votes = list(last_day_rates)
+            
             if not votes:
                 stats["unchanged"] += 1
                 continue
 
             rating_value_sum = sum(
-                v.rating for v in votes
+                v.value for v in votes
             ) + player_rating.value
             new_grade = player_rating.grade
             new_level = player_rating.level_mark
-            new_value = player_rating.value
-
-            if rating_value_sum < 0:
+            
+            if rating_value_sum < 1:
                 change = cls.get_obj_by_level_grade(
                     player_rating.grade,
                     player_rating.level_mark
@@ -172,8 +194,9 @@ class GradeSystem:
                     new_level = change.level
                     new_value = 6
                     stats["downgraded"] += 1
-                    continue
-                new_value = rating_value_sum
+                else:
+                    new_value = max(1, rating_value_sum)
+                    stats["unchanged"] += 1
             elif rating_value_sum > 12:
                 change = cls.get_obj_by_level_grade(
                     player_rating.grade,
@@ -184,23 +207,27 @@ class GradeSystem:
                     new_level = change.level
                     new_value = 6
                     stats["upgraded"] += 1
-                    continue
-                new_value = rating_value_sum
+                else:
+                    new_value = min(12, rating_value_sum)
+                    stats["unchanged"] += 1
             else:
                 new_value = rating_value_sum
-
+                stats["unchanged"] += 1
+                
             player_rating.grade = new_grade
             player_rating.level_mark = new_level
             player_rating.value = new_value
             player_rating.save()
+            
             last_day_rates.update(is_counted=True)
-        stats["unchanged"] = (
-            stats["total"] - stats["upgraded"] - stats["downgraded"]
-        )
+        
         return stats
 
     @classmethod
-    def downgrade_inactive_players(cls, days: int = 60) -> int:
+    def downgrade_inactive_players(
+        cls,
+        days: int = PlayerIntEnums.PLAYER_INACTIVE_DAYS
+    ) -> int:
         """
         Downgrade player level by one step inside current grade if no activity
         for `days`. Grade (Pro, Hard, etc.) does not change, only level_mark
@@ -214,16 +241,16 @@ class GradeSystem:
         inactive_ratings = PlayerRating.objects.filter(
             updated_at__lt=timezone.now() - timedelta(days=days)
         )
+        downgraded_count = 0
         for rating in inactive_ratings:
             player: Player = rating.player
-            if player.was_active_recently():
+            if player.was_active_recently(days=days):
                 continue
-            new_level_mark = rating.level_mark - 1
-            if new_level_mark < 1:
-                new_level_mark = 1
-            rating.level_mark = new_level_mark
-            rating.value = 6
-            rating.save()
-        return len(inactive_ratings)
+            if rating.level_mark > 1:
+                rating.level_mark = rating.level_mark - 1
+                rating.value = 6
+                rating.save()
+                downgraded_count += 1
+        return downgraded_count  
     
 GradeSystem.setup()
