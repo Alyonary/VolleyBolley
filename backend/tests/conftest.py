@@ -16,6 +16,7 @@ pytest_plugins = [
     "tests.fixtures.core",
     'tests.fixtures.auth',
     'tests.fixtures.push_service',
+    'tests.fixtures.tourneys',
 ]
 
 

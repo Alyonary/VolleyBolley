@@ -1,4 +1,3 @@
-from backend.apps.event.utils import procces_rate_players_request
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
@@ -20,6 +19,7 @@ from apps.event.serializers import (
     GameSerializer,
     GameShortSerializer,
 )
+from apps.event.utils import procces_rate_players_request
 
 
 class GameViewSet(GenericViewSet,

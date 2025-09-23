@@ -30,7 +30,7 @@ class PlayerIntEnums(IntEnum):
     MIN_RATING_VALUE = 0
     MAX_RATING_VALUE = 12
     PLAYER_INACTIVE_DAYS = 60
-
+    PLAYER_VOTE_DAY_LIMIT = 2
 
 
 

@@ -213,3 +213,26 @@ def player_thailand_female_pro(country_thailand):
     player.rating.grade = Grades.PRO.value
     player.rating.save()
     return player
+
+
+@pytest.fixture
+def three_games_thailand(game_data):
+    """Create three games in Thailand with same configuration."""
+    games = []
+    for i in range(3):
+        working_data = game_data.copy()
+        working_data['message'] = f'Test game {i+1} in Thailand'
+        players = working_data.pop('players')
+        levels = working_data.pop('player_levels')
+        
+        start_time = working_data['start_time'] + timedelta(hours=i*4)
+        end_time = working_data['end_time'] + timedelta(hours=i*4)
+        working_data['start_time'] = start_time
+        working_data['end_time'] = end_time
+
+        game = Game.objects.create(**working_data)
+        game.players.set(players)
+        game.player_levels.set(levels)
+        games.append(game)
+    
+    return games

@@ -156,11 +156,13 @@ class GradeSystem:
     def update_players_rating(cls) -> dict[str, int]:
         """
         Updates player ratings based on votes.
-        Returns statistics: total processed, upgraded, downgraded, unchanged.
+        Returns statistics: total processed, updated (new rating value),
+        upgraded, downgraded, unchanged.
         """
         players = Player.objects.all()
         stats = {
             "total": len(players),
+            'updated': 0,
             "upgraded": 0,
             "downgraded": 0,
             "unchanged": 0,
@@ -212,7 +214,7 @@ class GradeSystem:
                     stats["unchanged"] += 1
             else:
                 new_value = rating_value_sum
-                stats["unchanged"] += 1
+                stats["updated"] += 1
                 
             player_rating.grade = new_grade
             player_rating.level_mark = new_level

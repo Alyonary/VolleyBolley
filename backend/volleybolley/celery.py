@@ -12,7 +12,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 app.autodiscover_tasks()
 
 CELERY_BEAT_SCHEDULE = {
-     'delete-old-devices-every-day': {
+    'delete-old-devices-every-day': {
         'task': 'apps.notifications.tasks.delete_old_devices_task',
         'schedule': crontab(hour=0, minute=0),
     },
@@ -21,7 +21,7 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=2, minute=0),
     },
     'create-rate-objects-and-notify-every-10-minutes': {
-        'task': 'apps.event.tasks.create_rate_objects_and_notify',
+        'task': 'apps.notifications.tasks.send_rate_notification_task',
         'schedule': crontab(minute='*/10'),
     },
     'update-players-rating-every-day': {

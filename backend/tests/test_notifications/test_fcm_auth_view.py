@@ -15,7 +15,6 @@ class TestFCMApi:
         """Test successful FCM token registration."""
         client, user = authenticated_client
         response = client.put(fcm_token_url, fcm_token_data, format='json')
-
         assert response.status_code == status.HTTP_201_CREATED
         device = Device.objects.filter(token=fcm_token_data['token']).first()
         assert device is not None
