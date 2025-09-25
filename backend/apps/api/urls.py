@@ -9,6 +9,7 @@ from rest_framework_simplejwt.views import (
 )
 
 from apps.api.views import (
+    FacebookLogin,
     GoogleLogin,
     LogoutView,
     PhoneNumberLogin,
@@ -46,6 +47,11 @@ urlpatterns = [
         'auth/phone-number/login/',
         PhoneNumberLogin.as_view(),
         name='phone-number-login',
+    ),
+    path(
+        'auth/facebook/login',
+        FacebookLogin.as_view(),
+        name='facebook-login'
     ),
     path(
         'auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'
