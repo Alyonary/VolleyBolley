@@ -1,5 +1,7 @@
 import pytest
+from datetime import timedelta
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.event.models import Game
@@ -39,11 +41,13 @@ def game_data(
     game_levels_medium,
     player_thailand
 ):
+    start_time = timezone.now() + timedelta(hours=1)
+    end_time = timezone.now() + timedelta(hours=2)
     return {
         'court_id': court_thailand.id,
         'message': 'Test game in Thailand',
-        'start_time': '2025-09-21T15:30:00Z',
-        'end_time': '2025-09-21T18:30:00Z',
+        'start_time': start_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
+        'end_time': end_time.strftime('%Y-%m-%dT%H:%M:%SZ'),
         'gender': 'MEN',
         'player_levels': [
             game_levels_light,
