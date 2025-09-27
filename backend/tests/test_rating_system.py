@@ -177,7 +177,7 @@ class TestGradeSystemDatabaseOperations:
             email='r_test@mail,com',
             password='testpass123'
         )
-        player = Player.objects.create(user=user)
+        player = Player.objects.create(user=user, is_registered=True)
         player.refresh_from_db()
         assert hasattr(player, 'rating')
         assert isinstance(player.rating, PlayerRating)

@@ -91,7 +91,8 @@ def setup_test_data():
         user=john_bangkok_user,
         gender='MALE',
         country=thailand,
-        city=bangkok
+        city=bangkok,
+        is_registered=True,
     )
     john_bangkok.rating.grade = 'LIGHT'
     john_bangkok.rating.save()
@@ -100,7 +101,8 @@ def setup_test_data():
         user=john_pattaya_user,
         gender='MALE',
         country=thailand,
-        city=pattaya
+        city=pattaya,
+        is_registered=True,
     )
     john_pattaya.rating.grade = 'PRO'
     john_pattaya.rating.save()
@@ -109,7 +111,8 @@ def setup_test_data():
         user=jane_bangkok_user,
         gender='FEMALE',
         country=thailand,
-        city=bangkok
+        city=bangkok,
+        is_registered=True,
     )
     jane_bangkok.rating.grade = 'LIGHT'
     jane_bangkok.rating.save()
@@ -118,7 +121,8 @@ def setup_test_data():
         user=requesting_user_bangkok,
         gender='MALE',
         country=thailand,
-        city=bangkok
+        city=bangkok,
+        is_registered=True,
     )
     requesting_player_bangkok.rating.grade = 'PRO'
     requesting_player_bangkok.rating.save()
@@ -127,7 +131,8 @@ def setup_test_data():
         user=requesting_user_pattaya,
         gender='MALE',
         country=thailand,
-        city=pattaya
+        city=pattaya,
+        is_registered=True,
     )
     requesting_player_pattaya.rating.grade = 'LIGHT'
     requesting_player_pattaya.rating.save()
@@ -136,7 +141,8 @@ def setup_test_data():
         user=john_limassol_user,
         gender='MALE',
         country=cyprus,
-        city=limassol
+        city=limassol,
+        is_registered=True,
     )
     john_limassol.rating.grade = 'LIGHT'
     john_limassol.rating.save()
@@ -145,7 +151,8 @@ def setup_test_data():
         user=john_nicosia_user,
         gender='MALE',
         country=cyprus,
-        city=nicosia
+        city=nicosia,
+        is_registered=True,
     )
     john_nicosia.rating.grade = 'PRO'
     john_nicosia.rating.save()
@@ -154,7 +161,8 @@ def setup_test_data():
         user=jane_larnaca_user,
         gender='FEMALE',
         country=cyprus,
-        city=larnaca
+        city=larnaca,
+        is_registered=True,
     )
     jane_larnaca.rating.grade = 'LIGHT'
     jane_larnaca.rating.save()
@@ -163,7 +171,8 @@ def setup_test_data():
         user=requesting_user_limassol,
         gender='FEMALE',
         country=cyprus,
-        city=limassol
+        city=limassol,
+        is_registered=True,
     )
     requesting_player_limassol.rating.grade = 'PRO'
     requesting_player_limassol.rating.save()
@@ -399,7 +408,8 @@ class TestPlayersFilter:
             user=johnny_user,
             gender='MALE',
             country=setup_test_data['countries'].get(name='Thailand'),
-            city=setup_test_data['thailand_cities'].get(name='Bangkok')
+            city=setup_test_data['thailand_cities'].get(name='Bangkok'),
+            is_registered=True
         )
 
         data = {'search': 'J'}

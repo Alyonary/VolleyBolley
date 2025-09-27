@@ -9,6 +9,7 @@ def player_data(active_user):
         'user': active_user,
         'gender': 'MALE',
         'level': 'LIGHT',
+        'is_registered': True,
     }
 
 
@@ -68,6 +69,7 @@ def player_not_default_data(countries_cities, active_user):
         'city': countries_cities['Thailand'].cities.filter(
             name='Bangkok'
         ).first(),
+
     }
 
 @pytest.fixture

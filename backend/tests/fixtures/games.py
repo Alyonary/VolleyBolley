@@ -126,7 +126,8 @@ def player_thailand(active_user, country_thailand, city_in_thailand):
         user=active_user,
         gender='MALE',
         country=country_thailand,
-        city=city_in_thailand
+        city=city_in_thailand,
+        is_registered=True
     )
 
 
@@ -145,7 +146,8 @@ def player_cyprus(another_user, country_cyprus, city_in_cyprus):
         user=another_user,
         gender='MALE',
         country=country_cyprus,
-        city=city_in_cyprus
+        city=city_in_cyprus,
+        is_registered=True
     )
 
 
@@ -208,7 +210,8 @@ def player_thailand_female_pro(country_thailand):
     player =  Player.objects.create(
         user=user,
         gender='FEMALE',
-        country=country_thailand
+        country=country_thailand,
+        is_registered=True
     )
     player.rating.grade = Grades.PRO.value
     player.rating.save()

@@ -60,12 +60,12 @@ def users():
 @pytest.fixture
 def players(users):
     """Creates test players associated with users."""
-    player1 = Player.objects.create(user=users['user1'])
-    player2 = Player.objects.create(user=users['user2'])
-    player3 = Player.objects.create(user=users['user3'])
-    player4 = Player.objects.create(user=users['user4'])
-    player5 = Player.objects.create(user=users['user5'])
-    player6 = Player.objects.create(user=users['user6'])
+    player1 = Player.objects.create(user=users['user1'], is_registered=True)
+    player2 = Player.objects.create(user=users['user2'], is_registered=True)
+    player3 = Player.objects.create(user=users['user3'], is_registered=True)
+    player4 = Player.objects.create(user=users['user4'], is_registered=True)
+    player5 = Player.objects.create(user=users['user5'], is_registered=True)
+    player6 = Player.objects.create(user=users['user6'], is_registered=True)
     
     return {
         'player1': player1, 'player2': player2, 'player3': player3,
@@ -151,6 +151,7 @@ def user_with_player():
     
     player = Player.objects.create(
         user=user,
+        is_registered=True
     )
     return user, player
 
@@ -165,6 +166,7 @@ def second_user_with_player():
     )
     player = Player.objects.create(
         user=user,
+        is_registered=True
     )
     return user, player
 

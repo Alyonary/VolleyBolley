@@ -55,6 +55,7 @@ def authenticated_client(api_client):
     )
     Player.objects.create(
         user=user,
+        is_registered=True
     )
     api_client.force_authenticate(user=user)
     return api_client, user
