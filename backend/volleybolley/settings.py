@@ -9,8 +9,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR_OUT = Path(__file__).resolve().parents[2]
 
-
-load_dotenv()
+ENV_PATH = BASE_DIR_OUT / 'infra' / '.env'
+load_dotenv(ENV_PATH)
 
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'drf_yasg',
 ]
 
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = False
 CSRF_TRUSTED_ORIGINS = [
@@ -74,7 +77,7 @@ ROOT_URLCONF = 'volleybolley.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
+        'DIRS': [BASE_DIR / 'templates',],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -202,8 +205,30 @@ FIREBASE_SERVICE_ACCOUNT = {
     'universe_domain': os.getenv('FIREBASE_UNIVERSE_DOMAIN', 'googleapis.com'),
 }
 
+
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+TEMPLATES_DIRS = BASE_DIR / 'templates'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [TEMPLATES_DIRS],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

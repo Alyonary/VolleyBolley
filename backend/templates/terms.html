@@ -1,22 +1,7 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"> 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VolleyBolley</title>
-    <link rel="stylesheet" href="../static/index_files/style.css">
-  </head>
-  <body>
-    <div class="container">
-      <img src="../static/index_files/logo.png" alt="VolleyBolley Logo" class="logo">
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
       <h1>Terms of Service</h1>
       <p>By using our service you accept the following terms: the terms are being developed.</p>
-      <a class="download-button" href="https://volleybolley.app" target="_blank">Back to start page</a>
-    </div>
-    <footer>
-      <p>Zverev Dmitrii<br>
-      volleybolley.app@gmail.com<br>
-      Telegram: <a href="https://t.me/zvdmeetry" target="_blank">@zvdmeetry</a></p>
-    </footer>
-  </body>
-</html>
+      <a class="download-button" href="{% url 'index' %}">Back to api start page</a>
+{% endblock %}
