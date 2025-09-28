@@ -10,14 +10,25 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR_OUT = Path(__file__).resolve().parents[2]
 
 ENV_PATH = BASE_DIR_OUT / 'infra' / '.env'
-load_dotenv(ENV_PATH)
 
+if ENV_PATH.exists():
+    load_dotenv(ENV_PATH)
+else:
+    load_dotenv()
+
+load_dotenv()
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+
+if not ALLOWED_HOSTS:
+    raise ValueError(
+        'Failed to get ALLOWED_HOSTS from the file ".env". '
+        'Check the path to the file ".env"'
+    )
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -105,6 +116,8 @@ DATABASES = {
     }
 }
 
+print(DATABASES, ALLOWED_HOSTS)
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -160,7 +173,7 @@ AUTHENTICATION_BACKENDS = (
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
 
 SOCIAL_AUTH_URL_NAMESPACE = 'api:social'
-SOCIAL_AUTH_RAISE_EXCEPTIONS = False # set True if debag
+SOCIAL_AUTH_RAISE_EXCEPTIONS = True if DEBUG else False
 SOCIAL_AUTH_LOG_REDIRECTS = True
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_CLEAN_USERNAMES = False
