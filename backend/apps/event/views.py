@@ -27,7 +27,7 @@ class GameViewSet(GenericViewSet,
                   RetrieveModelMixin,
                   DestroyModelMixin):
     """Provides CRUD operations for the Game model."""
-    permission_classes = (IsHostOrReadOnly, IsAuthenticated)
+    permission_classes = (IsHostOrReadOnly,)
     http_method_names = ['get', 'post', 'delete']
 
     def get_queryset(self):

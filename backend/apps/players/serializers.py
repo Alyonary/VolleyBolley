@@ -160,9 +160,6 @@ class PlayerAuthSerializer(PlayerBaseSerializer):
     player_id = serializers.PrimaryKeyRelatedField(
         source='id', read_only=True
     )
-    level = serializers.PrimaryKeyRelatedField(
-        source='rating.grade', read_only=True
-    )
 
     class Meta:
         model = Player
