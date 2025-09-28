@@ -234,9 +234,6 @@ class PlayerListSerializer(PlayerBaseSerializer):
     is_favorite = serializers.SerializerMethodField(
         read_only=True
     )
-    level = serializers.PrimaryKeyRelatedField(
-        source='rating.grade', read_only=True
-    )
 
     class Meta:
         model = Player
