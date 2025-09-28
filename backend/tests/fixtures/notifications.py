@@ -172,9 +172,9 @@ def second_user_with_player():
 
 
 @pytest.fixture
-def existing_device(second_user_with_player):
+def existing_device(user_with_registered_player):
     """Create an existing device for the second user."""
-    _, player = second_user_with_player
+    player = user_with_registered_player.player
     token = 'existing-fcm-token'
     device = Device.objects.create(
         token=token,

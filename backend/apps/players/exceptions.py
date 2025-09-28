@@ -25,3 +25,7 @@ class DuplicateVoteError(Exception):
 class RatingLimitError(Exception):
     """Custom exception for rating limit exceeded."""
     pass
+
+class  InvalidRatingError(Exception):
+    """Custom exception for invalid rating values."""
+    pass

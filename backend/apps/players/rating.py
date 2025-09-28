@@ -3,6 +3,7 @@ from datetime import timedelta
 from django.utils import timezone
 
 from apps.players.constants import PlayerIntEnums
+from apps.players.exceptions import InvalidRatingError
 from apps.players.models import Player, PlayerRating, PlayerRatingVote
 
 
@@ -61,27 +62,9 @@ class GradeSystem:
         self.next = None
         self.prev = None
         self.code = code.upper()
-        
-        try:
-            grade_code, level_str = code.split(':')
-        except ValueError as e:
-            raise ValueError(f"Invalid code format: {code}") from e
-        
-        if grade_code not in self.GRADES:
-            raise ValueError(f"Invalid grade code: {grade_code}")
-        
-        try:
-            level = int(level_str)
-        except ValueError as e:
-            raise ValueError(
-                f"Invalid level, it has to be a number: {level_str}"
-            ) from e
-        
-        if level not in [1, 2, 3]:
-            raise ValueError(
-                f"Level must be 1, 2, or 3, got: {level}"
-            )
-        
+
+        grade_code, level_str = code.split(':')
+        level = int(level_str)
         self.grade = self.GRADES[grade_code]
         self.level = level
 
@@ -150,16 +133,20 @@ class GradeSystem:
             return 1 * coefficient
         elif level_change == cls.DOWN:
             return -1 * coefficient
-        return 0
+        raise InvalidRatingError(
+            f'Invalid level_change value: {level_change}.'
+        )
 
     @classmethod
-    def update_players_rating(cls) -> dict[str, int]:
+    def bulk_update_players_rating(cls) -> dict[str, int]:
         """
         Updates player ratings based on votes.
         Returns statistics: total processed, updated (new rating value),
         upgraded, downgraded, unchanged.
         """
-        players = Player.objects.all()
+        players = Player.objects.all().select_related(
+            'rating'
+        ).prefetch_related('received_ratings')
         stats = {
             "total": len(players),
             'updated': 0,
@@ -167,63 +154,74 @@ class GradeSystem:
             "downgraded": 0,
             "unchanged": 0,
         }
-        
-        for player in players:
-            player_rating: PlayerRating = player.rating
-            last_day_rates = PlayerRatingVote.objects.filter(
-                rated=player,
-                is_counted=False
-            )
-            votes = list(last_day_rates)
-            
-            if not votes:
-                stats["unchanged"] += 1
-                continue
 
-            rating_value_sum = sum(
-                v.value for v in votes
-            ) + player_rating.value
-            new_grade = player_rating.grade
-            new_level = player_rating.level_mark
-            
-            if rating_value_sum < 1:
-                change = cls.get_obj_by_level_grade(
-                    player_rating.grade,
-                    player_rating.level_mark
-                ).prev
-                if change:
-                    new_grade = change.grade
-                    new_level = change.level
-                    new_value = 6
-                    stats["downgraded"] += 1
-                else:
-                    new_value = max(1, rating_value_sum)
-                    stats["unchanged"] += 1
-            elif rating_value_sum > 12:
-                change = cls.get_obj_by_level_grade(
-                    player_rating.grade,
-                    player_rating.level_mark
-                ).next
-                if change:
-                    new_grade = change.grade
-                    new_level = change.level
-                    new_value = 6
-                    stats["upgraded"] += 1
-                else:
-                    new_value = min(12, rating_value_sum)
-                    stats["unchanged"] += 1
-            else:
-                new_value = rating_value_sum
-                stats["updated"] += 1
-                
-            player_rating.grade = new_grade
-            player_rating.level_mark = new_level
-            player_rating.value = new_value
-            player_rating.save()
-            
-            last_day_rates.update(is_counted=True)
+        for player in players:
+            result = cls.update_player_rating(player)
+            stats[result] += 1
         
         return stats
+
+    @classmethod
+    def update_player_rating(cls, player: Player) -> str:
+        """
+        Updates a single player's rating based on their votes.
+        Returns the type of change:
+            'unchanged', 'updated', 'upgraded', 'downgraded'
+        """
+        player_rating: PlayerRating = player.rating
+        last_day_rates = PlayerRatingVote.objects.filter(
+            rated=player,
+            is_counted=False
+        )
+        votes = list(last_day_rates)
+        
+        if not votes:
+            return 'unchanged'
+
+        rating_value_sum = sum(
+            v.value for v in votes
+        ) + player_rating.value
+        new_grade = player_rating.grade
+        new_level = player_rating.level_mark
+        result = 'updated'
+        
+        if rating_value_sum < 1:
+            change = cls.get_obj_by_level_grade(
+                player_rating.grade,
+                player_rating.level_mark
+            ).prev
+            if change:
+                new_grade = change.grade
+                new_level = change.level
+                new_value = 6
+                result = 'downgraded'
+            else:
+                new_value = max(1, rating_value_sum)
+                result = 'unchanged'
+        elif rating_value_sum > 12:
+            change = cls.get_obj_by_level_grade(
+                player_rating.grade,
+                player_rating.level_mark
+            ).next
+            if change:
+                new_grade = change.grade
+                new_level = change.level
+                new_value = 6
+                result = 'upgraded'
+            else:
+                new_value = min(12, rating_value_sum)
+                result = 'unchanged'
+        else:
+            new_value = rating_value_sum
+            result = 'updated'
+            
+        player_rating.grade = new_grade
+        player_rating.level_mark = new_level
+        player_rating.value = new_value
+        player_rating.save()
+        
+        last_day_rates.update(is_counted=True)
+        return result
 
     @classmethod
     def downgrade_inactive_players(

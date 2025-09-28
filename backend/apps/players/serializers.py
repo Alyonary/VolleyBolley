@@ -10,6 +10,7 @@ from apps.event.models import Game, Tourney
 from apps.players.constants import PlayerIntEnums
 from apps.players.exceptions import (
     DuplicateVoteError,
+    InvalidRatingError,
     ParticipationError,
     PlayerNotExistsError,
     PlayerNotIntError,
@@ -156,7 +157,6 @@ class AvatarSerializer(PlayerBaseSerializer):
 
 class PlayerAuthSerializer(PlayerBaseSerializer):
     """Serialize data of player after authentication."""
-
     player_id = serializers.PrimaryKeyRelatedField(
         source='id', read_only=True
     )
@@ -412,18 +412,19 @@ class PlayerRateItemSerializer(serializers.Serializer):
                 f"You have already rated player {rated_player.user.username} "
                 "2 times in the last 2 months."
             )
-        
-        value = GradeSystem.get_value(
-            rater = rater_player,
-            rated = rated_player,
-            level_change = data['level_changed']
-        ) 
-        return {
-            'rater': rater_player.id,
-            'rated_player': rated_player.id,
-            'value': value
-        }
-
+        try:
+            value = GradeSystem.get_value(
+                rater = rater_player,
+                rated = rated_player,
+                level_change = data['level_changed']
+            ) 
+            return {
+                'rater': rater_player.id,
+                'rated_player': rated_player.id,
+                'value': value
+            }
+        except InvalidRatingError as e:
+            raise e
 
 class PlayerRateSerializer(serializers.Serializer):
     """
@@ -462,7 +463,8 @@ class PlayerRateSerializer(serializers.Serializer):
                     SelfRatingError, 
                     ParticipationError, 
                     DuplicateVoteError, 
-                    RatingLimitError):
+                    RatingLimitError,
+                    InvalidRatingError):
                 continue
             except serializers.ValidationError as e:
                 raise e

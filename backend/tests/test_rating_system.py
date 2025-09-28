@@ -6,6 +6,7 @@ import pytest
 from django.utils import timezone
 
 from apps.event.models import Game
+from apps.players.exceptions import InvalidRatingError
 from apps.players.models import Player, PlayerRating, PlayerRatingVote, User
 from apps.players.rating import GradeSystem
 
@@ -200,7 +201,7 @@ class TestGradeSystemDatabaseOperations:
     ):
         """Test rating update without votes."""
         initial_rating = player_thailand.rating.value
-        stats = GradeSystem.update_players_rating()
+        stats = GradeSystem.bulk_update_players_rating()
         player_thailand.refresh_from_db()
         assert player_thailand.rating.value == initial_rating
         assert stats['unchanged'] >= 1
@@ -226,7 +227,7 @@ class TestGradeSystemDatabaseOperations:
             is_counted=False
         )
         
-        stats = GradeSystem.update_players_rating()
+        stats = GradeSystem.bulk_update_players_rating()
         assert stats['updated'] == 1
         player1.refresh_from_db()
         expected_value = initial_value + 2 + 3
@@ -260,13 +261,13 @@ class TestGradeSystemDatabaseOperations:
                 is_counted=False
             )
         
-        stats = GradeSystem.update_players_rating()
+        stats = GradeSystem.bulk_update_players_rating()
         player1.refresh_from_db()
         assert player1.rating.grade == 'MEDIUM'
         assert player1.rating.level_mark == 1
         assert player1.rating.value == 6
         assert stats['upgraded'] == 1
-        update_with_old_votes_stats = GradeSystem.update_players_rating()
+        update_with_old_votes_stats = GradeSystem.bulk_update_players_rating()
         player1.refresh_from_db()
         assert player1.rating.level_mark == 1
         assert player1.rating.value == 6
@@ -296,13 +297,13 @@ class TestGradeSystemDatabaseOperations:
                 ),
                 is_counted=False
             )
-        stats = GradeSystem.update_players_rating()
+        stats = GradeSystem.bulk_update_players_rating()
         player1.refresh_from_db()
         assert player1.rating.level_mark == 3
         assert player1.rating.value == 6
         assert player1.rating.grade == 'LIGHT'
         assert stats['downgraded'] >= 1
-        update_with_old_votes_stats = GradeSystem.update_players_rating()
+        update_with_old_votes_stats = GradeSystem.bulk_update_players_rating()
         player1.refresh_from_db()
         assert player1.rating.level_mark == 3
         assert player1.rating.value == 6
@@ -324,7 +325,7 @@ class TestGradeSystemDatabaseOperations:
             value=-3,
             is_counted=False
         )
-        stats = GradeSystem.update_players_rating()
+        stats = GradeSystem.bulk_update_players_rating()
         player_thailand.refresh_from_db()
         assert player_thailand.rating.grade == 'LIGHT'
         assert player_thailand.rating.level_mark == 1
@@ -426,10 +427,13 @@ class TestGradeSystemEdgeCases:
     
     def test_get_value_invalid_level_change(self):
         """Test handling invalid level change type."""
+        
         rater = MagicMock()
         rated = MagicMock()
         rater.rating.grade = 'LIGHT'
         rated.rating.grade = 'LIGHT'
-        
-        value = GradeSystem.get_value(rater, rated, 'INVALID_CHANGE')
-        assert value == 0
+        with pytest.raises(InvalidRatingError) as exc_info:
+            GradeSystem.get_value(rater, rated, 'INVALID_CHANGE')
+        assert "Invalid level_change value: INVALID_CHANGE" in str(
+            exc_info.value
+        )

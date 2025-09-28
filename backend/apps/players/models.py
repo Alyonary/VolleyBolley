@@ -100,11 +100,10 @@ class Player(models.Model):
         Checks if the player was active in the last N days.
         Returns True if the player participated in any games in last 60 days.
         """
-        games_qs = Game.objects.filter(
+        return Game.objects.filter(
             players=self,
             end_time__gte=timezone.now() - timedelta(days=days)
-        )
-        return games_qs.exists()
+        ).exists()
 
 
 class Payment(models.Model):
