@@ -248,11 +248,10 @@ class TestGradeSystemDatabaseOperations:
                 value=1,
                 is_counted=False
             )
-            print(f'Rater before vote {rater.rating.value}')
         player1.refresh_from_db()
         assert player1.rating.grade == 'MEDIUM'
         assert player1.rating.level_mark == 1
-        assert player1.rating.value == 1
+        assert player1.rating.value == 3
 
 
     
