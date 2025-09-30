@@ -156,6 +156,10 @@ def send_rate_notification_for_events(
         )   
         event.is_active = False
         event.save()
+    logger.info(
+        f'Processed {events.count()} {event_type.__name__} '
+        f'events for rate notifications.'
+    )
     return True
 
 

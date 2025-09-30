@@ -1,4 +1,6 @@
 # signals.py
+import logging
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -6,8 +8,10 @@ from apps.players.constants import (
     BASE_PAYMENT_DATA,
     PlayerStrEnums,
 )
-from apps.players.models import Payment, Player, PlayerRating
+from apps.players.models import Payment, Player, PlayerRating, PlayerRatingVote
+from apps.players.rating import GradeSystem
 
+logger = logging.getLogger(__name__) 
 
 @receiver(post_save, sender=Player)
 def init_player_payments(sender, instance, created, **kwargs):
@@ -39,3 +43,19 @@ def create_player_rating_obj(sender, instance, created, **kwargs):
                 PlayerStrEnums.DEFAULT_GRADE.value
             ),
         )
+
+@receiver(post_save, sender=PlayerRatingVote)
+def update_player_rating_on_vote(sender, instance, created, **kwargs):
+    """
+    Signal to update PlayerRating when a new PlayerRatingVote is created.
+    Simple synchronous execution.
+    """
+    if created:
+        try:
+            status = GradeSystem.update_player_rating(
+                player=instance.rated,
+                vote=instance
+            )
+            logger.info(f"Player id={instance.rated.id} rating {status}")
+        except Exception as e:
+            logger.error(f"Error updating player rating: {e}")

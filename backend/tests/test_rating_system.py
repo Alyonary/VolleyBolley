@@ -195,17 +195,7 @@ class TestGradeSystemDatabaseOperations:
         assert player.rating.value == 6
         assert player.rating.level_mark == 2
 
-    def test_update_players_rating_no_votes(
-        self,
-        player_thailand
-    ):
-        """Test rating update without votes."""
-        initial_rating = player_thailand.rating.value
-        stats = GradeSystem.bulk_update_players_rating()
-        player_thailand.refresh_from_db()
-        assert player_thailand.rating.value == initial_rating
-        assert stats['unchanged'] >= 1
-    
+
     def test_update_players_rating_with_votes(
         self,
         players
@@ -213,26 +203,24 @@ class TestGradeSystemDatabaseOperations:
         """Test rating update with votes."""
         player1, player2 = players['player1'], players['player2']
         initial_value = player1.rating.value
-        
+        assert player1.rating.value == 6
         PlayerRatingVote.objects.create(
             rater=player2,
             rated=player1,
             value=2,
             is_counted=False
         )
+        assert player1.rating.value == 8
         PlayerRatingVote.objects.create(
             rater=player2,
             rated=player1,
             value=3,
             is_counted=False
         )
-        
-        stats = GradeSystem.bulk_update_players_rating()
-        assert stats['updated'] == 1
+        assert player1.rating.value == 11
         player1.refresh_from_db()
         expected_value = initial_value + 2 + 3
         assert player1.rating.value == expected_value
-        
         assert PlayerRatingVote.objects.filter(
             rated=player1,
             is_counted=True
@@ -260,18 +248,13 @@ class TestGradeSystemDatabaseOperations:
                 value=1,
                 is_counted=False
             )
-        
-        stats = GradeSystem.bulk_update_players_rating()
+            print(f'Rater before vote {rater.rating.value}')
         player1.refresh_from_db()
         assert player1.rating.grade == 'MEDIUM'
         assert player1.rating.level_mark == 1
-        assert player1.rating.value == 6
-        assert stats['upgraded'] == 1
-        update_with_old_votes_stats = GradeSystem.bulk_update_players_rating()
-        player1.refresh_from_db()
-        assert player1.rating.level_mark == 1
-        assert player1.rating.value == 6
-        assert update_with_old_votes_stats['unchanged'] >= 1
+        assert player1.rating.value == 1
+
+
     
     def test_update_players_rating_downgrade(
         self,
@@ -287,6 +270,7 @@ class TestGradeSystemDatabaseOperations:
         raters.pop('player1')
         for rater in raters.values():
             rater.rating.grade = 'PRO'
+            rater.rating.save()
             PlayerRatingVote.objects.create(
                 rater=rater,
                 rated=player1,
@@ -297,17 +281,13 @@ class TestGradeSystemDatabaseOperations:
                 ),
                 is_counted=False
             )
-        stats = GradeSystem.bulk_update_players_rating()
+            print(f'PLayer rated value {player1.rating.value}')
+            
         player1.refresh_from_db()
         assert player1.rating.level_mark == 3
-        assert player1.rating.value == 6
+        assert player1.rating.value == 3
         assert player1.rating.grade == 'LIGHT'
-        assert stats['downgraded'] >= 1
-        update_with_old_votes_stats = GradeSystem.bulk_update_players_rating()
-        player1.refresh_from_db()
-        assert player1.rating.level_mark == 3
-        assert player1.rating.value == 6
-        assert update_with_old_votes_stats['unchanged'] >= 1
+
     
     def test_update_players_rating_no_downgrade_at_minimum(
         self,
@@ -325,12 +305,10 @@ class TestGradeSystemDatabaseOperations:
             value=-3,
             is_counted=False
         )
-        stats = GradeSystem.bulk_update_players_rating()
         player_thailand.refresh_from_db()
         assert player_thailand.rating.grade == 'LIGHT'
         assert player_thailand.rating.level_mark == 1
         assert player_thailand.rating.value == 1
-        assert stats['unchanged'] >= 1
     
 
     def test_downgrade_inactive_players(

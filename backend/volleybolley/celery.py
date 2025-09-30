@@ -24,8 +24,4 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'apps.notifications.tasks.send_rate_notification_task',
         'schedule': crontab(minute='*/10'),
     },
-    'update-players-rating-every-day': {
-        'task': 'apps.players.tasks.update_players_rating_task',
-        'schedule': crontab(hour=1, minute=0),
-    },
 }

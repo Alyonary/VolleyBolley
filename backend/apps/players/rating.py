@@ -138,67 +138,27 @@ class GradeSystem:
         )
 
     @classmethod
-    def bulk_update_players_rating(cls) -> dict[str, int]:
-        """
-        Updates player ratings based on votes.
-        Returns statistics: total processed, updated (new rating value),
-        upgraded, downgraded, unchanged.
-        """
-        players = Player.objects.all().select_related(
-            'rating'
-        ).prefetch_related('received_ratings')
-        stats = {
-            "total": len(players),
-            'updated': 0,
-            "upgraded": 0,
-            "downgraded": 0,
-            "unchanged": 0,
-        }
-
-        for player in players:
-            result = cls.update_player_rating(player)
-            stats[result] += 1
-        
-        return stats
-
-    @classmethod
-    def update_player_rating(cls, player: Player) -> str:
+    def update_player_rating(
+        cls,
+        player: Player,
+        vote: PlayerRatingVote
+    ) -> str:
         """
         Updates a single player's rating based on their votes.
         Returns the type of change:
             'unchanged', 'updated', 'upgraded', 'downgraded'
         """
         player_rating: PlayerRating = player.rating
-        last_day_rates = PlayerRatingVote.objects.filter(
-            rated=player,
-            is_counted=False
-        )
-        votes = list(last_day_rates)
-        
-        if not votes:
+        if vote.value == 0:
+            vote.is_counted = True
+            vote.save()
             return 'unchanged'
-
-        rating_value_sum = sum(
-            v.value for v in votes
-        ) + player_rating.value
+        rating_value_sum = player_rating.value + vote.value
         new_grade = player_rating.grade
         new_level = player_rating.level_mark
+        new_value = rating_value_sum
         result = 'updated'
-        
-        if rating_value_sum < 1:
-            change = cls.get_obj_by_level_grade(
-                player_rating.grade,
-                player_rating.level_mark
-            ).prev
-            if change:
-                new_grade = change.grade
-                new_level = change.level
-                new_value = 6
-                result = 'downgraded'
-            else:
-                new_value = max(1, rating_value_sum)
-                result = 'unchanged'
-        elif rating_value_sum > 12:
+        if rating_value_sum > 12:
             change = cls.get_obj_by_level_grade(
                 player_rating.grade,
                 player_rating.level_mark
@@ -206,21 +166,30 @@ class GradeSystem:
             if change:
                 new_grade = change.grade
                 new_level = change.level
-                new_value = 6
+                new_value = 1
                 result = 'upgraded'
             else:
-                new_value = min(12, rating_value_sum)
-                result = 'unchanged'
-        else:
-            new_value = rating_value_sum
-            result = 'updated'
-            
+                new_value = 12
+                result = 'updated'
+        elif rating_value_sum < 1:
+            change = cls.get_obj_by_level_grade(
+                player_rating.grade,
+                player_rating.level_mark
+            ).prev
+            if change:
+                new_grade = change.grade
+                new_level = change.level
+                new_value = 12
+                result = 'downgraded'
+            else:
+                new_value = 1
+                result = 'updated'
         player_rating.grade = new_grade
         player_rating.level_mark = new_level
         player_rating.value = new_value
         player_rating.save()
-        
-        last_day_rates.update(is_counted=True)
+        vote.is_counted = True
+        vote.save()
         return result
 
     @classmethod
@@ -240,7 +209,7 @@ class GradeSystem:
 
         inactive_ratings = PlayerRating.objects.filter(
             updated_at__lt=timezone.now() - timedelta(days=days)
-        )
+        ).select_related('player')
         downgraded_count = 0
         for rating in inactive_ratings:
             player: Player = rating.player

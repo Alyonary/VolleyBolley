@@ -5,6 +5,7 @@ description = ""
 authors = [
     {name = "Киприн Вячеслав",email = "kiprinvs@gmail.com"},
     {name = "Дорофеев Ярослав",email = "dorof.rik@gmail.com"},
+    {name = "Илья Широков", email="ilshi2904@gmail.com"},
 ]
 readme = "README.md"
 requires-python = ">=3.11,<4.0"
