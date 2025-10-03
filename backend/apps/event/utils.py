@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from apps.event.models import Game, Tourney
 from apps.notifications.constants import NotificationTypes
 from apps.notifications.tasks import send_event_notification_task
+from apps.players.models import Player
 from apps.players.serializers import (
     PlayerRateSerializer,
     PlayerShortSerializer,
@@ -20,12 +21,10 @@ def procces_rate_players_request(self, request, *args, **kwargs) -> Response:
     GET: Returns a list of players available for rating.
     POST: Accepts ratings for players and saves them.
     """
-    rater_player = request.user.player
+    rater_player: Player = request.user.player
     event = self.get_object()
     if self.request.method == 'GET':
-        valid_players = PlayerRateSerializer.get_players_to_rate(
-            rater_player, event
-        )
+        valid_players = rater_player.get_players_to_rate(event)
         serializer = PlayerShortSerializer(valid_players, many=True)
         return Response({"players": serializer.data})
 

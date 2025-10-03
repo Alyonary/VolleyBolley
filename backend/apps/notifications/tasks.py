@@ -93,7 +93,7 @@ def retry_notification_task(self, token, notification_type, event_id=None):
         )
 
 @shared_task(bind=True)
-def inform_removed_players(
+def inform_removed_players_task(
     self,
     event_id: int,
     player_id: int,
@@ -178,7 +178,7 @@ def delete_old_devices_task():
 
 
 @shared_task
-def create_notification_type_tables():
+def create_notification_type_tables_task():
     """
     Create initial notification types in the database if they do not exist.
     """
@@ -196,4 +196,4 @@ def create_notification_type_tables():
 def at_start(**kwargs):
     """Start the push service initialization task when the worker is ready."""
     init_push_service.apply_async()
-    create_notification_type_tables.apply_async()
+    create_notification_type_tables_task.apply_async()

@@ -1,7 +1,8 @@
 import base64
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 from django.core.files.base import ContentFile
+from django.core.validators import MinValueValidator
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
@@ -321,7 +322,10 @@ class PlayerRateItemSerializer(serializers.Serializer):
     Returns a dict with rater id, rated player id, and calculated value.
     """
 
-    player_id = serializers.IntegerField(required=True)
+    player_id = serializers.IntegerField(
+        validators=[MinValueValidator(1)], 
+        help_text="player_id must be a positive integer."
+    )
     level_changed = serializers.ChoiceField(
         required=True,
         choices=[
@@ -329,13 +333,6 @@ class PlayerRateItemSerializer(serializers.Serializer):
             GradeSystem.DOWN,
             GradeSystem.CONFIRM]
     )
-
-    def validate_player_id(self, value):
-        if not value or not isinstance(value, int) or value <= 0:
-            raise PlayerNotIntError(
-                "player_id must be a positive integer."
-            )
-        return value
 
     def validate_level_changed(self, value):
         if not value or value not in [
@@ -354,8 +351,6 @@ class PlayerRateItemSerializer(serializers.Serializer):
         """
         request = self.context.get('request')
         event: Game | Tourney = self.context.get('event')
-        if not request or not hasattr(request.user, 'player'):
-            raise serializers.ValidationError('Invalid rater player.')
         rater_player: Player = request.user.player
         
         try:
@@ -394,7 +389,7 @@ class PlayerRateItemSerializer(serializers.Serializer):
             )
         
         two_months_ago = timezone.now() - timedelta(
-            days=PlayerIntEnums.PLAYER_VOTE_DAY_LIMIT.value
+            days=PlayerIntEnums.PLAYER_VOTE_LIMIT.value
         )
         last_votes = PlayerRatingVote.objects.filter(
             rater=rater_player,
@@ -493,30 +488,6 @@ class PlayerRateSerializer(serializers.Serializer):
         if votes:
             PlayerRatingVote.objects.bulk_create(votes)
         return {'players': results}
-
-    @classmethod
-    def get_players_to_rate(
-        cls,
-        rater_player: Player,
-        event: Game | Tourney
-    ) -> list[Player]:
-        """
-        Returns a list of players whom rater_player can still rate
-        (not more than 2 ratings in the last 2 months).
-        """
-        two_months_ago = datetime.now() - timedelta(
-            days=PlayerIntEnums.PLAYER_INACTIVE_DAYS
-        )
-        available_players = []
-        for player in event.players.all().exclude(id=rater_player.id):
-            votes_count = PlayerRatingVote.objects.filter(
-                rater=rater_player,
-                rated=player,
-                created_at__gte=two_months_ago
-            ).count()
-            if votes_count < 2:
-                available_players.append(player)
-        return available_players
 
 
 class PlayerShortSerializer(serializers.ModelSerializer):

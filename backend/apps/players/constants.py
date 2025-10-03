@@ -27,13 +27,11 @@ class PlayerIntEnums(IntEnum):
     PAYMENT_MAX_LENGTH = 10
     PLAYER_DATA_MAX_LENGTH = 150
     DEFAULT_RATING = 6
-    MIN_RATING_VALUE = 0
+    MIN_RATING_VALUE = 1
     MAX_RATING_VALUE = 12
     PLAYER_INACTIVE_DAYS = 60
-    PLAYER_VOTE_DAY_LIMIT = 2
-
-
-
+    PLAYER_VOTE_LIMIT = 2
+    RATING_PERIOD_DAYS = 60
 
 class Genders(models.TextChoices):
     """Gender enums for player."""

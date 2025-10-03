@@ -6,7 +6,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-from apps.event.models import Game
+from apps.event.models import Game, Tourney
 from apps.locations.models import City, Country
 from apps.players.constants import (
     Genders,
@@ -105,6 +105,28 @@ class Player(models.Model):
             end_time__gte=timezone.now() - timedelta(days=days)
         ).exists()
 
+    def get_players_to_rate(
+        self,
+        event: Game | Tourney
+    ):
+        """
+        Returns a QuerySet of players whom rater_player can still rate
+        (not more than 2 ratings in the last 2 months).
+        """
+        
+        period_start = timezone.now() - timedelta(
+            days=PlayerIntEnums.RATING_PERIOD_DAYS
+        )
+        
+        return event.players.exclude(id=self.id).annotate(
+            votes_from_me=models.Count(
+                'received_ratings',
+                filter=models.Q(
+                    received_ratings__rater=self,
+                    received_ratings__created_at__gte=period_start
+                )
+            )
+        ).filter(votes_from_me__lt=PlayerIntEnums.PLAYER_VOTE_LIMIT.value)
 
 class Payment(models.Model):
     """Players payment model."""

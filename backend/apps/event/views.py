@@ -196,7 +196,7 @@ class GameViewSet(GenericViewSet,
         methods=['get', 'post'],
         detail=True,
         url_path='rate-players',
-        permission_classes=[IsAuthenticated]
+        permission_classes=[IsHostOrReadOnly]
     )
     def rate_players(self, request, *args, **kwargs):
         """

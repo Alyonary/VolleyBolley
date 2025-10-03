@@ -158,20 +158,20 @@ class GradeSystem:
         new_level = player_rating.level_mark
         new_value = rating_value_sum
         result = 'updated'
-        if rating_value_sum > 12:
-            change = cls.get_obj_by_level_grade(
+        if rating_value_sum > PlayerIntEnums.MAX_RATING_VALUE:
+            change: GradeSystem = cls.get_obj_by_level_grade(
                 player_rating.grade,
                 player_rating.level_mark
             ).next
             if change:
                 new_grade = change.grade
                 new_level = change.level
-                new_value = 1
+                new_value = PlayerIntEnums.MIN_RATING_VALUE
                 result = 'upgraded'
             else:
-                new_value = 12
+                new_value = PlayerIntEnums.MAX_RATING_VALUE
                 result = 'updated'
-        elif rating_value_sum < 1:
+        elif rating_value_sum < PlayerIntEnums.MIN_RATING_VALUE:
             change = cls.get_obj_by_level_grade(
                 player_rating.grade,
                 player_rating.level_mark
@@ -179,10 +179,10 @@ class GradeSystem:
             if change:
                 new_grade = change.grade
                 new_level = change.level
-                new_value = 12
+                new_value = PlayerIntEnums.MAX_RATING_VALUE
                 result = 'downgraded'
             else:
-                new_value = 1
+                new_value = PlayerIntEnums.MIN_RATING_VALUE
                 result = 'updated'
         player_rating.grade = new_grade
         player_rating.level_mark = new_level
@@ -217,7 +217,7 @@ class GradeSystem:
                 continue
             if rating.level_mark > 1:
                 rating.level_mark = rating.level_mark - 1
-                rating.value = 6
+                rating.value = PlayerIntEnums.DEFAULT_RATING
                 rating.save()
                 downgraded_count += 1
         return downgraded_count  
