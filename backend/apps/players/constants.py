@@ -3,19 +3,35 @@ from enum import Enum, IntEnum
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from apps.core.enums import Levels
+
+class Grades(models.TextChoices):
+    """Level enums for players and games."""
+
+    LIGHT = 'LIGHT', _('Beginner')
+    MEDIUM = 'MEDIUM', _('Confident amateur')
+    HARD = 'HARD', _('Advanced')
+    PRO = 'PRO', _('Professional')
+
+
+class LevelMarkChoices(models.IntegerChoices):
+    ONE = 1, '1'
+    TWO = 2, '2'
+    THREE = 3, '3'
 
 
 class PlayerIntEnums(IntEnum):
-
-    DEFAULT_RATING = 1
 
     LOCATION_MAX_LENGTH = 150
     GENDER_MAX_LENGTH = 6
     LEVEL_MAX_LENGTH = 6
     PAYMENT_MAX_LENGTH = 10
     PLAYER_DATA_MAX_LENGTH = 150
-
+    DEFAULT_RATING = 6
+    MIN_RATING_VALUE = 1
+    MAX_RATING_VALUE = 12
+    PLAYER_INACTIVE_DAYS = 60
+    PLAYER_VOTE_LIMIT = 2
+    RATING_PERIOD_DAYS = 60
 
 class Genders(models.TextChoices):
     """Gender enums for player."""
@@ -28,7 +44,7 @@ class PlayerStrEnums(Enum):
 
     DEFAULT_BIRTHDAY = '2000-01-01'
     DEFAULT_GENDER = Genders.MALE.value
-    DEFAULT_LEVEL = Levels.LIGHT.value
+    DEFAULT_GRADE = Grades.LIGHT.value
     DEFAULT_FIRST_NAME = 'Anonym'
     DEFAULT_LAST_NAME = 'Anonym'
 

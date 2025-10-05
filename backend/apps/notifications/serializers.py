@@ -21,7 +21,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         source='notification_type.title',
         read_only=True
     )
-    message = serializers.CharField(
+    body = serializers.CharField(
         source='notification_type.body',
         read_only=True
     )
@@ -31,16 +31,17 @@ class NotificationSerializer(serializers.ModelSerializer):
     )
     notification_id = serializers.IntegerField(source='id')
     event_id = serializers.SerializerMethodField()
+    date = serializers.SerializerMethodField()
 
     class Meta:
         model = Notifications
         fields = [
-            'notification_id',
-            'created_at',
-            'title',
-            'message',
             'screen',
+            'notification_id',
             'event_id',
+            'date',
+            'title',
+            'body',
         ]
 
     def get_event_id(self, obj):
@@ -49,6 +50,9 @@ class NotificationSerializer(serializers.ModelSerializer):
         if obj.tourney_id:
             return obj.tourney_id
         return None
+
+    def get_date(self, obj):
+        return obj.created_at.date()
 
     def update(self, instance, validated_data):
         instance.is_read = True

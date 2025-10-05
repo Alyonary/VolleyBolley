@@ -50,13 +50,15 @@ class TestNotificationsViewSet:
         assert notif3.id in ids
 
         expected_keys = {
-            'notification_id', 'created_at', 'title', 'message', 'screen'
+            'screen', 'notification_id', 'event_id', 'date', 'title', 'body'
             }
         for n in data['notifications']:
             assert expected_keys.issubset(set(n.keys()))
+            assert isinstance(n['notification_id'], int)
+            assert isinstance(n['event_id'], (int, type(None)))
+            assert isinstance(n['date'], str)
             assert isinstance(n['title'], str)
-            assert isinstance(n['message'], str)
-            assert isinstance(n['screen'], str)
+            assert isinstance(n['body'], str)
 
     def test_get_read_notifications(
         self,
