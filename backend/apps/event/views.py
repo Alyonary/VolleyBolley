@@ -19,6 +19,7 @@ from apps.event.serializers import (
     GameSerializer,
     GameShortSerializer,
 )
+from apps.event.utils import procces_rate_players_request
 
 
 class GameViewSet(GenericViewSet,
@@ -26,7 +27,7 @@ class GameViewSet(GenericViewSet,
                   RetrieveModelMixin,
                   DestroyModelMixin):
     """Provides CRUD operations for the Game model."""
-    permission_classes = (IsHostOrReadOnly, IsAuthenticated)
+    permission_classes = (IsHostOrReadOnly,)
     http_method_names = ['get', 'post', 'delete']
 
     def get_queryset(self):
@@ -190,3 +191,17 @@ class GameViewSet(GenericViewSet,
                 status=status.HTTP_400_BAD_REQUEST,
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    @action(
+        methods=['get', 'post'],
+        detail=True,
+        url_path='rate-players',
+        permission_classes=[IsHostOrReadOnly]
+    )
+    def rate_players(self, request, *args, **kwargs):
+        """
+        Allows a player to rate other players in a game.
+        POST: Submits ratings for the specified players.
+        GET: Retrieves a list of players available for rating.
+        """
+        return procces_rate_players_request(self, request, *args, **kwargs)

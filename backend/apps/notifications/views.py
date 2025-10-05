@@ -2,9 +2,10 @@ import logging
 
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+from apps.core.permissions import IsRegisteredPlayer
 from apps.notifications.constants import NotificationTypes
 from apps.notifications.models import Device, Notifications, NotificationsBase
 from apps.notifications.push_service import PushService
@@ -26,7 +27,7 @@ class NotificationsViewSet(
     - PUT /notifications/fcm-auth : register/update device FCM token
     """
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsRegisteredPlayer]
     serializer_class = NotificationSerializer
     http_method_names = ['get', 'put', 'patch',]
 

@@ -13,6 +13,7 @@ from pyfcm.errors import FCMError
 
 from apps.event.models import Game, Tourney
 from apps.notifications.constants import (
+    RETRY_PUSH_TIME,
     NotificationTypes,
 )
 from apps.notifications.models import (
@@ -251,7 +252,7 @@ class PushService:
             )
             if not notification:
                 logger.error(
-                f'Notification type {notification_type} not found'
+                    f'Notification type {notification_type} not found'
             )
                 return {
                     'status': False,
@@ -271,10 +272,14 @@ class PushService:
                 'message':stats_msg,
             }     
         except Exception as e:
-            err_msg = f'Error processing notification type {type}: {str(e)}'
+            err_msg = (
+                f'Error processing notification type {notification_type}: '
+                f'{str(e)}'
+            )
             logger.error(err_msg, exc_info=True)
             return {
                 'status': False,
+                'notification_type': notification_type,
                 'message': f'Error: Notification creation failed: {str(e)}'
             }
 
@@ -310,7 +315,7 @@ class PushService:
             devices: list[Device] = Device.objects.in_tourney(event_id)
         else:
             devices = []
-            logger.warning(f'Unknown notification type: {type}')
+            logger.warning(f'Unknown notification type: {notification_type}')
         return devices
 
     def get_notification_object(
@@ -443,7 +448,7 @@ class PushService:
 
                     retry_notification_task.apply_async(
                         args=[device.token, notification.type, event_id],
-                        countdown=60,
+                        countdown=RETRY_PUSH_TIME,
                     )
                     logger.info(
                         f'Scheduled retry task for token {masked_token} '

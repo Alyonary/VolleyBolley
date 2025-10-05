@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.notifications.constants import (
+    DEVICE_PLATFORM_LENGTH,
     DEVICE_TOKEN_MAX_LENGTH,
     NOTIFICATION_INIT_DATA,
     NOTIFICATION_SCREEN_MAX_LENGTH,
@@ -91,7 +92,9 @@ class Device(models.Model):
 
     token = models.CharField(max_length=DEVICE_TOKEN_MAX_LENGTH, unique=True)
     platform = models.CharField(
-        max_length=10, choices=DeviceType.choices, default=DeviceType.ANDROID
+        max_length=DEVICE_PLATFORM_LENGTH,
+        choices=DeviceType.choices,
+        default=DeviceType.ANDROID
     )
     player = models.ForeignKey(
         'players.Player', related_name='devices', on_delete=models.CASCADE
