@@ -51,12 +51,18 @@ def real_google_access_token():
 def firebase_response():
     '''Moke firebase response after token verification.'''
     return {
-    'iss': 'https://securetoken.google.com/your-project-id',
-    'aud': 'your-project-id',
-    'auth_time': 1672531200,
-    'user_id': 'phone-auth-uid-123',
-    'sub': 'phone-auth-uid-123',
-    'phone_number': '+79123456789',
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'user_id': 'phone-auth-uid-123',
+        'sub': 'phone-auth-uid-123',
+        'phone_number': '+79123456789',
+        'firebase': {
+            'identities': {
+                'phone': ['+79123456789'],
+            },
+            'sign_in_provider': 'phone',
+        }
 }
 
 
@@ -107,6 +113,103 @@ def firebase_response_bad_phone_number():
 
 
 @pytest.fixture
+def firebase_fb_response():
+    return {
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'user_id': 'phone-auth-uid-123',
+        'sub': 'phone-auth-uid-123',
+        'phone_number': '+79123456789',
+        'email': 'test.user@gmail.com',
+        'email_verified': True,
+        'given_name': 'Test',
+        'family_name': 'User',
+        'name': 'Test User',
+        'firebase': {
+            'identities': {
+                'facebook.com': ["123456789012345678901"],
+                'phone': ['+79123456789'],
+                'email': ['test.user@gmail.com'],
+            },
+            'sign_in_provider': 'facebook.com',
+        }
+}
+
+
+@pytest.fixture
+def firebase_fb_response_no_email():
+    return {
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'user_id': 'phone-auth-uid-123',
+        'sub': 'phone-auth-uid-123',
+        'phone_number': '+79123456789',
+        'email': '',
+        'email_verified': False,
+        'given_name': 'Test',
+        'family_name': 'User',
+        'name': 'Test User',
+        'firebase': {
+            'identities': {
+                'facebook.com': ["123456789012345678901"],
+                'phone': ['+79123456789'],
+                'email': [''],
+            },
+            'sign_in_provider': 'facebook.com',
+        }
+}
+
+
+@pytest.fixture
+def firebase_fb_response_bad_email():
+    return {
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'user_id': 'phone-auth-uid-123',
+        'sub': 'phone-auth-uid-123',
+        'phone_number': '+79123456789',
+        'email': 'bad_email',
+        'email_verified': False,
+        'given_name': 'Test',
+        'family_name': 'User',
+        'name': 'Test User',
+        'firebase': {
+            'identities': {
+                'facebook.com': ["123456789012345678901"],
+                'phone': ['+79123456789'],
+                'email': ['bad_email'],
+            },
+            'sign_in_provider': 'facebook.com',
+        }
+}
+
+
+@pytest.fixture
+def firebase_fb_response_no_names():
+    return {
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'user_id': 'phone-auth-uid-123',
+        'sub': 'phone-auth-uid-123',
+        'phone_number': '+79123456789',
+        'email': 'test.user@gmail.com',
+        'email_verified': True,
+        'firebase': {
+            'identities': {
+                'facebook.com': ["123456789012345678901"],
+                'phone': ['+79123456789'],
+                'email': ['test.user@gmail.com'],
+            },
+            'sign_in_provider': 'facebook.com',
+        }
+}
+
+
+@pytest.fixture
 def empty_token():
     return {}
 
@@ -128,6 +231,14 @@ def real_firebase_token():
         'PeX4ayotuw0glapanQYzk0E8pdPLYqq2thlUb68XbERbV-sKcwLMTgc4Bd6M4plnPFPzE'
         'S4wxJPTRIJSTXSuJunZPh6iBiINv3Po7O91j9d0g2hUsEnWjeFOfYuNIsL0Q'
     )
+
+
+@pytest.fixture
+def real_fb_firebase_token():
+    return (
+        ...
+    )
+
 
 @pytest.fixture
 def invalid_firebase_token():

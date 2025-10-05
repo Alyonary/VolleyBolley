@@ -9,15 +9,26 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR_OUT = Path(__file__).resolve().parents[2]
 
+ENV_PATH = BASE_DIR_OUT / 'infra' / '.env'
+
+if ENV_PATH.exists():
+    load_dotenv(ENV_PATH)
+else:
+    load_dotenv()
 
 load_dotenv()
-
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+
+if not ALLOWED_HOSTS:
+    raise ValueError(
+        'Failed to get ALLOWED_HOSTS from the file ".env". '
+        'Check the path to the file ".env"'
+    )
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -42,6 +53,9 @@ INSTALLED_APPS = [
     'django_filters',
     'drf_yasg',
 ]
+
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
 
 CSRF_COOKIE_HTTPONLY = True
 CSRF_USE_SESSIONS = False
@@ -74,7 +88,7 @@ ROOT_URLCONF = 'volleybolley.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates',],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -98,6 +112,8 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', 5432)
     }
 }
+
+print(DATABASES, ALLOWED_HOSTS)
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -154,7 +170,7 @@ AUTHENTICATION_BACKENDS = (
 SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
 
 SOCIAL_AUTH_URL_NAMESPACE = 'api:social'
-SOCIAL_AUTH_RAISE_EXCEPTIONS = False # set True if debag
+SOCIAL_AUTH_RAISE_EXCEPTIONS = True if DEBUG else False
 SOCIAL_AUTH_LOG_REDIRECTS = True
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
 SOCIAL_AUTH_CLEAN_USERNAMES = False
@@ -199,8 +215,30 @@ FIREBASE_SERVICE_ACCOUNT = {
     'universe_domain': os.getenv('FIREBASE_UNIVERSE_DOMAIN', 'googleapis.com'),
 }
 
+
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+TEMPLATES_DIRS = BASE_DIR / 'templates'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [TEMPLATES_DIRS],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
