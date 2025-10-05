@@ -1,7 +1,9 @@
 import logging
+from datetime import datetime, timedelta
 
 from celery import shared_task
 from celery.signals import worker_ready
+from django.utils import timezone
 
 from apps.notifications.constants import (
     MAX_RETRIES,
@@ -34,41 +36,29 @@ def init_push_service():
         return False
 
 
-@shared_task(bind=True)
-def send_push_notifications_on_upcoming_events(
-    self,
-    event_id,
-    notification_type
-):
+@shared_task(
+    bind=True,
+    max_retries=MAX_RETRIES,
+    default_retry_delay=RETRY_PUSH_TIME
+)
+def send_event_notification_task(self, event_id: int, notification_type: str):
     """
-    Send notifications about a specific event.
+    Sends notification to users about an upcoming event (Game or Tourney).
+    notification_type: 'InGame' or 'InTourney'
     """
-    try:
-        push_service = PushService()
-        logger.info(
-            f'Executing task: send_event_notification for event {event_id}, '
-            f'type: {notification_type}'
-        )
-
-        result = push_service.process_notifications_by_type(
-            type=notification_type,
-            event_id=event_id,
-        )
-
-        if result['status']:
-            logger.info(
-                f'Successfully sent notifications for event {event_id}'
-            )
-        else:
-            logger.warning(f'No notifications sent for event {event_id}')
-        return result
-    except Exception as e:
-        logger.error(
-            f'Error sending notification for event {event_id}: {str(e)}',
-            exc_info=True,
-        )
-        self.retry(exc=e, countdown=RETRY_PUSH_TIME, max_retries=MAX_RETRIES)
-        return {'status': False, 'message': str(e)}
+    push_service = PushService()
+    if not push_service:
+        push_service.reconnect()
+        if not push_service:
+            logger.error("Push service is not available")
+            return {
+                'status': False,
+                'message': 'Push service is not available'
+            }
+            
+    return push_service.process_notifications_by_type(
+        notification_type, event_id
+    )
 
 
 @shared_task(bind=True)
@@ -103,7 +93,12 @@ def retry_notification_task(self, token, notification_type, event_id=None):
         )
 
 @shared_task(bind=True)
-def inform_removed_players(event_id: int, player_id: int, event_type: str):
+def inform_removed_players_task(
+    self,
+    event_id: int,
+    player_id: int,
+    event_type: str
+):
     """
     Inform players that they have been removed from an event.
     """
@@ -125,6 +120,55 @@ def inform_removed_players(event_id: int, player_id: int, event_type: str):
     )
 
 
+def procces_rate_notifications_for_recent_events():
+    """
+    Find all games and tourneys ended an hour ago and send rate notifications.
+    """
+    from apps.event.models import Game, Tourney
+    
+    hour_ago = timezone.now() - timedelta(hours=1)
+    send_rate_notification_for_events(Game, hour_ago)
+    send_rate_notification_for_events(Tourney, hour_ago)
+
+
+def send_rate_notification_for_events(
+    event_type: type,
+    hour_ago: datetime
+    ) -> bool:
+    """
+    Sends notification to all players in the event to rate other players.
+    """
+    from apps.event.models import Game
+    
+    events = event_type.objects.filter(
+        end_time__gte=hour_ago,
+        end_time__lt=timezone.now()
+    )
+    if issubclass(event_type, Game):
+        notification_type = NotificationTypes.GAME_RATE
+    else:
+        notification_type = NotificationTypes.TOURNEY_RATE
+    
+    for event in events:
+        send_event_notification_task.delay(
+            event.id,
+            notification_type
+        )   
+        event.is_active = False
+        event.save()
+    logger.info(
+        f'Processed {events.count()} {event_type.__name__} '
+        f'events for rate notifications.'
+    )
+    return True
+
+
+@shared_task
+def send_rate_notification_task():
+    """Wrapper task for scheduled rate notifications."""
+    return procces_rate_notifications_for_recent_events()
+
+
 @shared_task
 def delete_old_devices_task():
     """
@@ -134,7 +178,7 @@ def delete_old_devices_task():
 
 
 @shared_task
-def create_notification_type_tables():
+def create_notification_type_tables_task():
     """
     Create initial notification types in the database if they do not exist.
     """
@@ -152,4 +196,4 @@ def create_notification_type_tables():
 def at_start(**kwargs):
     """Start the push service initialization task when the worker is ready."""
     init_push_service.apply_async()
-    create_notification_type_tables.apply_async()
+    create_notification_type_tables_task.apply_async()

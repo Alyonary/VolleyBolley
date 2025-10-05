@@ -1,7 +1,8 @@
 import logging
+from typing import Any
 
 from phonenumber_field.serializerfields import PhoneNumberField
-from rest_framework import serializers
+from rest_framework import exceptions, serializers
 
 from apps.players.constants import PlayerStrEnums
 from apps.players.serializers import PlayerAuthSerializer
@@ -58,20 +59,107 @@ class GoogleUserDataSerializer(serializers.Serializer):
         }
 
 
-class FirebaseUserDataSerializer(serializers.Serializer):
-    """Serialize Firebase user data."""
-    
+class FirebaseBaseSerializer(serializers.Serializer):
+    """Generic Firebase serializer."""
+
     user_id = serializers.CharField(required=True)
-    phone_number = PhoneNumberField(required=True)
+    given_name = serializers.CharField(required=False, allow_blank=True)
+    family_name = serializers.CharField(required=False, allow_blank=True)
+    name = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone_number = PhoneNumberField(required=False, allow_blank=True)
+    phone = PhoneNumberField(
+        required=False, allow_blank=True, source='firebase.identities.phone'
+    )
+
+    def extract_name_last_name(
+        self, validated_data: dict[str, Any]
+    ) -> tuple[str]:
+        """Extract users first and last names from Firebase id_token.
+        
+        Returns:
+            The tuple (first_name, last_name).
+        """
+        first_name = validated_data.get('given_name')
+        last_name = validated_data.get('family_name')
+        full_name = validated_data.get('name')
+        email = validated_data.get('email')
+
+        if first_name and last_name:
+            return first_name, last_name
+
+        if full_name:
+            if len(full_name) > 1:
+                return full_name.split()[0], ' '.join(full_name.split()[1:])
+
+            return full_name, full_name
+
+        if email:
+            return self.configure_from_email(email)
+
+        return (
+            PlayerStrEnums.DEFAULT_FIRST_NAME.value,
+            PlayerStrEnums.DEFAULT_LAST_NAME.value
+        )
     
+    def configure_from_email(self, email: str) -> tuple[str]:
+        """Configure first_name, last_name from users email.
+        
+        Returns:
+            The tuple (first_name, last_name).
+        """
+        full_name = email.split('@')[0]
+
+        if '.' in full_name:
+            return full_name.rsplit('.', 1)
+
+        if '_' in full_name:
+            return full_name.rsplit('_', 1)
+
+        return full_name, full_name
+
+
+class FirebasePhoneSerializer(FirebaseBaseSerializer):
+    """Serialize Firebase user data for auth via phone number."""
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        attrs['phone_number'] = attrs.get('phone_number') or attrs.get('phone')
+        if not attrs['phone_number']:
+            raise exceptions.ValidationError(
+                'Missing phone_number in Firebase id_token.'
+            )
+        return attrs
+
     def create(self, validated_data):
         """Extract user data from Firebase response."""
         phone_number = validated_data.get('phone_number')
-        first_name = PlayerStrEnums.DEFAULT_FIRST_NAME.value
-        last_name = PlayerStrEnums.DEFAULT_LAST_NAME.value
+        first_name, last_name = self.extract_name_last_name(validated_data)
+        email = validated_data.get('email')
 
         return {
             'phone_number': phone_number,
+            'email': email,
+            'first_name': first_name,
+            'last_name': last_name,
+        }
+
+
+class FirebaseFacebookSerializer(FirebaseBaseSerializer):
+    """Serialize Firebase user data for auth via facebook."""
+
+    email = serializers.EmailField(required=True)
+
+    def create(self, validated_data):
+        """Extract user data from Firebase response."""
+        phone_number = (validated_data.get('phone_number') or
+                        validated_data.get('phone'))
+        first_name, last_name = self.extract_name_last_name(validated_data)
+        email = validated_data.get('email')
+
+        return {
+            'phone_number': phone_number,
+            'email': email,
             'first_name': first_name,
             'last_name': last_name,
         }

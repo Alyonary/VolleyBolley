@@ -36,16 +36,41 @@ def users():
         email='test3@example.com',
         password='testpass123'
     )
-    
-    return {'user1': user1, 'user2': user2, 'user3': user3}
+    user4 = User.objects.create(
+        username='test_user4',
+        email='test4@example.com',
+        password='testpass123'
+    )
+    user5 = User.objects.create(
+        username='test_user5',
+        email='test5@example.com',
+        password='testpass123'
+    )
+    user6 = User.objects.create(
+        username='test_user6',
+        email='test6@example.com',
+        password='testpass123'
+    )
+
+    return {
+        'user1': user1, 'user2': user2, 'user3': user3,
+        'user4': user4, 'user5': user5, 'user6': user6
+    }
 
 @pytest.fixture
 def players(users):
     """Creates test players associated with users."""
-    player1 = Player.objects.create(user=users['user1'])
-    player2 = Player.objects.create(user=users['user2'])
-    player3 = Player.objects.create(user=users['user3'])
-    return {'player1': player1, 'player2': player2, 'player3': player3}
+    player1 = Player.objects.create(user=users['user1'], is_registered=True)
+    player2 = Player.objects.create(user=users['user2'], is_registered=True)
+    player3 = Player.objects.create(user=users['user3'], is_registered=True)
+    player4 = Player.objects.create(user=users['user4'], is_registered=True)
+    player5 = Player.objects.create(user=users['user5'], is_registered=True)
+    player6 = Player.objects.create(user=users['user6'], is_registered=True)
+    
+    return {
+        'player1': player1, 'player2': player2, 'player3': player3,
+        'player4': player4, 'player5': player5, 'player6': player6
+    }
 
 
 @pytest.fixture
@@ -126,6 +151,7 @@ def user_with_player():
     
     player = Player.objects.create(
         user=user,
+        is_registered=True
     )
     return user, player
 
@@ -140,14 +166,15 @@ def second_user_with_player():
     )
     player = Player.objects.create(
         user=user,
+        is_registered=True
     )
     return user, player
 
 
 @pytest.fixture
-def existing_device(second_user_with_player):
+def existing_device(user_with_registered_player):
     """Create an existing device for the second user."""
-    _, player = second_user_with_player
+    player = user_with_registered_player.player
     token = 'existing-fcm-token'
     device = Device.objects.create(
         token=token,

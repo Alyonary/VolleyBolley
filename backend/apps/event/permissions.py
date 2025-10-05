@@ -1,9 +1,11 @@
 """The module that defines access rights in the application."""
 
-from rest_framework.permissions import SAFE_METHODS, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import SAFE_METHODS
+
+from apps.core.permissions import IsRegisteredPlayer
 
 
-class IsHostOrReadOnly(IsAuthenticatedOrReadOnly):
+class IsHostOrReadOnly(IsRegisteredPlayer):
     """Verification of access rights to the authorship of the object."""
 
     def has_object_permission(self, request, view, obj):
