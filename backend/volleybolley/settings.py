@@ -9,8 +9,13 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR_OUT = Path(__file__).resolve().parents[2]
 
+ENV_PATH = BASE_DIR_OUT / 'infra' / '.env'
 
-load_dotenv()
+if ENV_PATH.exists():
+    load_dotenv(ENV_PATH)
+
+else:
+    load_dotenv()
 
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
@@ -211,6 +216,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
+AUTO_CREATE_DEFAULT_SUPERUSER = True
 
 LOGGING = {
     'version': 1,
@@ -307,10 +313,15 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
-    #    'root': {
-    #        'handlers': ['console'],
-    #        'level': 'INFO',
-    #    },
+        'apps.users': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # 'root': {
+        #     'handlers': ['console'],
+        #     'level': 'INFO',
+        # },
     },
 }
 
