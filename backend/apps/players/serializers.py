@@ -112,8 +112,9 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         required=False
     )
     avatar = Base64ImageField(read_only=True)
-    level = serializers.PrimaryKeyRelatedField(
-        source='rating.grade', read_only=True
+    level = serializers.CharField(
+        source='rating.grade', read_only=True,
+        max_length=PlayerIntEnums.GENDER_MAX_LENGTH.value,
     )
 
     class Meta:
