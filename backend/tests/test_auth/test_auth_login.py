@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse, reverse_lazy
 from rest_framework import status
 
+from apps.players.models import Player, PlayerRating
+
 User = get_user_model()
 
 
@@ -200,6 +202,10 @@ class TestPhoneNumberAuth:
         access_token = response.data.get('access_token', None)
         refresh_token = response.data.get('refresh_token', None)
         player_json = response.data.get('player', None)
+        new_player = Player.objects.get(id=player_json['player_id'])
+        player_rating = PlayerRating.objects.filter(player=new_player).first()
+        assert player_rating is not None
+        assert player_rating.player == new_player
         assert isinstance(access_token, str)
         assert isinstance(refresh_token, str)
         expected_keys = {

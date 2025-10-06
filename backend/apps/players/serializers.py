@@ -112,9 +112,12 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         required=False
     )
     avatar = Base64ImageField(read_only=True)
-    level = serializers.PrimaryKeyRelatedField(
-        source='rating.grade', read_only=True
-    )
+    level = serializers.SerializerMethodField()
+
+    def get_level(self, obj):
+        if hasattr(obj, 'rating') and obj.rating:
+            return obj.rating.grade
+        return None
 
     class Meta:
         model = Player
@@ -430,7 +433,7 @@ class PlayerRateSerializer(serializers.Serializer):
     )
 
     def validate_players(self, players_data):
-        """Validate each player item and filter out invalid ones."""
+        """Validate each player item and filter out valid ones."""
         valid_items = []
         for item_data in players_data:
             try:
