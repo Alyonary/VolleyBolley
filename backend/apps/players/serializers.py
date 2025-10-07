@@ -142,9 +142,6 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         rep['level'] = instance.rating.grade
         return rep
 
-    def validate(self, attrs):
-        return super().validate(attrs)
-
     def update(self, instance, validated_data):
         level = validated_data.pop('level', None)
         self._update_player_rate(instance, level)
@@ -240,12 +237,6 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
             'country',
             'city',
         )
-    
-    def create(self, validated_data):
-        level = validated_data.pop('level', None)
-        player = Player.objects.create(**validated_data)
-        player.level = level
-        return player
 
 
 class PlayerListSerializer(PlayerBaseSerializer):

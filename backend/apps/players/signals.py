@@ -43,6 +43,7 @@ def create_player_rating_obj(sender, instance, created, **kwargs):
                 PlayerStrEnums.DEFAULT_GRADE.value
             ),
         )
+        logger.info(f"PlayerRating created for Player id={instance.id}")
 
 @receiver(post_save, sender=PlayerRatingVote)
 def update_player_rating_on_vote(sender, instance, created, **kwargs):
