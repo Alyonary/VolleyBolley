@@ -274,3 +274,4 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             return Response(status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+

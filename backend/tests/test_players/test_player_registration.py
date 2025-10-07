@@ -21,6 +21,8 @@ class TestPlayerRegistration:
            url, player_data_for_registration, format='json'
         )
         player = Player.objects.get(user=user_generated_after_login)
+        player.refresh_from_db()
+        assert player.rating.grade == player_data_for_registration['level']
         assert response.status_code == status.HTTP_200_OK
         assert response.data is None
         assert player.is_registered is True

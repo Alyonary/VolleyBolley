@@ -279,9 +279,7 @@ class TestGradeSystemDatabaseOperations:
                     level_change=GradeSystem.DOWN
                 ),
                 is_counted=False
-            )
-            print(f'PLayer rated value {player1.rating.value}')
-            
+            )            
         player1.refresh_from_db()
         assert player1.rating.level_mark == 3
         assert player1.rating.value == 3

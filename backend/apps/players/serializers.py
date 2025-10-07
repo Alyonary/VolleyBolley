@@ -19,7 +19,13 @@ from apps.players.exceptions import (
     RatingLimitError,
     SelfRatingError,
 )
-from apps.players.models import Favorite, Payment, Player, PlayerRatingVote
+from apps.players.models import (
+    Favorite,
+    Payment,
+    Player,
+    PlayerRating,
+    PlayerRatingVote,
+)
 from apps.players.rating import GradeSystem
 
 
@@ -112,12 +118,10 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         required=False
     )
     avatar = Base64ImageField(read_only=True)
-    level = serializers.SerializerMethodField()
-
-    def get_level(self, obj):
-        if hasattr(obj, 'rating') and obj.rating:
-            return obj.rating.grade
-        return None
+    level = serializers.CharField(
+        write_only=True,
+        required=True
+    )
 
     class Meta:
         model = Player
@@ -132,21 +136,38 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
             'avatar'
         )
 
+
+    def to_representation(self, instance):
+        rep = super().to_representation(instance)
+        rep['level'] = instance.rating.grade
+        return rep
+
+    def validate(self, attrs):
+        return super().validate(attrs)
+
     def update(self, instance, validated_data):
+        level = validated_data.pop('level', None)
+        self._update_player_rate(instance, level)
         user_data = validated_data.pop('user', {})
         for attr, value in user_data.items():
             setattr(instance.user, attr, value)
-
         instance.user.save()
-
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.is_registered = True
-
         instance.save()
-
         return instance
 
+    def _update_player_rate(self, player, new_level):
+        """
+        Check if PLayerRating object exists, create if not.
+        Update grade if new_level is provided.
+        """
+        player_rate_obj, _ = PlayerRating.objects.get_or_create(player=player)
+        if new_level: 
+            player_rate_obj.grade = new_level
+            player_rate_obj.save()
+        return player_rate_obj
 
 
 class AvatarSerializer(PlayerBaseSerializer):
@@ -214,11 +235,12 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
             'first_name',
             'last_name',
             'gender',
+            'level',
             'date_of_birth',
             'country',
             'city',
         )
-
+    
     def create(self, validated_data):
         level = validated_data.pop('level', None)
         player = Player.objects.create(**validated_data)
@@ -235,7 +257,7 @@ class PlayerListSerializer(PlayerBaseSerializer):
     is_favorite = serializers.SerializerMethodField(
         read_only=True
     )
-
+    
     class Meta:
         model = Player
         fields = (
@@ -263,15 +285,16 @@ class PlayerListSerializer(PlayerBaseSerializer):
         ).exists()
 
 
-class FavoriteSerializer(PlayerListSerializer):
+class FavoriteSerializer(serializers.Serializer):
     """Serialize player data to add/delete player to/from favorite list."""
 
     def validate(self, data):
+        """Validate that player can be added/deleted to/from favorite list."""
         player = self.context.get('player')
         favorite = self.context.get('favorite')
         request_method = self.context.get('request').method
         object_in_favorite_list = Favorite.objects.filter(
-                player=player, favorite=favorite
+            player=player, favorite=favorite
         ).exists()
         if request_method == 'POST':
             if favorite == player:
@@ -467,7 +490,6 @@ class PlayerRateSerializer(serializers.Serializer):
         votes = []
         results = []
         event = self.context.get('event')
-        print(validated_data)
         for item in validated_data['players']:
             rater_player = Player.objects.get(id=item['rater'])
             rated_player = Player.objects.get(id=item['rated_player'])

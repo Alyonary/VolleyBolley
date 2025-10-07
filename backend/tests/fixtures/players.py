@@ -50,7 +50,7 @@ def player_data_for_registration(countries_cities):
         'first_name': 'TestPlayerName',
         'last_name': 'TestPlayerSurname',
         'gender': 'FEMALE',
-        'level': 'LIGHT',
+        'level': 'PRO',
         'date_of_birth': '2000-01-01',
         'country': countries_cities['Thailand'].id,
         'city': countries_cities['Thailand'].cities.filter(
