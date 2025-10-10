@@ -119,8 +119,8 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
     )
     avatar = Base64ImageField(read_only=True)
     level = serializers.CharField(
-        write_only=True,
-        required=True
+        source='rating.grade',
+        read_only=True,
     )
 
     class Meta:
@@ -143,8 +143,6 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         return rep
 
     def update(self, instance, validated_data):
-        level = validated_data.pop('level', None)
-        self._update_player_rate(instance, level)
         user_data = validated_data.pop('user', {})
         for attr, value in user_data.items():
             setattr(instance.user, attr, value)
@@ -154,17 +152,6 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         instance.is_registered = True
         instance.save()
         return instance
-
-    def _update_player_rate(self, player, new_level):
-        """
-        Check if PLayerRating object exists, create if not.
-        Update grade if new_level is provided.
-        """
-        player_rate_obj, _ = PlayerRating.objects.get_or_create(player=player)
-        if new_level: 
-            player_rate_obj.grade = new_level
-            player_rate_obj.save()
-        return player_rate_obj
 
 
 class AvatarSerializer(PlayerBaseSerializer):
@@ -212,8 +199,7 @@ class PlayerAuthSerializer(PlayerBaseSerializer):
 
 
 class PlayerRegisterSerializer(PlayerBaseSerializer):
-    """Serialize data for player registration."""
-
+    """Serializer for player registration."""
     first_name = serializers.CharField(
         source='user.first_name',
         max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
@@ -224,7 +210,7 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
         max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
         required=True
     )
-
+    level = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = Player
@@ -237,6 +223,14 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
             'country',
             'city',
         )
+
+    def update(self, instance, validated_data):
+        level = validated_data.pop('level')
+        instance = super().update(instance, validated_data)
+        player_rating, _ = PlayerRating.objects.get_or_create(player=instance)
+        player_rating.grade = level
+        player_rating.save()
+        return instance
 
 
 class PlayerListSerializer(PlayerBaseSerializer):
@@ -308,9 +302,6 @@ class FavoriteSerializer(serializers.Serializer):
 
 class PlayerGameSerializer(PlayerAuthSerializer):
     """Player data for retrieve in event serializer."""
-    level = serializers.CharField(
-        source='rating.grade', read_only=True
-    )
     class Meta:
         model = Player
         fields = (
