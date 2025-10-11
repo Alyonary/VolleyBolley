@@ -148,3 +148,35 @@ class CurrencyType(m.Model):
         verbose_name = _('Currency type')
         verbose_name_plural = _('Currency types')
         default_related_name = 'currency_types'
+
+
+class FAQ(m.Model):
+    """FAQ model to store project description."""
+    name = m.CharField(
+        max_length=CoreFieldLength.NAME.value,
+        unique=True,
+        default='',
+    )
+    is_active = m.BooleanField(default=False)
+    created_at = m.DateTimeField(auto_now_add=True)
+    updated_at = m.DateTimeField(auto_now=True)
+    content = m.TextField()
+
+    class Meta:
+        verbose_name = _('FAQ')
+        verbose_name_plural = _('FAQs')
+
+    def __str__(self):
+        return f'FAQ (ID: {self.id}, Active: {self.is_active})'
+
+    def save(self, *args, **kwargs):
+        if not self.name:
+            super().save(*args, **kwargs)
+            self.name = f'faq {self.id}'
+            return super().save(update_fields=['name'])
+        return super().save(*args, **kwargs)
+
+    @classmethod
+    def get_active(cls):
+        """Get the active FAQ instance."""
+        return cls.objects.filter(is_active=True).first()
