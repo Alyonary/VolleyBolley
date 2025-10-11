@@ -464,6 +464,7 @@ class PlayerRateSerializer(serializers.Serializer):
         votes = []
         results = []
         event = self.context.get('event')
+
         for item in validated_data['players']:
             rater_player = Player.objects.get(id=item['rater'])
             rated_player = Player.objects.get(id=item['rated_player'])
