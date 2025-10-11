@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -18,7 +20,8 @@ class TestPlayerRegistration:
             ('player_data_for_registration', status.HTTP_200_OK, True),
             ('player_no_data_for_registration',
              status.HTTP_400_BAD_REQUEST, False),
-            ('player_location_data_for_registration', status.HTTP_200_OK, True)
+            ('player_necessary_data_for_registration',
+             status.HTTP_200_OK, True)
         ]
     )
     def test_player_registration(
@@ -29,7 +32,7 @@ class TestPlayerRegistration:
         registered,
         auth_api_client_with_not_registered_player,
         player_no_data_for_registration,
-        player_location_data_for_registration,
+        player_necessary_data_for_registration,
         player_generated_after_login_data,
         user_generated_after_login
     ):
@@ -49,8 +52,10 @@ class TestPlayerRegistration:
             assert player.city.id == player_data['city']     
             assert not player.avatar
 
-            if player_data == player_location_data_for_registration:
-                player_data.update(player_generated_after_login_data)
+            if player_data == player_necessary_data_for_registration:
+                upcoming_player_data = deepcopy(player_data)
+                player_data = deepcopy(player_generated_after_login_data)
+                player_data.update(upcoming_player_data)
 
             assert player.user.first_name == player_data['first_name']
             assert player.user.last_name == player_data['last_name']

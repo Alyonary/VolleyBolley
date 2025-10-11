@@ -141,12 +141,13 @@ def player_no_data_for_registration():
 
 
 @pytest.fixture
-def player_location_data_for_registration(countries_cities):
+def player_necessary_data_for_registration(countries_cities):
     return {
         'country': countries_cities['Thailand'].id,
         'city': countries_cities['Thailand'].cities.filter(
             name='Bangkok'
         ).first().id,
+        'level': 'MEDIUM'
     }
 
 
