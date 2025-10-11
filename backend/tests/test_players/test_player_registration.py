@@ -1,4 +1,5 @@
 from copy import deepcopy
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -19,7 +20,8 @@ class TestPlayerRegistration:
             ('player_data_for_registration', status.HTTP_200_OK, True),
             ('player_no_data_for_registration',
              status.HTTP_400_BAD_REQUEST, False),
-            ('player_necessary_data_for_registration', status.HTTP_200_OK, True)
+            ('player_necessary_data_for_registration',
+             status.HTTP_200_OK, True)
         ]
     )
     def test_player_registration(
