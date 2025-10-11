@@ -223,7 +223,7 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
     level = serializers.ChoiceField(
         choices=Grades.choices,
         source='rating.grade',
-        required=False,
+        required=True,
         write_only=True,
     )
     gender = serializers.ChoiceField(
@@ -499,7 +499,7 @@ class PlayerRateSerializer(serializers.Serializer):
         votes = []
         results = []
         event = self.context.get('event')
-        print(validated_data)
+
         for item in validated_data['players']:
             rater_player = Player.objects.get(id=item['rater'])
             rated_player = Player.objects.get(id=item['rated_player'])
