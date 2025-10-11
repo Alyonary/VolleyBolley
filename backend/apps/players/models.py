@@ -229,7 +229,7 @@ class PlayerRating(models.Model):
         verbose_name_plural = _('Players ratings')
 
     def __str__(self) -> str:
-        return f'Rating {self.rating} of {self.player} at {self.updated_at}'
+        return f'Rating {self.grade} of {self.player} at {self.updated_at}'
 
 
 class PlayerRatingVote(models.Model):
