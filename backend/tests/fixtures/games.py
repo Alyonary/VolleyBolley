@@ -15,22 +15,26 @@ User = get_user_model()
 
 @pytest.fixture
 def country_thailand():
-    return Country.objects.create(name='Thailand')
+    return Country.objects.get_or_create(name='Thailand')[0]
 
 
 @pytest.fixture
 def city_in_thailand(country_thailand):
-    return City.objects.create(name='Pattaya', country=country_thailand)
+    return City.objects.get_or_create(
+        name='Pattaya', country=country_thailand
+    )[0]
 
 
 @pytest.fixture
 def country_cyprus():
-    return Country.objects.create(name='Cyprus')
+    return Country.objects.get_or_create(name='Cyprus')[0]
 
 
 @pytest.fixture
 def city_in_cyprus(country_cyprus):
-    return City.objects.create(name='Limassol', country=country_cyprus)
+    return City.objects.get_or_create(
+        name='Limassol', country=country_cyprus
+    )[0]
 
 
 @pytest.fixture
