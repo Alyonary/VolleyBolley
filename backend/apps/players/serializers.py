@@ -223,7 +223,7 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
     level = serializers.ChoiceField(
         choices=Grades.choices,
         source='rating.grade',
-        required=False,
+        required=True,
         write_only=True,
     )
     gender = serializers.ChoiceField(

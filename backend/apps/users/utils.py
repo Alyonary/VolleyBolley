@@ -12,8 +12,8 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 username = os.getenv('DJANGO_SUPERUSER_USERNAME')
-first_name=os.getenv('DJANGO_SUPERUSER_FIRST_NAME')
-last_name=os.getenv('DJANGO_SUPERUSER_LAST_NAME')
+first_name = os.getenv('DJANGO_SUPERUSER_FIRST_NAME')
+last_name = os.getenv('DJANGO_SUPERUSER_LAST_NAME')
 password = os.getenv('DJANGO_SUPERUSER_PASSWORD')
 
 
