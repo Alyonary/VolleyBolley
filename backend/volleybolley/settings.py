@@ -242,7 +242,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
-AUTO_CREATE_DEFAULT_SUPERUSER = True
+AUTO_CREATE_DEFAULT_SUPERUSER = os.getenv('AUTO_CREATE_DEFAULT_SUPERUSER', False)
+MANY_SUPERUSERS = os.getenv('MANY_SUPERUSERS', False)
 
 LOGGING = {
     'version': 1,

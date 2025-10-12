@@ -185,20 +185,25 @@ def create_superuser_with_settings_check(
         - DJANGO_SUPERUSER_LAST_NAME
         - DJANGO_SUPERUSER_PASSWORD
 
-        Also ensure settings.AUTO_CREATE_DEFAULT_SUPERUSER is True.
+        Also ensure AUTO_CREATE_DEFAULT_SUPERUSER is True.
     """
     if not getattr(settings, 'AUTO_CREATE_DEFAULT_SUPERUSER', False):
         logger.warning(
             'Pass the superuser auto creation process: '
-            'settings.AUTO_CREATE_DEFAULT_SUPERUSER = False.'
+            'AUTO_CREATE_DEFAULT_SUPERUSER = False.'
         )
 
         return
 
-    if User.objects.filter(is_superuser=True).exists():
+    if (
+        User.objects.filter(is_superuser=True).exists() and
+        not getattr(settings, 'MANY_SUPERUSERS', False)
+    ):
         logger.info(
             'Pass the superuser auto creation process: '
-            f'superuser {username} has been already created previously.'
+            f'superuser {username} has been already created previously. '
+            'Set MANY_SUPERUSERS to True to allow auto creation '
+            'of another superuser.'
         )
 
         return
