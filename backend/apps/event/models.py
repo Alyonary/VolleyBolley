@@ -169,11 +169,6 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         blank=True,
         related_name='tournaments_host',
     )
-    players = m.ManyToManyField(
-        Player,
-        verbose_name=_('Players'),
-        related_name='tournaments_players',
-    )
     is_individual = m.BooleanField(
         verbose_name=_('Individual format'),
         default=False,
@@ -186,3 +181,23 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         verbose_name = _('Tourney')
         verbose_name_plural = _('Tourneys')
         default_related_name = 'tournaments'
+
+
+class TourneyTeam(m.Model):
+
+    tourney = m.ForeignKey(
+        Tourney,
+        verbose_name=_('Tourney is from'),
+        on_delete=m.CASCADE
+        )
+    players = m.ManyToManyField(
+        Player,
+        verbose_name=_('Players'),
+        related_name='tourney_players',
+        blank=True
+    )
+
+    class Meta:
+        verbose_name = _('Tourney team')
+        verbose_name_plural = _('Tourney teams')
+        default_related_name = 'teams'

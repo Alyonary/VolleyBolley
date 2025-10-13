@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
 from apps.event.enums import EventIntEnums
-from apps.event.models import Game, GameInvitation, Tourney
+from apps.event.models import Game, GameInvitation, Tourney, TourneyTeam
 
 
 class BaseEventAdmin(admin.ModelAdmin):
@@ -30,6 +30,11 @@ class GameAdmin(BaseEventAdmin):
     pass
 
 
+class TeamInline(admin.TabularInline):
+    model = TourneyTeam
+    extra = 1
+
+
 @admin.register(Tourney)
 class TourneyAdmin(BaseEventAdmin):
     list_display = BaseEventAdmin.list_display + (
@@ -39,6 +44,8 @@ class TourneyAdmin(BaseEventAdmin):
     list_filter = BaseEventAdmin.list_filter + (
         'is_individual',
     )
+    filter_horizontal = ('player_levels',)
+    inlines = [TeamInline]
 
 
 @admin.register(GameInvitation)

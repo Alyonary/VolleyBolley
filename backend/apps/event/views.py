@@ -1,5 +1,4 @@
 from django.db.models import Q
-from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
@@ -7,6 +6,7 @@ from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
     RetrieveModelMixin,
+    ListModelMixin
 )
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
@@ -18,7 +18,10 @@ from apps.event.serializers import (
     GameDetailSerializer,
     GameInviteSerializer,
     GameSerializer,
-    GameShortSerializer, TourneySerializer, TourneyShortSerializer, TourneyDetailSerializer,
+    GameShortSerializer,
+    TourneySerializer,
+    TourneyShortSerializer,
+    TourneyDetailSerializer
 )
 
 
@@ -197,69 +200,76 @@ class TourneyViewSet(
     GenericViewSet,
     CreateModelMixin,
     RetrieveModelMixin,
-    DestroyModelMixin
+    DestroyModelMixin,
+    ListModelMixin
 ):
     """CRUD for tournaments."""
-    permission_classes = (IsHostOrReadOnly, IsAuthenticated)
+    permission_classes = (AllowAny,)
     http_method_names = ['get', 'post', 'delete']
+    queryset = Tourney.objects.all()
 
-    def get_queryset(self):
-        player = getattr(self.request.user, 'player', None)
-        if player is None or player.country is None:
-            return Tourney.objects.all().select_related(
-                'host', 'court').prefetch_related('players')
-        return Tourney.objects.filter(
-            court__location__country=player.country
-        ).select_related('host', 'court').prefetch_related('players')
+    # def get_queryset(self):
+    #     player = getattr(self.request.user, 'player', None)
+    #     if player is None or player.country is None:
+    #         return Tourney.objects.all().select_related(
+    #             'host', 'court').prefetch_related('players')
+    #     return Tourney.objects.filter(
+    #         court__location__country=player.country
+    #     ).select_related('host', 'court').prefetch_related('players')
 
     def get_serializer_class(self):
         if self.action in ('retrieve', 'join_tournament'):
             return TourneyDetailSerializer
-        elif self.action in ('my_tournaments', 'archive', 'invites', 'upcoming'):
+        elif self.action in (
+                'my_tournaments', 'archive', 'invites', 'upcoming'):
             return TourneyShortSerializer
         else:
             return TourneySerializer
 
-    @action(methods=['get'], detail=False, url_path='my-tournaments')
-    def my_tournaments(self, request, *args, **kwargs):
-        """List of tournaments created by the current user."""
-        tournaments = Tourney.objects.filter(host=request.user.player)
-        serializer = self.get_serializer(tournaments, many=True)
-        return Response({'tournaments': serializer.data}, status=status.HTTP_200_OK)
+    # @action(methods=['get'], detail=False, url_path='my-tournaments')
+    # def my_tournaments(self, request, *args, **kwargs):
+    #     """List of tournaments created by the current user."""
+    #     tournaments = Tourney.objects.filter(host=request.user.player)
+    #     serializer = self.get_serializer(tournaments, many=True)
+    #     return Response(
+    # {'tournaments': serializer.data}, status=status.HTTP_200_OK)
 
-    @action(methods=['get'], detail=False, url_path='archive')
-    def archive(self, request, *args, **kwargs):
-        """List of past tournaments (already finished)."""
-        tournaments = Tourney.objects.filter(end_time__lte=timezone.now())
-        serializer = self.get_serializer(tournaments, many=True)
-        return Response({'tournaments': serializer.data}, status=status.HTTP_200_OK)
+    # @action(methods=['get'], detail=False, url_path='archive')
+    # def archive(self, request, *args, **kwargs):
+    #     """List of past tournaments (already finished)."""
+    #     tournaments = Tourney.objects.filter(end_time__lte=timezone.now())
+    #     serializer = self.get_serializer(tournaments, many=True)
+    #     return Response(
+    # {'tournaments': serializer.data}, status=status.HTTP_200_OK)
 
-    @action(methods=['get'], detail=False, url_path='upcoming')
-    def upcoming(self, request, *args, **kwargs):
-        """List of upcoming tournaments (not started yet)."""
-        tournaments = Tourney.objects.filter(
-            players=request.user.player,
-            start_time__gte=timezone.now()
-        )
-        serializer = self.get_serializer(tournaments, many=True)
-        return Response({'tournaments': serializer.data}, status=status.HTTP_200_OK)
+    # @action(methods=['get'], detail=False, url_path='upcoming')
+    # def upcoming(self, request, *args, **kwargs):
+    #     """List of upcoming tournaments (not started yet)."""
+    #     tournaments = Tourney.objects.filter(
+    #         players=request.user.player,
+    #         start_time__gte=timezone.now()
+    #     )
+    #     serializer = self.get_serializer(tournaments, many=True)
+    #     return Response(
+    # {'tournaments': serializer.data}, status=status.HTTP_200_OK)
 
-    @action(
-        methods=['post'],
-        detail=True,
-        url_path='join-tournament',
-        permission_classes=[IsAuthenticated],
-    )
-    def join_tournament(self, request, *args, **kwargs):
-        """Join the tournament as a player."""
-        tourney = self.get_object()
-        player = request.user.player
-        if tourney.max_players > tourney.players.count():
-            tourney.players.add(player)
-            is_joined = True
-        else:
-            is_joined = False
-        serializer = self.get_serializer(tourney, context={'request': request})
-        data = serializer.data.copy()
-        data.update({'is_joined': is_joined})
-        return Response(data, status=status.HTTP_200_OK)
+    # @action(
+    #     methods=['post'],
+    #     detail=True,
+    #     url_path='join-tournament',
+    #     permission_classes=[IsAuthenticated],
+    # )
+    # def join_tournament(self, request, *args, **kwargs):
+    #     """Join the tournament as a player."""
+    #     tourney = self.get_object()
+    #     player = request.user.player
+    #     if tourney.max_players > tourney.players.count():
+    #         tourney.players.add(player)
+    #         is_joined = True
+    #     else:
+    #         is_joined = False
+    #     serializer = self.get_serializer(
+    # tourney, context={'request': request})
+    #     data = serializer.data.copy()
+    #     data.update({'is_joined': is_joined})
+    #     return Response(data, status=status.HTTP_200_OK)
