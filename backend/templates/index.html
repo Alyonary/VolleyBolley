@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+  <ul>
+    <a class="download-button" href="{% url 'admin:index' %}" target="_blank">Open admin panel</a>
+    <a class="download-button" href="/api/" target="_blank">Go to api</a>
+    <a class="download-button" href="/privacy/">Privacy policy</a>
+    <a class="download-button" href="/terms/">Terms of usage</a>
+  </ul>
+{% endblock %}

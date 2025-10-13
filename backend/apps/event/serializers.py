@@ -212,11 +212,11 @@ class GameInviteSerializer(serializers.ModelSerializer):
         elif invited in game.players.all():
             raise serializers.ValidationError(
                 {'invited': 'This player is already participate in the game.'})
-        elif invited.level not in levels:
+        elif invited.rating.grade not in levels:
             raise serializers.ValidationError(
-                {'invited': f'Level of the player {invited.level} '
-                            'not allowed in this game. '
-                            f'Allowed levels: {", ".join(levels)}'})
+                {'invited': f'Level of the player {invited.rating.grade} '
+                 'not allowed in this game. '
+                 f'Allowed levels: {", ".join(levels)}'})
         return attrs
 
 

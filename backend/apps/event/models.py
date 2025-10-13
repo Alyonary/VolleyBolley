@@ -5,7 +5,6 @@ from django.utils.translation import gettext_lazy as _
 from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.event.enums import EventIntEnums
 from apps.event.mixins import EventMixin
-from apps.players.models import Player
 
 
 class GameQuerySet(m.query.QuerySet):
@@ -99,13 +98,13 @@ class GameInvitation(m.Model):
     """Invitation to game model."""
 
     host = m.ForeignKey(
-        Player,
+        'players.Player',
         on_delete=m.CASCADE,
         related_name='invite_host'
     )
 
     invited = m.ForeignKey(
-        Player,
+        'players.Player',
         on_delete=m.CASCADE,
         related_name='invited'
     )
@@ -129,13 +128,13 @@ class GameInvitation(m.Model):
 class Game(EventMixin, CreatedUpdatedMixin):
     """Game model."""
     host = m.ForeignKey(
-        Player,
+        'players.Player',
         verbose_name=_('Game organizer'),
         on_delete=m.CASCADE,
         related_name='games_host'
     )
     players = m.ManyToManyField(
-        Player,
+        'players.Player',
         verbose_name=_('Players'),
         related_name='games_players',
         blank=True
@@ -162,7 +161,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
     """Tourney model."""
 
     host = m.ForeignKey(
-        Player,
+        'players.Player',
         verbose_name=_('Tourney organizer'),
         on_delete=m.SET_NULL,
         null=True,
@@ -191,7 +190,7 @@ class TourneyTeam(m.Model):
         on_delete=m.CASCADE
         )
     players = m.ManyToManyField(
-        Player,
+        'players.Player',
         verbose_name=_('Players'),
         related_name='tourney_players',
         blank=True

@@ -1,6 +1,7 @@
 import pytest
 from django.contrib.auth import get_user_model
 
+from apps.locations.models import City, Country
 from apps.players.constants import BASE_PAYMENT_DATA
 from apps.players.models import Payment, Player
 
@@ -91,13 +92,37 @@ def user_generated_after_login(active_user):
 
 
 @pytest.fixture
-def user_with_registered_player(user_generated_after_login):
+def user_with_registered_player(
+    user_generated_after_login,
+    player_data_for_registration
+):
     player, _ = Player.objects.get_or_create(user=user_generated_after_login)
+    player.country = Country.objects.filter(
+        id=player_data_for_registration.get('country')
+    ).first()
+    player.city = City.objects.filter(
+        id=player_data_for_registration.get('city')
+    ).first()
+
+    rating = player.rating
+    rating.grade = player_data_for_registration.get('level')
+    rating.save()
+
+    user = player.user
+    user.first_name = player_data_for_registration.get('first_name')
+    user.last_name = player_data_for_registration.get('last_name')
+    user.save()
+
+    player.gender = player_data_for_registration.get('gender')
+    player.date_of_birth = player_data_for_registration.get('date_of_birth')
     player.is_registered = True
     player.save()
+
     return player.user
 
 
 @pytest.fixture
 def bulk_create_users(bulk_users_data):
     return [User.objects.create(**user) for user in bulk_users_data]
+
+

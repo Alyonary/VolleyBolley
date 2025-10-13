@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import pytest
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -116,20 +118,61 @@ class TestPlayerViewSet:
             ('auth_api_client_registered_player', status.HTTP_200_OK),
         ],
     )
-    def test_patch_my_profile(
-        self, request, client_fixture_name, expected_status
+    def test_status_patch_my_profile(
+        self,
+        request,
+        client_fixture_name,
+        expected_status,
+        player_updated_data
     ):
         client = request.getfixturevalue(client_fixture_name)
         url = reverse('api:players-me')
-        data = {'first_name': 'NewName'}
-        
-        response = client.patch(url, data, format='json')
+        response = client.patch(url, player_updated_data, format='json')
+
         assert response.status_code == expected_status
-        
-        if client_fixture_name == 'auth_api_client_registered_player':
-            assert User.objects.get(
-                id=response.wsgi_request.user.id
-            ).first_name == 'NewName'
+
+    @pytest.mark.parametrize(
+        'data',
+        [
+            'player_updated_data',
+            'player_partial_updated_data'
+        ]
+    )
+    def test_patch_my_profile(
+        self,
+        request,
+        data,
+        auth_api_client_registered_player,
+        registered_player_data,
+        player_partial_updated_data
+    ):
+        data = request.getfixturevalue(data)
+        url = reverse('api:players-me')
+        response = auth_api_client_registered_player.patch(
+            url, data, format='json'
+        )
+        user = User.objects.get(
+            id=response.wsgi_request.user.id
+        )
+
+        if data == player_partial_updated_data:
+            data = deepcopy(registered_player_data)
+            data.update(player_partial_updated_data)
+
+        # allowed to be updated fields
+        assert user.first_name == data.get('first_name')
+        assert user.last_name == data.get('last_name')
+        assert user.player.country.id == data.get('country')
+        assert user.player.city.id == data.get('city')
+        assert user.player.date_of_birth.isoformat() == data.get(
+            'date_of_birth'
+        )
+
+        # not allowed to be updated fields
+        assert user.player.is_registered is True
+        assert not user.player.avatar
+        assert user.player.gender == registered_player_data.get('gender')
+        assert user.player.rating.grade == registered_player_data.get('level')
 
 
     @pytest.mark.parametrize(

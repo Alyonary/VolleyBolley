@@ -1,9 +1,13 @@
+from datetime import timedelta
+
 import pytest
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.event.models import Game
 from apps.locations.models import City, Country
+from apps.players.constants import Grades
 from apps.players.models import Payment, Player
 
 User = get_user_model()
@@ -11,22 +15,26 @@ User = get_user_model()
 
 @pytest.fixture
 def country_thailand():
-    return Country.objects.create(name='Thailand')
+    return Country.objects.get_or_create(name='Thailand')[0]
 
 
 @pytest.fixture
 def city_in_thailand(country_thailand):
-    return City.objects.create(name='Pattaya', country=country_thailand)
+    return City.objects.get_or_create(
+        name='Pattaya', country=country_thailand
+    )[0]
 
 
 @pytest.fixture
 def country_cyprus():
-    return Country.objects.create(name='Cyprus')
+    return Country.objects.get_or_create(name='Cyprus')[0]
 
 
 @pytest.fixture
 def city_in_cyprus(country_cyprus):
-    return City.objects.create(name='Limassol', country=country_cyprus)
+    return City.objects.get_or_create(
+        name='Limassol', country=country_cyprus
+    )[0]
 
 
 @pytest.fixture
@@ -39,11 +47,18 @@ def game_data(
     game_levels_medium,
     player_thailand
 ):
+    """
+    Return data for creating a game.
+    The game is created in Thailand with 5 registered players.
+    """
+    start_time = timezone.now() + timedelta(days=2)
+    end_time = start_time + timedelta(hours=3)
+
     return {
         'court_id': court_thailand.id,
         'message': 'Test game in Thailand',
-        'start_time': '2025-09-21T15:30:00Z',
-        'end_time': '2025-09-21T18:30:00Z',
+        'start_time': start_time,
+        'end_time': end_time,
         'gender': 'MEN',
         'player_levels': [
             game_levels_light,
@@ -114,9 +129,9 @@ def player_thailand(active_user, country_thailand, city_in_thailand):
     return Player.objects.create(
         user=active_user,
         gender='MALE',
-        level='LIGHT',
         country=country_thailand,
-        city=city_in_thailand
+        city=city_in_thailand,
+        is_registered=True
     )
 
 
@@ -134,9 +149,9 @@ def player_cyprus(another_user, country_cyprus, city_in_cyprus):
     return Player.objects.create(
         user=another_user,
         gender='MALE',
-        level='LIGHT',
         country=country_cyprus,
-        city=city_in_cyprus
+        city=city_in_cyprus,
+        is_registered=True
     )
 
 
@@ -167,20 +182,23 @@ def game_create_data(
     game_levels_medium,
     payment_account_revolut
 ):
+    start_time = timezone.now() + timedelta(days=2)
+    end_time = start_time + timedelta(hours=2)
+    
     return {
-            'court_id': court_thailand.id,
-            'message': 'Hi! Just old',
-            'start_time': '2026-07-01T14:30:00Z',
-            'end_time': '2026-07-01T16:30:00Z',
-            'gender': 'MEN',
-            'levels': [game_levels_light.name,
-                       game_levels_medium.name],
-            'is_private': False,
-            'maximum_players': 5,
-            'price_per_person': '5.00',
-            'payment_type': payment_account_revolut.payment_type,
-            'players': []
-        }
+        'court_id': court_thailand.id,
+        'message': 'Hi! Just old',
+        'start_time': start_time.isoformat().replace('+00:00', 'Z'),
+        'end_time': end_time.isoformat().replace('+00:00', 'Z'),
+        'gender': 'MEN',
+        'levels': [game_levels_light.name,
+                   game_levels_medium.name],
+        'is_private': False,
+        'maximum_players': 5,
+        'price_per_person': '5.00',
+        'payment_type': payment_account_revolut.payment_type,
+        'players': []
+    }
 
 
 @pytest.fixture
@@ -193,9 +211,35 @@ def player_thailand_female_pro(country_thailand):
         password='test4@games.com',
         phone_number='+82648129229',
     )
-    return Player.objects.create(
+    player =  Player.objects.create(
         user=user,
         gender='FEMALE',
-        level='PRO',
-        country=country_thailand
+        country=country_thailand,
+        is_registered=True
     )
+    player.rating.grade = Grades.PRO.value
+    player.rating.save()
+    return player
+
+
+@pytest.fixture
+def three_games_thailand(game_data):
+    """Create three games in Thailand with same configuration."""
+    games = []
+    for i in range(3):
+        working_data = game_data.copy()
+        working_data['message'] = f'Test game {i+1} in Thailand'
+        players = working_data.pop('players')
+        levels = working_data.pop('player_levels')
+        
+        start_time = working_data['start_time'] + timedelta(hours=i*4)
+        end_time = working_data['end_time'] + timedelta(hours=i*4)
+        working_data['start_time'] = start_time
+        working_data['end_time'] = end_time
+
+        game = Game.objects.create(**working_data)
+        game.players.set(players)
+        game.player_levels.set(levels)
+        games.append(game)
+    
+    return games

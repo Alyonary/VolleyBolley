@@ -90,19 +90,19 @@ class TestCourtModel:
 @pytest.mark.django_db(transaction=True)
 class TestCourtApiModel:
 
-    def test_api_url(self, api_client, court_list_url):
-        response = api_client.get(court_list_url)
+    def test_api_url(self, api_client_thailand, court_list_url):
+        response = api_client_thailand.get(court_list_url)
         assert response.status_code == HTTPStatus.OK
 
     def test_response_structure(
             self,
-            api_client,
+            api_client_thailand,
             court_list_url,
             court_api_response_data,
             court_obj_with_tag,
             contact_object
             ):
-        response = api_client.get(court_list_url)
+        response = api_client_thailand.get(court_list_url)
         answer = response.data[0]
         assert answer.keys() == court_api_response_data.keys()
         assert answer['contacts_list'] == court_api_response_data[
@@ -114,16 +114,30 @@ class TestCourtApiModel:
 
     def test_filter_response(
             self,
-            api_client,
+            api_client_cyprus,
+            player_cyprus,
             court_list_url,
             court_cyprus,
             court_thailand
             ):
         court_list_url += '?search=Cy'
-        response = api_client.get(court_list_url)
+        response = api_client_cyprus.get(court_list_url)
         assert Court.objects.all().count() == 2
         assert len(response.data) == 1
         assert response.data[0][
             'location']['court_name'] == court_cyprus.location.court_name
         assert response.data[0][
             'location']['court_name'] != court_thailand.location.court_name
+
+    def test_filter_qs_for_player(
+            self,
+            court_list_url,
+            court_cyprus,
+            court_thailand,
+            api_client_thailand,
+            player_thailand
+    ):
+        response = api_client_thailand.get(court_list_url)
+        assert Court.objects.count() == 2
+        assert len(response.data) == 1
+        assert response.data[0]['court_id'] == court_thailand.id
