@@ -196,6 +196,20 @@ class GameViewSet(GenericViewSet,
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @action(
+        methods=['get', 'post'],
+        detail=True,
+        url_path='rate-players',
+        permission_classes=[IsHostOrReadOnly]
+    )
+    def rate_players(self, request, *args, **kwargs):
+        """
+        Allows a player to rate other players in a game.
+        POST: Submits ratings for the specified players.
+        GET: Retrieves a list of players available for rating.
+        """
+        return procces_rate_players_request(self, request, *args, **kwargs)
+
 
 class TourneyViewSet(
     GenericViewSet,
@@ -274,17 +288,4 @@ class TourneyViewSet(
     #     data = serializer.data.copy()
     #     data.update({'is_joined': is_joined})
     #     return Response(data, status=status.HTTP_200_OK)
-    
-    @action(
-        methods=['get', 'post'],
-        detail=True,
-        url_path='rate-players',
-        permission_classes=[IsHostOrReadOnly]
-    )
-    def rate_players(self, request, *args, **kwargs):
-        """
-        Allows a player to rate other players in a game.
-        POST: Submits ratings for the specified players.
-        GET: Retrieves a list of players available for rating.
-        """
-        return procces_rate_players_request(self, request, *args, **kwargs)
+

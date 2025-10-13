@@ -47,7 +47,8 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('', include(api_v1.urls)),
-    path('auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('auth/token/', TokenObtainPairView.as_view(
+                            ), name='token_obtain_pair'),
     path('social-auth/', include('social_django.urls', namespace='social')),
     path('countries/', CountryListView.as_view(), name='countries'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
