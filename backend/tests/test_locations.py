@@ -13,12 +13,12 @@ class TestCountriesAPI:
         '''Test that countries endpoint is accessible - status 200.'''
         url = reverse('api:countries')
         response = api_client.get(url)
-        
+
         assert response.status_code == status.HTTP_200_OK
 
     def test_response_structure(self, api_client):
         '''Test response has correct JSON structure.
-    
+
         Expected structure:
         {
             "countries": [
@@ -37,19 +37,19 @@ class TestCountriesAPI:
         '''
         url = reverse('api:countries')
         response = api_client.get(url)
-        
+
         assert response.status_code == status.HTTP_200_OK
-        
+
         assert 'countries' in response.data
         assert isinstance(response.data['countries'], list)
-        
+
         if response.data['countries']:
             country = response.data['countries'][0]
             assert 'country_id' in country
             assert 'country_name' in country
             assert 'cities' in country
             assert isinstance(country['cities'], list)
-            
+
             if country['cities']:
                 city = country['cities'][0]
                 assert 'city_id' in city
@@ -59,7 +59,7 @@ class TestCountriesAPI:
         '''Test API with empty database.'''
         url = reverse('api:countries')
         response = api_client.get(url)
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert response.data['countries'] == []
 
@@ -69,12 +69,12 @@ class TestCountriesAPI:
 
         url = reverse('api:countries')
         response = api_client.get(url)
-        
+
         assert response.status_code == status.HTTP_200_OK
-        
+
         countries_data = response.data['countries']
         empty_country = next(
-            (c for c in countries_data 
+            (c for c in countries_data
              if c['country_name'] == 'Empty Country'),
             None
         )
@@ -84,19 +84,19 @@ class TestCountriesAPI:
     def test_http_methods(self, api_client):
         '''Test that only GET method is allowed.'''
         url = reverse('api:countries')
-        
+
         response = api_client.get(url)
         assert response.status_code == status.HTTP_200_OK
-        
+
         response = api_client.post(url, {})
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
-        
+
         response = api_client.put(url, {})
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
-        
+
         response = api_client.patch(url, {})
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
-        
+
         response = api_client.delete(url)
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
@@ -108,16 +108,16 @@ class TestCountriesAPI:
         '''Test that countries are sorted alphabetically.'''
         Country.objects.create(name='Vietnam')
         Country.objects.create(name='Malaysia')
-        
+
         url = reverse('api:countries')
         response = api_client.get(url)
-        
+
         assert response.status_code == status.HTTP_200_OK
-        
+
         countries_data = response.data['countries']
         country_names = [c['country_name'] for c in countries_data]
-        
+
         expected_order = ['Cyprus', 'Malaysia', 'Thailand', 'Vietnam']
         assert country_names == expected_order
-        
+
         assert country_names == sorted(country_names)

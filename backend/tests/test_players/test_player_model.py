@@ -15,7 +15,7 @@ class TestPlayerModel:
 
     def test_create_default_player(
         self, active_user
-    ):  
+    ):
         player = Player.objects.create(user=active_user)
         assert player.user == active_user
         assert player.gender == 'MALE'
@@ -65,7 +65,7 @@ class TestPlayerModel:
 
     def test_player_with_bad_birthday_format(self, player_not_default_data):
         with pytest.raises(ValidationError):
-            
+
             player_not_default_data.update(
                 {'date_of_birth': '12:01:1998'}
             )

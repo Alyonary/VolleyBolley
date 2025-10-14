@@ -14,7 +14,7 @@ def setup_test_data():
     '''Creates test data for filters.'''
     thailand = Country.objects.create(name='Thailand')
     cyprus = Country.objects.create(name='Cyprus')
-    
+
     bangkok = City.objects.create(
         country=thailand, name='Bangkok'
     )

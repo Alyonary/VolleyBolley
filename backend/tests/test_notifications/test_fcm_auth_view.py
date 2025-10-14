@@ -93,7 +93,7 @@ class TestFCMApi:
 
         response = client.patch(fcm_token_url, fcm_token_data)
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
-        
+
         response = client.put(fcm_token_url, fcm_token_data, format='json')
         assert response.status_code == status.HTTP_201_CREATED
 

@@ -10,7 +10,7 @@ from apps.players.rating import GradeSystem
 @pytest.mark.django_db
 class TestRatePlayersAPI:
     """Test rate players functionality with real API calls."""
-    
+
     def test_get_players_to_rate_in_game_api(
         self,
         api_client,
@@ -88,12 +88,12 @@ class TestRatePlayersAPI:
         rated_player.rating.save()
         rater.refresh_from_db()
         rated_player.refresh_from_db()
-        
+
         if rater not in game.players.all():
             game.players.add(rater)
         if rated_player not in game.players.all():
             game.players.add(rated_player)
-        
+
         url = reverse('api:games-rate-players', args=[game.id])
         post_data = {
             'players': [
@@ -111,13 +111,13 @@ class TestRatePlayersAPI:
         ).first()
 
         expected_value = GradeSystem.get_value(
-            rater=rater, 
-            rated=rated_player, 
+            rater=rater,
+            rated=rated_player,
             level_change=level_changed
         )
         assert vote is not None
         assert vote.is_counted is False
-        assert vote.value == expected_value        
+        assert vote.value == expected_value
         vote.delete()
 
     @pytest.mark.parametrize(
@@ -126,23 +126,23 @@ class TestRatePlayersAPI:
             ({}, status.HTTP_400_BAD_REQUEST),
             ({'players': []}, status.HTTP_400_BAD_REQUEST),
             (
-                {'players': [{'level_changed': 'UP'}]}, 
+                {'players': [{'level_changed': 'UP'}]},
                 status.HTTP_400_BAD_REQUEST
             ),
             (
-                {'players': [{'player_id': 1}]}, 
+                {'players': [{'player_id': 1}]},
                 status.HTTP_400_BAD_REQUEST
             ),
             (
-                {'players': [{'player_id': 1, 'level_changed': 'INVALID'}]}, 
+                {'players': [{'player_id': 1, 'level_changed': 'INVALID'}]},
                 status.HTTP_400_BAD_REQUEST
             ),
             (
-                {'players': [{'player_id': 1, 'level_changed': ''}]}, 
+                {'players': [{'player_id': 1, 'level_changed': ''}]},
                 status.HTTP_400_BAD_REQUEST
             ),
             (
-                {'players': [{'player_id': 1, 'level_changed': None}]}, 
+                {'players': [{'player_id': 1, 'level_changed': None}]},
                 status.HTTP_400_BAD_REQUEST
             ),
             (
@@ -150,15 +150,15 @@ class TestRatePlayersAPI:
                     'players': [
                         {'player_id': 'invalid', 'level_changed': 'UP'}
                     ]
-                }, 
+                },
                 status.HTTP_400_BAD_REQUEST
             ),
             (
-                {'players': [{'player_id': -1, 'level_changed': 'UP'}]}, 
+                {'players': [{'player_id': -1, 'level_changed': 'UP'}]},
                 status.HTTP_400_BAD_REQUEST
             ),
             (
-                {'players': {'player_id': 1, 'level_changed': 'UP'}}, 
+                {'players': {'player_id': 1, 'level_changed': 'UP'}},
                 status.HTTP_400_BAD_REQUEST
             ),
             (
@@ -167,7 +167,7 @@ class TestRatePlayersAPI:
                         {'player_id': 1, 'level_changed': 'UP'},
                         {'player_id': 2, 'level_changed': 'INVALID'}
                     ]
-                }, 
+                },
                 status.HTTP_400_BAD_REQUEST
             ),
             (
@@ -176,7 +176,7 @@ class TestRatePlayersAPI:
                         {'player_id': 1, 'level': 'UP'},
                         {'player_id': 2, 'changed': 'INVALID'}
                     ]
-                }, 
+                },
                 status.HTTP_400_BAD_REQUEST
             ),
         ]
@@ -194,9 +194,9 @@ class TestRatePlayersAPI:
         game = game_thailand_with_players
         rater = player_thailand
         rated_player = bulk_create_registered_players[0]
-        
+
         game.players.add(rater, rated_player)
-        
+
         if 'players' in post_data and isinstance(post_data['players'], list):
             for player_data in post_data['players']:
                 if isinstance(player_data, dict):
@@ -208,10 +208,10 @@ class TestRatePlayersAPI:
                             player_data['player_id'] = (
                                 bulk_create_registered_players[1].id
                             )
-    
+
         url = reverse('api:games-rate-players', args=[game.id])
         response = api_client_thailand.post(url, post_data, format='json')
-        
+
         assert response.status_code == expected_status
         vote_count = PlayerRatingVote.objects.filter(rater=rater).count()
         assert vote_count == 0
@@ -248,22 +248,22 @@ class TestRatePlayersAPI:
         game = game_thailand_with_players
         rater = player_thailand
         rated_player = bulk_create_registered_players[0]
-        
+
         game.players.add(rater, rated_player)
-        
+
         if 'players' in post_data and isinstance(post_data['players'], list):
             for player_data in post_data['players']:
                 if isinstance(player_data, dict):
                     player_id = player_data.get('player_id')
                     if player_id == 1:
                         player_data['player_id'] = rated_player.id
-    
+
         url = reverse('api:games-rate-players', args=[game.id])
         response = api_client_thailand.post(url, post_data, format='json')
-        
+
         assert response.status_code == status.HTTP_200_OK
         vote_count = PlayerRatingVote.objects.filter(rater=rater).count()
-        
+
         if post_data['players'][0].get('player_id') == 999:
             assert vote_count == 0
         else:
@@ -272,7 +272,7 @@ class TestRatePlayersAPI:
 
     @pytest.mark.parametrize("rater_in_game,rated_in_game", [
         (False, True),
-        (True, False), 
+        (True, False),
         (False, False),
         (True, True),
     ])
@@ -289,14 +289,14 @@ class TestRatePlayersAPI:
         game = game_thailand_with_players
         rater = player_thailand
         rated_player = bulk_create_registered_players[0]
-        
+
         game.players.clear()
-        
+
         if rater_in_game:
             game.players.add(rater)
         if rated_in_game:
             game.players.add(rated_player)
-        
+
         url = reverse('api:games-rate-players', args=[game.id])
         post_data = {
             'players': [
@@ -306,11 +306,11 @@ class TestRatePlayersAPI:
                 }
             ]
         }
-        
+
         response = api_client_thailand.post(url, post_data, format='json')
-        assert response.status_code == status.HTTP_200_OK    
+        assert response.status_code == status.HTTP_200_OK
         vote_count = PlayerRatingVote.objects.filter(rater=rater).count()
-        
+
         if rater_in_game and rated_in_game:
             assert vote_count >= 1
             PlayerRatingVote.objects.filter(rater=rater).delete()
@@ -328,7 +328,7 @@ class TestRatePlayersAPI:
         game = game_thailand_with_players
         rater = player_thailand
         rated_player = bulk_create_registered_players[0]
-        
+
         game.players.add(rater, rated_player)
         PlayerRatingVote.objects.create(
             rater=rater,
@@ -337,7 +337,7 @@ class TestRatePlayersAPI:
             value=1.0,
             is_counted=False
         )
-        
+
         url = reverse('api:games-rate-players', args=[game.id])
         post_data = {
             'players': [
@@ -348,7 +348,7 @@ class TestRatePlayersAPI:
             ]
         }
         response = api_client_thailand.post(url, post_data, format='json')
-        
+
         assert response.status_code == status.HTTP_200_OK
         vote_count = PlayerRatingVote.objects.filter(
             rater=rater,
@@ -364,7 +364,7 @@ class TestRatePlayersAPI:
         """Test that unauthorized requests return 401."""
         game = game_thailand_with_players
         url = reverse('api:games-rate-players', args=[game.id])
-        
+
         post_data = {
             'players': [
                 {
@@ -373,7 +373,7 @@ class TestRatePlayersAPI:
                 }
             ]
         }
-        
+
         response = api_client.post(url, post_data, format='json')
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         vote_count = PlayerRatingVote.objects.count()
@@ -387,7 +387,7 @@ class TestRatePlayersAPI:
         """Test POST to nonexistent game returns 404."""
         nonexistent_game_id = 99999
         url = reverse('api:games-rate-players', args=[nonexistent_game_id])
-        
+
         post_data = {
             'players': [
                 {
@@ -422,29 +422,29 @@ class TestRatePlayersAPI:
                 }
             ]
         }
-        
+
         for i, game in enumerate(games):
             url = reverse(url_template, args=[game.id])
             response = api_client_thailand.post(url, post_data, format='json')
-            
+
             assert response.status_code == status.HTTP_200_OK
-            
+
             vote_count = PlayerRatingVote.objects.filter(
                 rater=rater,
                 rated=rated_player
             ).count()
-            
+
             if i < 2:
                 assert vote_count == i + 1
             else:
                 assert vote_count == 2
-        
+
         total_votes = PlayerRatingVote.objects.filter(
             rater=rater,
             rated=rated_player
         ).count()
         assert total_votes == 2
-        
+
         PlayerRatingVote.objects.filter(rater=rater).delete()
 
     def test_post_rate_player_mixed_validation_errors(
@@ -466,9 +466,9 @@ class TestRatePlayersAPI:
         rated_player1 = bulk_create_registered_players[0]
         rated_player2 = bulk_create_registered_players[1]
         rated_player3 = bulk_create_registered_players[2]
-        
+
         game.players.add(rater, rated_player1, rated_player2)
-        
+
         PlayerRatingVote.objects.create(
             rater=rater,
             rated=rated_player1,
@@ -480,7 +480,7 @@ class TestRatePlayersAPI:
             rater=rater,
             game=game
         ).count()
-        
+
         url = reverse('api:games-rate-players', args=[game.id])
         post_data = {
             'players': [
@@ -498,11 +498,11 @@ class TestRatePlayersAPI:
                 }
             ]
         }
-        
+
         response = api_client_thailand.post(url, post_data, format='json')
-        
+
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        
+
         final_vote_count = PlayerRatingVote.objects.filter(
             rater=rater,
             game=game
@@ -519,7 +519,7 @@ class TestRatePlayersAPI:
         """
         Test POST with only business logic errors:
         - One player already rated (business logic error)
-        - One player not in game (business logic error) 
+        - One player not in game (business logic error)
         - One valid player to rate
         Should return 200 and create only valid vote.
         """
@@ -527,12 +527,12 @@ class TestRatePlayersAPI:
         rater = player_thailand
         rated_player = bulk_create_registered_players[1]
         rated_player_with_vote = bulk_create_registered_players[0]
-        rated_player_not_in_game = bulk_create_registered_players[2]        
+        rated_player_not_in_game = bulk_create_registered_players[2]
         game.players.clear()
         game.players.add(rater, rated_player, rated_player_with_vote)
 
         assert rated_player_not_in_game not in game.players.all()
-        
+
         PlayerRatingVote.objects.create(
             rater=rater,
             rated=rated_player_with_vote,
@@ -562,15 +562,15 @@ class TestRatePlayersAPI:
             ]
         }
         response = api_client_thailand.post(url, post_data, format='json')
-        
+
         assert response.status_code == status.HTTP_200_OK
-        
+
         vote_count = PlayerRatingVote.objects.filter(
             rater=rater,
             game=game
         ).count()
         assert vote_count == initial_vote_count + 1
-        
+
         # Проверяем что новый голос создан только для rated_player3
         new_vote = PlayerRatingVote.objects.filter(
             rater=rater,
@@ -584,9 +584,9 @@ class TestRatePlayersAPI:
             rated=rated_player_not_in_game,
             game=game
         ).first()
-        
+
         assert invalid_vote is None
-        
+
         PlayerRatingVote.objects.filter(rater=rater, game=game).delete()
 
     def test_post_rate_player_structural_error_stops_processing(
@@ -607,9 +607,9 @@ class TestRatePlayersAPI:
         rater = player_thailand
         rated_player1 = bulk_create_registered_players[0]
         rated_player2 = bulk_create_registered_players[1]
-        
+
         game.players.add(rater, rated_player1, rated_player2)
-        
+
         url = reverse('api:games-rate-players', args=[game.id])
         post_data = {
             'players': [
@@ -627,11 +627,11 @@ class TestRatePlayersAPI:
                 }
             ]
         }
-        
+
         response = api_client_thailand.post(url, post_data, format='json')
-        
+
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        
+
         vote_count = PlayerRatingVote.objects.filter(
             rater=rater,
             game=game

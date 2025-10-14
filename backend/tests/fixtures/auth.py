@@ -13,6 +13,7 @@ def google_response():
         'name': 'Test User'
     }
 
+
 @pytest.fixture
 def real_google_id_token():
     return (
@@ -63,53 +64,53 @@ def firebase_response():
             },
             'sign_in_provider': 'phone',
         }
-}
+    }
 
 
 @pytest.fixture
 def firebase_response_no_user_id():
     '''Moke firebase response after token verification.
-    
+
     Invalid token: no field "user_id" in JSON response.
     '''
     return {
-    'iss': 'https://securetoken.google.com/your-project-id',
-    'aud': 'your-project-id',
-    'auth_time': 1672531200,
-    'sub': 'phone-auth-uid-123',
-    'phone_number': '+79123456789',
-}
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'sub': 'phone-auth-uid-123',
+        'phone_number': '+79123456789',
+    }
 
 
 @pytest.fixture
 def firebase_response_no_phone_number():
     '''Moke firebase response after token verification.
-    
+
     Invalid token: no field "phone_number" in JSON response.
     '''
     return {
-    'iss': 'https://securetoken.google.com/your-project-id',
-    'aud': 'your-project-id',
-    'auth_time': 1672531200,
-    'user_id': 'phone-auth-uid-123',
-    'sub': 'phone-auth-uid-123',
-}
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'user_id': 'phone-auth-uid-123',
+        'sub': 'phone-auth-uid-123',
+    }
 
 
 @pytest.fixture
 def firebase_response_bad_phone_number():
     '''Moke firebase response after token verification.
-    
+
     Invalid token: bad value in the field "phone_number" in JSON response.
     '''
     return {
-    'iss': 'https://securetoken.google.com/your-project-id',
-    'aud': 'your-project-id',
-    'auth_time': 1672531200,
-    'user_id': 'phone-auth-uid-123',
-    'sub': 'phone-auth-uid-123',
-    'phone_number': 'bad_phone_number',
-}
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'user_id': 'phone-auth-uid-123',
+        'sub': 'phone-auth-uid-123',
+        'phone_number': 'bad_phone_number',
+    }
 
 
 @pytest.fixture
@@ -134,7 +135,7 @@ def firebase_fb_response():
             },
             'sign_in_provider': 'facebook.com',
         }
-}
+    }
 
 
 @pytest.fixture
@@ -159,7 +160,7 @@ def firebase_fb_response_no_email():
             },
             'sign_in_provider': 'facebook.com',
         }
-}
+    }
 
 
 @pytest.fixture
@@ -184,7 +185,7 @@ def firebase_fb_response_bad_email():
             },
             'sign_in_provider': 'facebook.com',
         }
-}
+    }
 
 
 @pytest.fixture
@@ -206,7 +207,7 @@ def firebase_fb_response_no_names():
             },
             'sign_in_provider': 'facebook.com',
         }
-}
+    }
 
 
 @pytest.fixture
@@ -248,6 +249,7 @@ def invalid_firebase_token():
 @pytest.fixture
 def refresh_token(active_user):
     return RefreshToken.for_user(active_user).__str__()
+
 
 @pytest.fixture
 def refresh_token_for_user_with_registered_player(user_with_registered_player):
