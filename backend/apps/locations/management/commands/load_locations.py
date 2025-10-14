@@ -33,7 +33,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         '''Main command logic.'''
         file_path = options['file']
-        
+
         if options['clear']:
             self.clear_data()
             return

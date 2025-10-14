@@ -15,6 +15,7 @@ def generate_json_response(
 
     return None
 
+
 def raise_oauth_success(
     strategy, details, backend, user=None, *args, **kwargs
 ):
@@ -27,4 +28,4 @@ def raise_oauth_success(
              or not hasattr(strategy.request, 'via_access_token'))
     ):
         raise OAuthSuccessException()
-    return None 
+    return None

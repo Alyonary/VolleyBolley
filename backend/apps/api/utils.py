@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def get_serialized_data(user: User) -> LoginSerializer:
     """Get serialized data for response.
-    
+
     Returns a JSON response containing access_token, refresh_token,
     and player instance.
     """

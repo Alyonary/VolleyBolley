@@ -70,7 +70,7 @@ class InfoSectionAdmin(admin.ModelAdmin):
                 + '...'
             )
             if obj.content
-                and (
+            and (
                     len(obj.content)
                     > CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value
                 )

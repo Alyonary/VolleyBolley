@@ -11,7 +11,8 @@ from apps.players.constants import (
 from apps.players.models import Payment, Player, PlayerRating, PlayerRatingVote
 from apps.players.rating import GradeSystem
 
-logger = logging.getLogger(__name__) 
+logger = logging.getLogger(__name__)
+
 
 @receiver(post_save, sender=Player)
 def init_player_payments(sender, instance, created, **kwargs):
@@ -43,6 +44,7 @@ def create_player_rating_obj(sender, instance, created, **kwargs):
                 PlayerStrEnums.DEFAULT_GRADE.value
             ),
         )
+
 
 @receiver(post_save, sender=PlayerRatingVote)
 def update_player_rating_on_vote(sender, instance, created, **kwargs):

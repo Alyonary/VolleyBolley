@@ -135,7 +135,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer=self.get_serializer(instance)
+        serializer = self.get_serializer(instance)
 
         return Response(
             status=status.HTTP_200_OK, data=serializer.data
@@ -224,7 +224,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             data=request.data,
             context={
                 'request': request,
-                'player': player, 
+                'player': player,
                 'favorite': favorite
             }
         )

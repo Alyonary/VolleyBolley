@@ -11,21 +11,21 @@ logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
-username = os.getenv('DJANGO_SUPERUSER_USERNAME')
-first_name = os.getenv('DJANGO_SUPERUSER_FIRST_NAME')
-last_name = os.getenv('DJANGO_SUPERUSER_LAST_NAME')
-password = os.getenv('DJANGO_SUPERUSER_PASSWORD')
+username: str | None = os.getenv('DJANGO_SUPERUSER_USERNAME', None)
+first_name: str | None = os.getenv('DJANGO_SUPERUSER_FIRST_NAME', None)
+last_name: str | None = os.getenv('DJANGO_SUPERUSER_LAST_NAME', None)
+password: str | None = os.getenv('DJANGO_SUPERUSER_PASSWORD', None)
 
 
 def is_django_fully_ready() -> bool:
     """Comprehensive health check for Django application readiness.
-    
+
     Performs a series of critical checks to ensure Django is completely
     initialized and ready for database operations.
     This includes verifying that all applications are loaded,
     models are available, database connection is established,
     and essential database table (the User table) exists.
-    
+
     This function is designed to be used during application startup or by
     background processes that need guaranteed Django readiness before
     performing database operations like creating superusers.
@@ -37,7 +37,7 @@ def is_django_fully_ready() -> bool:
     Raises:
         Exception: With descriptive message if any readiness check fails:
             - If Django applications haven't finished loading
-            - If model registry isn't properly initialized  
+            - If model registry isn't properly initialized
             - If database connection cannot be established
             - If the User table doesn't exist in database
             - If using a non-PostgreSQL database
@@ -45,7 +45,7 @@ def is_django_fully_ready() -> bool:
     apps_ready = apps.ready
     models_ready = hasattr(apps, 'get_models') and callable(apps.get_models)
     db_connection = connection.ensure_connection
-    
+
     if not apps_ready:
         raise Exception('Apps are not ready.')
 
@@ -60,7 +60,7 @@ def is_django_fully_ready() -> bool:
             if connection.vendor == 'postgresql':
                 cursor.execute("""
                     SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
+                        SELECT FROM information_schema.tables
                         WHERE table_name = %s
                     );
                 """, [User._meta.db_table])
@@ -69,7 +69,7 @@ def is_django_fully_ready() -> bool:
                 if not exists:
                     err_msg = "There isn't user table in the database."
                     logger.error(err_msg)
-                    
+
                     raise Exception(err_msg)
 
                 logger.debug('connection is successful.')
@@ -78,7 +78,7 @@ def is_django_fully_ready() -> bool:
 
             err_msg = 'You are probably using not PostgreSQL database.'
             logger.error(err_msg)
-            
+
             raise Exception(err_msg)
 
     except Exception as e:
@@ -89,13 +89,13 @@ def is_django_fully_ready() -> bool:
 
 def wait_for_django_ready(max_retries: int = 10, delay: int = 1) -> bool:
     """Wait for Django and Database to be fully initialized.
-    
+
     This function periodically checks if Django has completed
     its initialization process and is ready to perform database operations.
     It's particularly useful for background tasks that need to ensure
     Django is fully set up before attempting to interact
     with the database or models.
-    
+
     The function will retry the readiness check multiple times
     with configurable delays between attempts, making it robust for scenarios
     where Django might be initializing concurrently with other processes.
@@ -103,11 +103,11 @@ def wait_for_django_ready(max_retries: int = 10, delay: int = 1) -> bool:
     Args:
         max_retries: Maximum number of readiness check attempts.
                      Defaults to 10 attempts.
-        delay: Time in seconds to wait between each retry attempt. 
+        delay: Time in seconds to wait between each retry attempt.
                Defaults to 1 second.
 
     Returns:
-        bool: True if Django becomes ready within the retry limit, 
+        bool: True if Django becomes ready within the retry limit,
               False if maximum retries are exceeded without success.
 
     Raises:
@@ -141,22 +141,22 @@ def wait_for_django_ready(max_retries: int = 10, delay: int = 1) -> bool:
 
 
 def create_superuser_with_settings_check(
-    username: str = username,
-    first_name: str = first_name,
-    last_name: str = last_name,
-    password: str = password
+    username: str | None = username,
+    first_name: str | None = first_name,
+    last_name: str | None = last_name,
+    password: str | None = password
 ) -> None:
     """Create a superuser automatically.
-    
+
     This function attempts to create a Django superuser using credentials from
     environment variables, but only if specific conditions are met.
-    
+
     The creation process will be skipped if:
     - AUTO_CREATE_DEFAULT_SUPERUSER setting is False
     - Any superuser already exists in the database
     - The requested username is already taken by another user
     - Required environment variables are missing or empty
-    
+
     Args:
         username: Superuser username from
                 DJANGO_SUPERUSER_USERNAME env variable
@@ -166,9 +166,9 @@ def create_superuser_with_settings_check(
                 DJANGO_SUPERUSER_LAST_NAME env variable
         password: Superuser password from
                 DJANGO_SUPERUSER_PASSWORD env variable
-        
+
     Returns: None
-        
+
     Raises:
         django.db.DatabaseError: If database operations fail
         Exception: For unexpected errors during user creation
@@ -181,7 +181,7 @@ def create_superuser_with_settings_check(
     Note:
         Environment variables should be set before calling this function:
         - DJANGO_SUPERUSER_USERNAME
-        - DJANGO_SUPERUSER_FIRST_NAME  
+        - DJANGO_SUPERUSER_FIRST_NAME
         - DJANGO_SUPERUSER_LAST_NAME
         - DJANGO_SUPERUSER_PASSWORD
 
@@ -233,7 +233,6 @@ def create_superuser_with_settings_check(
         'Superuser auto creation failed: '
         f'username - {username}, first name - {first_name}, '
         f'last name - {last_name}, '
-        f'password - {password[0:3]}***.'
     )
 
     return

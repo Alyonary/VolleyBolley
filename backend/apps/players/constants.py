@@ -33,6 +33,7 @@ class PlayerIntEnums(IntEnum):
     PLAYER_VOTE_LIMIT = 2
     RATING_PERIOD_DAYS = 60
 
+
 class Genders(models.TextChoices):
     """Gender enums for player."""
 
@@ -43,10 +44,11 @@ class Genders(models.TextChoices):
 class PlayerStrEnums(Enum):
 
     DEFAULT_BIRTHDAY = '2000-01-01'
-    DEFAULT_GENDER = Genders.MALE.value
-    DEFAULT_GRADE = Grades.LIGHT.value
+    DEFAULT_GENDER = Genders.MALE
+    DEFAULT_GRADE = Grades.LIGHT
     DEFAULT_FIRST_NAME = 'Anonym'
     DEFAULT_LAST_NAME = 'Anonym'
+
 
 class Payments(models.TextChoices):
     """Payments types."""

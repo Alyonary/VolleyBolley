@@ -22,7 +22,7 @@ class UsersConfig(AppConfig):
             if wait_for_django_ready():
                 create_superuser_with_settings_check()
 
-        # Create superuser in a separate thread 
+        # Create superuser in a separate thread
         thread = threading.Thread(target=initialize, daemon=True)
         thread.start()
 
