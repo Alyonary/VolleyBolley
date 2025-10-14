@@ -120,9 +120,9 @@ class GameInvitation(m.Model):
         verbose_name_plural = _('Game invitations')
 
     def __str__(self):
-        discription = str(_(
-            f'Invitation in {self.game} for {self.invited}'))
-        return discription
+        return str(_(
+            f'Invitation in {self.game} for {self.invited}'
+        ))
 
 
 class Game(EventMixin, CreatedUpdatedMixin):

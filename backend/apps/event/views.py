@@ -66,11 +66,11 @@ class GameViewSet(GenericViewSet,
         """Creates invitations to the game for players on the list."""
         game_id = self.get_object().id
         host_id = request.user.player.id
-        for id in request.data['players']:
+        for player_id in request.data['players']:
             serializer = self.get_serializer(
                     data={
                         'host': host_id,
-                        'invited': id,
+                        'invited': player_id,
                         'game': game_id
                     }
             )

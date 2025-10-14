@@ -7,7 +7,7 @@ from apps.notifications.constants import NotificationTypes
 from apps.notifications.tasks import send_event_notification_task
 
 
-def schedule_event_notifications(instance, event_type):
+def schedule_event_notifications(instance, event_type):  # noqa: RET503
     """
     Schedule notifications for the event (Game or Tourney).
     Sends notifications 1 hour and 1 day before the event start time.
@@ -33,15 +33,18 @@ def schedule_event_notifications(instance, event_type):
             eta=notify_day
             )
 
+
 @receiver(post_save, sender=Game)
 def game_created_handler(sender, instance, created, **kwargs):
     if created:
         schedule_event_notifications(instance, event_type='game')
 
+
 @receiver(post_save, sender=Tourney)
 def tourney_created_handler(sender, instance, created, **kwargs):
     if created:
         schedule_event_notifications(instance, event_type='tourney')
+
 
 @receiver(post_save, sender=GameInvitation)
 def game_invitation_created_handler(sender, instance, created, **kwargs):

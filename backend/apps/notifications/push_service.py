@@ -330,10 +330,9 @@ class PushService:
         Returns:
             Notification: NotificationsBase object with title, body, screen.
         """
-        notification = NotificationsBase.objects.get(
+        return NotificationsBase.objects.get(
             type=notification_type
         )
-        return notification
 
     @service_required
     def send_push_notifications(
