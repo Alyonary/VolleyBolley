@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'django_filters',
     'drf_yasg',
+    'django_prometheus',
 ]
 
 USE_X_FORWARDED_HOST = True

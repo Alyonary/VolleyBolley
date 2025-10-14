@@ -22,6 +22,7 @@ urlpatterns = [
         TemplateView.as_view(template_name='index.html'),
         name='index'
     ),
+    path('', include('django_prometheus.urls')),
 ]
 
 if settings.DEBUG:
