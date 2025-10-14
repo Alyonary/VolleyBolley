@@ -14,10 +14,10 @@ class GameQuerySet(m.query.QuerySet):
         city = getattr(player, 'city', None)
         if country is None or city is None:
             return self
-        elif player.country.name == 'Cyprus':
+        if player.country.name == 'Cyprus':
             return self.filter(
                 court__location__country=player.country)
-        elif player.country.name == 'Thailand':
+        if player.country.name == 'Thailand':
             return self.filter(court__location__city=player.city)
         return self
 

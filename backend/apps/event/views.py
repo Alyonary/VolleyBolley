@@ -46,17 +46,16 @@ class GameViewSet(GenericViewSet,
                             'joining_game'):
             return GameDetailSerializer
 
-        elif self.action == 'invite_players':
+        if self.action == 'invite_players':
             return GameInviteSerializer
 
-        elif self.action in (
+        if self.action in (
                             'my_games',
                             'archive',
                             'invites',
                             'upcoming'):
             return GameShortSerializer
-        else:
-            return GameSerializer
+        return GameSerializer
 
     @action(
         methods=['post'],

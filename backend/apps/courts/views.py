@@ -24,11 +24,11 @@ class CourtViewSet(ModelViewSet):
         if country is None or city is None:
             return super().get_queryset()
 
-        elif country.name == 'Cyprus':
+        if country.name == 'Cyprus':
             return super().get_queryset().filter(
                 location__country=country)
 
-        elif country.name == 'Thailand':
+        if country.name == 'Thailand':
             return super().get_queryset().filter(
                 location__city=city)
         return super().get_queryset()

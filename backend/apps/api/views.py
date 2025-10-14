@@ -190,10 +190,9 @@ class GoogleLogin(APIView):
                         request.data['access_token']
                     )
 
-                else:
-                    raise ValidationError('Empty token.')
+                raise ValidationError('Empty token.')
 
-            elif 'id_token' in data:
+            if 'id_token' in data:
                 if data['id_token']:
                     logger.info(
                         'Starting authentication via google id_token.'
@@ -201,15 +200,13 @@ class GoogleLogin(APIView):
 
                     return self._auth_via_id_token(data['id_token'])
 
-                else:
-                    raise ValidationError('Empty token.')
+                raise ValidationError('Empty token.')
 
-            else:
-                logger.info(
-                    'Redirected to authenticate via google without token.'
-                )
+            logger.info(
+                'Redirected to authenticate via google without token.'
+            )
 
-                return redirect('api:social:begin', backend='google-oauth2')
+            return redirect('api:social:begin', backend='google-oauth2')
 
         except ValidationError as e:
             error_msg = f'validation error: {e}.'

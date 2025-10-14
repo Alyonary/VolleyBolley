@@ -131,7 +131,7 @@ class GradeSystem:
         )
         if level_change == cls.UP:
             return 1 * coefficient
-        elif level_change == cls.DOWN:
+        if level_change == cls.DOWN:
             return -1 * coefficient
         raise InvalidRatingError(
             f'Invalid level_change value: {level_change}.'
