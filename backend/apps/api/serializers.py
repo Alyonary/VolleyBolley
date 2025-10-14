@@ -74,16 +74,16 @@ class FirebaseBaseSerializer(serializers.Serializer):
 
     def extract_name_last_name(
         self, validated_data: dict[str, Any]
-    ) -> tuple[str]:
+    ) -> tuple[str, str]:
         """Extract users first and last names from Firebase id_token.
-        
+
         Returns:
             The tuple (first_name, last_name).
         """
-        first_name = validated_data.get('given_name')
-        last_name = validated_data.get('family_name')
-        full_name = validated_data.get('name')
-        email = validated_data.get('email')
+        first_name: str | None = validated_data.get('given_name')
+        last_name: str | None = validated_data.get('family_name')
+        full_name: str | None = validated_data.get('name')
+        email: str | None = validated_data.get('email')
 
         if first_name and last_name:
             return first_name, last_name
@@ -101,10 +101,10 @@ class FirebaseBaseSerializer(serializers.Serializer):
             PlayerStrEnums.DEFAULT_FIRST_NAME.value,
             PlayerStrEnums.DEFAULT_LAST_NAME.value
         )
-    
-    def configure_from_email(self, email: str) -> tuple[str]:
+
+    def configure_from_email(self, email: str) -> tuple[str, str]:
         """Configure first_name, last_name from users email.
-        
+
         Returns:
             The tuple (first_name, last_name).
         """
@@ -163,3 +163,7 @@ class FirebaseFacebookSerializer(FirebaseBaseSerializer):
             'first_name': first_name,
             'last_name': last_name,
         }
+
+
+class FirebaseGoogleSerializer(FirebaseFacebookSerializer):
+    """Serialize Firebase user data for auth via google."""
