@@ -211,7 +211,9 @@ class GameInviteSerializer(s.ModelSerializer):
     def validate(self, attrs):
         host = attrs.get('host')
         invited = attrs.get('invited')
-        game = Game.objects.get(pk=attrs.get('object_id'))
+        content = attrs.get('content_type')
+        game = content.get_object_for_this_type(pk=attrs.get('object_id'))
+        #game = Game.objects.get(pk=attrs.get('object_id'))
         levels = [level.name for level in game.player_levels.all()]
         if host == invited:
             raise s.ValidationError(
@@ -248,14 +250,7 @@ class GameShortSerializer(s.ModelSerializer):
             'start_time',
             'end_time'
         ]
-        read_only_fields = [
-            'game_id',
-            'host',
-            'court_location',
-            'message',
-            'start_time',
-            'end_time'
-        ]
+        read_only_fields = fields
 
 
 class TourneyTeamSerializer(s.Serializer):
@@ -270,9 +265,8 @@ class TourneyTeamSerializer(s.Serializer):
 
 class BaseTourneySerializer(BaseEventSerializer):
     tournament_id = s.IntegerField(source='pk', read_only=True)
-    is_individual = s.BooleanField(default=False)
-    maximum_players = s.IntegerField()
-    maximum_teams = s.IntegerField()
+    is_individual = s.BooleanField()
+    maximum_teams = s.IntegerField(required=False, allow_null=True)
 
     class Meta:
         model = Tourney
@@ -295,7 +289,7 @@ class BaseTourneySerializer(BaseEventSerializer):
     def validate_maximum_teams(self, value):
         minimal = EventIntEnums.MIN_TEAMS.value
         maximal = EventIntEnums.MAX_TEAMS.value
-        if not (minimal <= value <= maximal):
+        if value is not None and not (minimal <= value <= maximal):
             raise s.ValidationError(
                 f'Number of teams must be between {minimal} and {maximal}!')
         return value
@@ -320,6 +314,7 @@ class TourneySerializer(BaseTourneySerializer):
         model = BaseTourneySerializer.Meta.model
         fields = BaseTourneySerializer.Meta.fields + [
             'court_id',
+            'teams',
             'players'
         ]
 
@@ -338,7 +333,7 @@ class TourneySerializer(BaseTourneySerializer):
             **validated_data)
 
         # tourney.players.add(host)
-        tourney.player_levels.set(levels)
+        
 
         if validated_data['is_individual']:
             TourneyTeam.objects.create(
@@ -350,28 +345,32 @@ class TourneySerializer(BaseTourneySerializer):
             for x in range(max_teams):
                 TourneyTeam.objects.create(tourney=tourney)
 
+        tourney.player_levels.set(levels)
+        tourney_ct = ContentType.objects.get_for_model(Tourney)
         for player in players:
             serializer = GameInviteSerializer(
                 data={
                     'host': tourney.host.id,
                     'invited': player.id,
-                    'game': tourney.id
+                    "content_type": tourney_ct.id,
+                    "object_id": tourney.id
                 },
                 context=self.context
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
+        
         return tourney
 
-    def validate_players(self, value):
-        host = self.context['request'].user.player
-        if host in value:
-            raise s.ValidationError(
-                'You can not invite yourself.')
-        if len(value) != len(set(value)):
-            raise s.ValidationError(
-                'The players should not repeat themselves.')
-        return value
+    # def validate_players(self, value):
+    #     host = self.context['request'].user.player
+    #     if host in value:
+    #         raise s.ValidationError(
+    #             'You can not invite yourself.')
+    #     if len(value) != len(set(value)):
+    #         raise s.ValidationError(
+    #             'The players should not repeat themselves.')
+    #     return value
 
 
 # class TourneyDetailSerializer(BaseTourneySerializer):

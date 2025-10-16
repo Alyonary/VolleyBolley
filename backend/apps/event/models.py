@@ -116,7 +116,7 @@ class GameManager(m.Manager):
 
 
 class GameInvitation(m.Model):
-    """Invitation to game model."""
+    """Invitation to game or tourney model."""
 
     host = m.ForeignKey(
         'players.Player',
@@ -129,11 +129,16 @@ class GameInvitation(m.Model):
         on_delete=m.CASCADE,
         related_name='invited'
     )
-
-    content_type = m.ForeignKey(ContentType, on_delete=m.CASCADE)
+    content_type = m.ForeignKey(
+        ContentType,
+        on_delete=m.CASCADE
+    )
     object_id = m.PositiveBigIntegerField()
-    content_object = GenericForeignKey("content_type", "object_id")
 
+    content_object = GenericForeignKey(
+        "content_type",
+        "object_id"
+    )
     objects = EventInvitesManager()
 
     class Meta:
@@ -196,7 +201,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
     maximum_teams = m.PositiveIntegerField(
         verbose_name=_('Maximum of teams'),
         blank=True,
-        null=False
+        null=True
     )
 
     class Meta:
