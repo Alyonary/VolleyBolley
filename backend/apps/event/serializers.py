@@ -1,3 +1,4 @@
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers as s
@@ -7,7 +8,7 @@ from apps.core.models import CurrencyType, GameLevel
 from apps.courts.models import Court
 from apps.courts.serializers import LocationSerializer
 from apps.event.enums import EventIntEnums
-from apps.event.models import Game, GameInvitation, Tourney
+from apps.event.models import Game, GameInvitation, Tourney, TourneyTeam
 from apps.players.models import Payment, Player
 from apps.players.serializers import PlayerGameSerializer
 
@@ -36,7 +37,7 @@ class BaseEventSerializer(s.ModelSerializer):
     )
 
     maximum_players = s.IntegerField(
-        source='max_players'
+        source='max_players',
     )
 
     def get_currency_type(self):
@@ -147,12 +148,14 @@ class GameSerializer(BaseGameSerializer):
 
         game.players.add(host)
         game.player_levels.set(levels)
+        game_ct = ContentType.objects.get_for_model(Game)
         for player in players:
             serializer = GameInviteSerializer(
                 data={
                     'host': game.host.id,
                     'invited': player.id,
-                    'game': game.id
+                    "content_type": game_ct.id,
+                    "object_id": game.id
                 },
                 context=self.context
             )
@@ -195,11 +198,12 @@ class GameInviteSerializer(s.ModelSerializer):
 
     class Meta:
         model = GameInvitation
-        fields = ('host', 'invited', 'game')
+        fields = ('host', 'invited', 'content_type', 'object_id')
+        write_only_fields = fields
         validators = [
             s.UniqueTogetherValidator(
                 queryset=GameInvitation.objects.all(),
-                fields=('host', 'invited', 'game'),
+                fields=('host', 'invited', 'content_type', 'object_id'),
                 message=_('This invitation already exists!'),
             )
         ]
@@ -207,7 +211,7 @@ class GameInviteSerializer(s.ModelSerializer):
     def validate(self, attrs):
         host = attrs.get('host')
         invited = attrs.get('invited')
-        game = attrs.get('game')
+        game = Game.objects.get(pk=attrs.get('object_id'))
         levels = [level.name for level in game.player_levels.all()]
         if host == invited:
             raise s.ValidationError(
@@ -254,11 +258,21 @@ class GameShortSerializer(s.ModelSerializer):
         ]
 
 
+class TourneyTeamSerializer(s.Serializer):
+
+    # players = s.PrimaryKeyRelatedField(
+    #     queryset=Player.objects.all())
+
+    class Meta:
+        model = TourneyTeam
+        fields = '__all__'
+
+
 class BaseTourneySerializer(BaseEventSerializer):
     tournament_id = s.IntegerField(source='pk', read_only=True)
     is_individual = s.BooleanField(default=False)
-    maximum_players = s.IntegerField(null=False, blank=True, required=False)
-    maximum_teams = s.IntegerField(null=False, blank=True, required=False)
+    maximum_players = s.IntegerField()
+    maximum_teams = s.IntegerField()
 
     class Meta:
         model = Tourney
@@ -293,12 +307,14 @@ class TourneySerializer(BaseTourneySerializer):
     players = s.PrimaryKeyRelatedField(
         queryset=Player.objects.all(),
         many=True,
-        required=False
+        required=False,
+        write_only=True
     )
     court_id = s.PrimaryKeyRelatedField(
         source='court',
         queryset=Court.objects.all()
     )
+    teams = TourneyTeamSerializer(many=True, read_only=True)
 
     class Meta(BaseTourneySerializer.Meta):
         model = BaseTourneySerializer.Meta.model
@@ -308,87 +324,87 @@ class TourneySerializer(BaseTourneySerializer):
         ]
 
     def create(self, validated_data):
-        request = self.context.get('request')
-
-        if not request or not hasattr(request.user, 'player'):
-            from apps.players.models import Player
-            host = Player.objects.first()
-        else:
-            host = request.user.player
-
+        host = self.context['request'].user.player
         validated_data['host'] = host
-        players = validated_data.pop('players', [])
-        levels = validated_data.pop('player_levels', [])
-        validated_data.pop('currency_type', None)
-        validated_data.pop('payment_account', None)
+        players = validated_data.pop('players')
+        levels = validated_data.pop('player_levels')
 
         tourney = Tourney.objects.create(
-            currency_type=self.get_currency_type(host),
-            payment_account=self.get_payment_account(
-                host, validated_data['payment_type']
-            ),
-            **validated_data
-        )
+            currency_type=self.get_currency_type(),
 
-        tourney.players.add(host, *players)
+            payment_account=self.get_payment_account(
+                validated_data['payment_type']
+            ),
+            **validated_data)
+
+        # tourney.players.add(host)
         tourney.player_levels.set(levels)
+
+        if validated_data['is_individual']:
+            TourneyTeam.objects.create(
+                tourney=tourney
+            )
+            tourney.maximum_teams = 1
+        else:
+            max_teams = int(validated_data['maximum_teams'])
+            for x in range(max_teams):
+                TourneyTeam.objects.create(tourney=tourney)
+
+        for player in players:
+            serializer = GameInviteSerializer(
+                data={
+                    'host': tourney.host.id,
+                    'invited': player.id,
+                    'game': tourney.id
+                },
+                context=self.context
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
         return tourney
 
-    def get_currency_type(self, host):
-        try:
-            return CurrencyType.objects.get(country=host.country)
-        except CurrencyType.DoesNotExist as e:
+    def validate_players(self, value):
+        host = self.context['request'].user.player
+        if host in value:
             raise s.ValidationError(
-                f'{e}: Currency for country {host.country} was not found.'
-            ) from e
-
-    def get_payment_account(self, host, payment_type):
-        if payment_type == 'CASH':
-            return 'Cash money'
-        payment = Payment.objects.filter(
-            player=host, payment_type=payment_type
-        ).last()
-        if payment is None:
+                'You can not invite yourself.')
+        if len(value) != len(set(value)):
             raise s.ValidationError(
-                'No payment account found for this payment type'
-            )
-        elif payment.payment_account is None:
-            return 'Not defined'
-        else:
-            return payment.payment_account
+                'The players should not repeat themselves.')
+        return value
 
 
-class TourneyDetailSerializer(BaseTourneySerializer):
-    """Serializer for viewing tournament details."""
+# class TourneyDetailSerializer(BaseTourneySerializer):
+#     """Serializer for viewing tournament details."""
 
-    host = PlayerGameSerializer()
-    court_location = LocationSerializer(source='court.location')
-    players = PlayerGameSerializer(many=True)
+#     host = PlayerGameSerializer()
+#     court_location = LocationSerializer(source='court.location')
+#     players = PlayerGameSerializer(many=True)
 
-    class Meta(BaseTourneySerializer.Meta):
-        model = BaseTourneySerializer.Meta.model
-        fields = BaseTourneySerializer.Meta.fields + [
-            'host',
-            'court_location',
-            'players'
-        ]
+#     class Meta(BaseTourneySerializer.Meta):
+#         model = BaseTourneySerializer.Meta.model
+#         fields = BaseTourneySerializer.Meta.fields + [
+#             'host',
+#             'court_location',
+#             'players'
+#         ]
 
 
-class TourneyShortSerializer(s.ModelSerializer):
-    tournament_id = s.IntegerField(source='pk')
-    host = PlayerGameSerializer()
-    court_location = LocationSerializer(source='court.location')
-    start_time = s.DateTimeField(format='iso-8601')
-    end_time = s.DateTimeField(format='iso-8601')
+# class TourneyShortSerializer(s.ModelSerializer):
+#     tournament_id = s.IntegerField(source='pk')
+#     host = PlayerGameSerializer()
+#     court_location = LocationSerializer(source='court.location')
+#     start_time = s.DateTimeField(format='iso-8601')
+#     end_time = s.DateTimeField(format='iso-8601')
 
-    class Meta:
-        model = Tourney
-        fields = [
-            'tournament_id',
-            'host',
-            'court_location',
-            'message',
-            'start_time',
-            'end_time'
-        ]
-        read_only_fields = fields
+#     class Meta:
+#         model = Tourney
+#         fields = [
+#             'tournament_id',
+#             'host',
+#             'court_location',
+#             'message',
+#             'start_time',
+#             'end_time'
+#         ]
+#         read_only_fields = fields

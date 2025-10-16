@@ -89,10 +89,8 @@ class TestGameAPI:
         assert response.status_code == status.HTTP_201_CREATED
         assert GameInvitation.objects.count() == len(player_ids)
         for user in player_ids:
-            invite = GameInvitation.objects.filter(
-                host=game_thailand.host,
-                invited=user,
-                game=game_thailand
+            invite = game_thailand.event_invites.filter(
+                invited=user
             ).first()
             assert invite is not None
 
@@ -104,7 +102,7 @@ class TestGameAPI:
         GameInvitation.objects.create(
             host=game_thailand.host,
             invited=player_cyprus,
-            game=game_thailand
+            content_object=game_thailand
         )
         url = reverse(
             'api:games-joining-game', args=(game_thailand.id,))
@@ -126,7 +124,7 @@ class TestGameAPI:
         GameInvitation.objects.create(
             host=game_thailand.host,
             invited=player_cyprus,
-            game=game_thailand
+            content_object=game_thailand
         )
         url = reverse(
             'api:games-delete-invitation',
@@ -387,7 +385,7 @@ class TestGameFiltering:
             game_cyprus
     ):
         GameInvitation.objects.create(
-            game=game_cyprus,
+            content_object=game_cyprus,
             host=game_cyprus.host,
             invited=player_thailand
         )
@@ -437,7 +435,7 @@ class TestGameFiltering:
         assert not games
 
         GameInvitation.objects.create(
-            game=game_thailand,
+            content_object=game_thailand,
             host=game_thailand.host,
             invited=player_thailand_female_pro
         )

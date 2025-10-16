@@ -1,7 +1,7 @@
 from django.core.validators import MaxLengthValidator
 from django.db import models as m
 from django.utils.translation import gettext_lazy as _
-
+from django.contrib.contenttypes.fields import GenericRelation
 from apps.core.constants import GenderChoices
 from apps.event.enums import EventIntEnums
 from apps.players.constants import Payments
@@ -39,6 +39,8 @@ class EventMixin(m.Model):
     )
     max_players = m.PositiveIntegerField(
         verbose_name=_('Maximum of players'),
+        blank=True,
+        null=False
     )
     price_per_person = m.DecimalField(
         verbose_name=_('Price per person'),
@@ -70,6 +72,7 @@ class EventMixin(m.Model):
         verbose_name=_('Active'),
         default=True,
     )
+    event_invites = GenericRelation('event.GameInvitation')
 
     class Meta:
         abstract = True

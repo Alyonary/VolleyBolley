@@ -1,3 +1,5 @@
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models as m
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -33,7 +35,7 @@ class GameQuerySet(m.query.QuerySet):
     def invited_games(self, player):
         return self.player_located_games(
             player).future_games().filter(
-                game_invites__invited=player)
+                event_invites__invited=player)
 
     def upcomming_games(self, player):
         return self.player_related_games(player).future_games()
@@ -50,6 +52,25 @@ class GameQuerySet(m.query.QuerySet):
             player).filter(
             start_time__lt=current_time).order_by(
                 '-end_time')
+
+
+class EventInvitesManager(m.Manager):
+    def count_events(self, player):
+        """
+        The method retrieves the number of events which the player was invited.
+
+        Parameters:
+        - player: Player object.
+
+        Returns:
+        The number of unique objects (games and tournaments)
+        for which the player has received invitations.
+        """
+        distinct_invites = self.filter(
+            invited=player).values(
+                'content_type', 'object_id').distinct().count()
+
+        return distinct_invites
 
 
 class GameManager(m.Manager):
@@ -109,11 +130,11 @@ class GameInvitation(m.Model):
         related_name='invited'
     )
 
-    game = m.ForeignKey(
-        'event.Game',
-        on_delete=m.CASCADE,
-        related_name='game_invites'
-    )
+    content_type = m.ForeignKey(ContentType, on_delete=m.CASCADE)
+    object_id = m.PositiveBigIntegerField()
+    content_object = GenericForeignKey("content_type", "object_id")
+
+    objects = EventInvitesManager()
 
     class Meta:
         verbose_name = _('Game invitation')
@@ -121,7 +142,7 @@ class GameInvitation(m.Model):
 
     def __str__(self):
         discription = str(_(
-            f'Invitation in {self.game} for {self.invited}'))
+            f'Invitation in {self.content_object} for {self.invited}'))
         return discription
 
 
@@ -174,6 +195,8 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
     )
     maximum_teams = m.PositiveIntegerField(
         verbose_name=_('Maximum of teams'),
+        blank=True,
+        null=False
     )
 
     class Meta:

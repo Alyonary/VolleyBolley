@@ -50,8 +50,7 @@ class TourneyAdmin(BaseEventAdmin):
 
 @admin.register(GameInvitation)
 class GameInvitationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'game', 'host', 'invited')
-    search_fields = ('game', 'host', 'invited')
-    ordering = ('game',)
+    list_display = ('id', 'content_object', 'host', 'invited')
+    search_fields = ('content_object', 'host', 'invited')
     empty_value_display = _('Not defined')
     list_per_page = EventIntEnums.ADMIN_LIST_PER_PAGE.value

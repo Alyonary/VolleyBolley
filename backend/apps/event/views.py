@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
@@ -20,8 +20,8 @@ from apps.event.serializers import (
     GameSerializer,
     GameShortSerializer,
     TourneySerializer,
-    TourneyShortSerializer,
-    TourneyDetailSerializer
+    # TourneyShortSerializer,
+    # TourneyDetailSerializer
 )
 from apps.event.utils import procces_rate_players_request
 
@@ -69,15 +69,17 @@ class GameViewSet(GenericViewSet,
     )
     def invite_players(self, request, *args, **kwargs):
         """Creates invitations to the game for players on the list."""
-        game_id = self.get_object().id
+        game = self.get_object()
         host_id = request.user.player.id
-        for id in request.data['players']:
+        game_ct = ContentType.objects.get_for_model(Game)
+        for invited in request.data['players']:
             serializer = self.get_serializer(
                 data={
                     'host': host_id,
-                    'invited': id,
-                    'game': game_id
-                }
+                    'invited': invited,
+                    "content_type": game_ct.id,
+                    "object_id": game.id
+                },
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -96,8 +98,7 @@ class GameViewSet(GenericViewSet,
             upcoming_game_time = upcoming_game.start_time
         else:
             upcoming_game_time = None
-        invites = GameInvitation.objects.filter(
-            invited=request.user.player).values('game').distinct().count()
+        invites = GameInvitation.objects.count_events(request.user.player)
         return Response(
             data={'upcoming_game_time': upcoming_game_time,
                   'invites': invites}, status=status.HTTP_200_OK)
@@ -168,8 +169,7 @@ class GameViewSet(GenericViewSet,
         if game.max_players > game.players.count():
             is_joined = {'is_joined': True}
             game.players.add(player)
-            GameInvitation.objects.filter(
-                Q(game=game) & Q(invited=player)).delete()
+            game.event_invites.filter(invited=player).delete()
         else:
             is_joined = {'is_joined': False}
         serializer = self.get_serializer(
@@ -187,8 +187,7 @@ class GameViewSet(GenericViewSet,
     def delete_invitation(self, request, *args, **kwargs):
         game = self.get_object()
         player = request.user.player
-        delete_count, dt = GameInvitation.objects.filter(
-            Q(game=game) & Q(invited=player)).delete()
+        delete_count, dt = game.event_invites.filter(invited=player).delete()
         if not delete_count:
             return Response(
                 data={'error': _('The invitation does not exist!')},
@@ -233,13 +232,13 @@ class TourneyViewSet(
     #     ).select_related('host', 'court').prefetch_related('players')
 
     def get_serializer_class(self):
-        if self.action in ('retrieve', 'join_tournament'):
-            return TourneyDetailSerializer
-        elif self.action in (
-                'my_tournaments', 'archive', 'invites', 'upcoming'):
-            return TourneyShortSerializer
-        else:
-            return TourneySerializer
+        # if self.action in ('retrieve', 'join_tournament'):
+        #     return TourneyDetailSerializer
+        # elif self.action in (
+        #         'my_tournaments', 'archive', 'invites', 'upcoming'):
+        #     return TourneyShortSerializer
+        # else:
+        return TourneySerializer
 
     # @action(methods=['get'], detail=False, url_path='my-tournaments')
     # def my_tournaments(self, request, *args, **kwargs):
@@ -288,4 +287,3 @@ class TourneyViewSet(
     #     data = serializer.data.copy()
     #     data.update({'is_joined': is_joined})
     #     return Response(data, status=status.HTTP_200_OK)
-
