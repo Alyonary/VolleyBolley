@@ -140,7 +140,7 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         read_only_fields = (
             'gender',
             'level',
-            'avatar'     
+            'avatar'
         )
 
     def update(self, instance, validated_data):
@@ -329,6 +329,7 @@ class PlayerGameSerializer(PlayerAuthSerializer):
     level = serializers.CharField(
         source='rating.grade', read_only=True
     )
+
     class Meta:
         model = Player
         fields = (
@@ -438,9 +439,9 @@ class PlayerRateItemSerializer(serializers.Serializer):
             )
         try:
             value = GradeSystem.get_value(
-                rater = rater_player,
-                rated = rated_player,
-                level_change = data['level_changed']
+                rater=rater_player,
+                rated=rated_player,
+                level_change=data['level_changed']
             ) 
             return {
                 'rater': rater_player.id,
@@ -449,6 +450,7 @@ class PlayerRateItemSerializer(serializers.Serializer):
             }
         except InvalidRatingError as e:
             raise e
+
 
 class PlayerRateSerializer(serializers.Serializer):
     """

@@ -113,11 +113,11 @@ class Player(models.Model):
         Returns a QuerySet of players whom rater_player can still rate
         (not more than 2 ratings in the last 2 months).
         """
-        
+
         period_start = timezone.now() - timedelta(
             days=PlayerIntEnums.RATING_PERIOD_DAYS
         )
-        
+
         return event.players.exclude(id=self.id).annotate(
             votes_from_me=models.Count(
                 'received_ratings',
@@ -127,6 +127,7 @@ class Player(models.Model):
                 )
             )
         ).filter(votes_from_me__lt=PlayerIntEnums.PLAYER_VOTE_LIMIT.value)
+
 
 class Payment(models.Model):
     """Players payment model."""
@@ -236,7 +237,7 @@ class PlayerRatingVote(models.Model):
     """
     Model for storing player-to-player rating votes.
 
-    Each vote is given by one player to another and affects the rated 
+    Each vote is given by one player to another and affects the rated
     player's rating. A player can rate another player no more than 2 times
     within 2 months.
     Used for rating calculations and level/grade progression.

@@ -1,3 +1,5 @@
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models as m
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -33,7 +35,7 @@ class GameQuerySet(m.query.QuerySet):
     def invited_games(self, player):
         return self.player_located_games(
             player).future_games().filter(
-                game_invites__invited=player)
+                event_invites__invited=player)
 
     def upcomming_games(self, player):
         return self.player_related_games(player).future_games()
@@ -50,6 +52,25 @@ class GameQuerySet(m.query.QuerySet):
             player).filter(
             start_time__lt=current_time).order_by(
                 '-end_time')
+
+
+class EventInvitesManager(m.Manager):
+    def count_events(self, player):
+        """
+        The method retrieves the number of events which the player was invited.
+
+        Parameters:
+        - player: Player object.
+
+        Returns:
+        The number of unique objects (games and tournaments)
+        for which the player has received invitations.
+        """
+        distinct_invites = self.filter(
+            invited=player).values(
+                'content_type', 'object_id').distinct().count()
+
+        return distinct_invites
 
 
 class GameManager(m.Manager):
@@ -95,7 +116,7 @@ class GameManager(m.Manager):
 
 
 class GameInvitation(m.Model):
-    """Invitation to game model."""
+    """Invitation to game or tourney model."""
 
     host = m.ForeignKey(
         'players.Player',
@@ -108,12 +129,17 @@ class GameInvitation(m.Model):
         on_delete=m.CASCADE,
         related_name='invited'
     )
-
-    game = m.ForeignKey(
-        'event.Game',
-        on_delete=m.CASCADE,
-        related_name='game_invites'
+    content_type = m.ForeignKey(
+        ContentType,
+        on_delete=m.CASCADE
     )
+    object_id = m.PositiveBigIntegerField()
+
+    content_object = GenericForeignKey(
+        "content_type",
+        "object_id"
+    )
+    objects = EventInvitesManager()
 
     class Meta:
         verbose_name = _('Game invitation')
@@ -121,7 +147,7 @@ class GameInvitation(m.Model):
 
     def __str__(self):
         discription = str(_(
-            f'Invitation in {self.game} for {self.invited}'))
+            f'Invitation in {self.content_object} for {self.invited}'))
         return discription
 
 
@@ -168,20 +194,37 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         blank=True,
         related_name='tournaments_host',
     )
-    players = m.ManyToManyField(
-        'players.Player',
-        verbose_name=_('Players'),
-        related_name='tournaments_players',
-    )
     is_individual = m.BooleanField(
         verbose_name=_('Individual format'),
         default=False,
     )
     maximum_teams = m.PositiveIntegerField(
         verbose_name=_('Maximum of teams'),
+        blank=True,
+        null=True
     )
 
     class Meta:
         verbose_name = _('Tourney')
         verbose_name_plural = _('Tourneys')
         default_related_name = 'tournaments'
+
+
+class TourneyTeam(m.Model):
+
+    tourney = m.ForeignKey(
+        Tourney,
+        verbose_name=_('Tourney is from'),
+        on_delete=m.CASCADE
+        )
+    players = m.ManyToManyField(
+        'players.Player',
+        verbose_name=_('Players'),
+        related_name='tourney_players',
+        blank=True
+    )
+
+    class Meta:
+        verbose_name = _('Tourney team')
+        verbose_name_plural = _('Tourney teams')
+        default_related_name = 'teams'

@@ -14,3 +14,4 @@ class EventIntEnums(IntEnum):
     MAX_PLAYERS = 24
     MAX_TEAMS = 24
     MIN_TEAMS = 3
+    TOURNEY_TEAM_CAPACITY = 2
