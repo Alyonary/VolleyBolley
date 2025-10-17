@@ -1,7 +1,8 @@
+from django.contrib.contenttypes.fields import GenericRelation
 from django.core.validators import MaxLengthValidator
 from django.db import models as m
 from django.utils.translation import gettext_lazy as _
-from django.contrib.contenttypes.fields import GenericRelation
+
 from apps.core.constants import GenderChoices
 from apps.event.enums import EventIntEnums
 from apps.players.constants import Payments

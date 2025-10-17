@@ -1,15 +1,16 @@
-from django.core.management.base import BaseCommand
-from django.contrib.auth import get_user_model
-from django.utils import timezone
 from datetime import timedelta
 
+from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
+from django.utils import timezone
+
 from apps.core.constants import GenderChoices
-from apps.locations.models import Country, City
 from apps.core.models import CurrencyType, GameLevel
 from apps.courts.models import Court, CourtLocation
-from apps.players.models import Player, Payment
-from apps.players.constants import Genders, Payments, PlayerStrEnums
 from apps.event.models import Tourney
+from apps.locations.models import City, Country
+from apps.players.constants import Genders, Payments, PlayerStrEnums
+from apps.players.models import Payment, Player
 
 User = get_user_model()
 
@@ -26,7 +27,8 @@ class Command(BaseCommand):
         thailand, _ = Country.objects.get_or_create(name='Thailand')
 
         paphos, _ = City.objects.get_or_create(name='Paphos', country=cyprus)
-        pattaya, _ = City.objects.get_or_create(name='Pattaya', country=thailand)
+        pattaya, _ = City.objects.get_or_create(
+            name='Pattaya', country=thailand)
 
         # Валюты
         eur, _ = CurrencyType.objects.get_or_create(
@@ -55,7 +57,11 @@ class Command(BaseCommand):
         # Пользователь + игрок
         user, _ = User.objects.get_or_create(
             username='testuser',
-            defaults={'first_name': 'Test', 'last_name': 'User', 'email': 'test@test.com'},
+            defaults={
+                'first_name': 'Test',
+                'last_name': 'User',
+                'email': 'test@test.com'
+            },
         )
         if not hasattr(user, "player"):
             player = Player.objects.create(

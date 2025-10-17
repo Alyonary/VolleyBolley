@@ -211,14 +211,27 @@ class GameInviteSerializer(s.ModelSerializer):
     def validate(self, attrs):
         host = attrs.get('host')
         invited = attrs.get('invited')
-        content = attrs.get('content_type')
-        game = content.get_object_for_this_type(pk=attrs.get('object_id'))
-        #game = Game.objects.get(pk=attrs.get('object_id'))
-        levels = [level.name for level in game.player_levels.all()]
+        content_type = attrs.get('content_type')
+        event = content_type.get_object_for_this_type(
+            pk=attrs.get('object_id'))
+
+        levels = [level.name for level in event.player_levels.all()]
+
+        if isinstance(event, Game):
+            players = event.players.all()
+        elif isinstance(event, Tourney):
+            player_ids = event.teams.all().values_list('players', flat=True)
+            players = Player.objects.filter(id__in=player_ids)
+        else:
+            raise s.ValidationError(
+                {'content_type': (f'{content_type.model_class()}'
+                                  ' is unknown object class.')}
+            )
+
         if host == invited:
             raise s.ValidationError(
                 {'invited': 'You can not invite yourself.'})
-        elif invited in game.players.all():
+        elif invited in players:
             raise s.ValidationError(
                 {'invited': 'This player is already participate in the game.'})
         elif invited.rating.grade not in levels:
@@ -255,18 +268,21 @@ class GameShortSerializer(s.ModelSerializer):
 
 class TourneyTeamSerializer(s.Serializer):
 
-    # players = s.PrimaryKeyRelatedField(
-    #     queryset=Player.objects.all())
+    team_id = s.IntegerField(source='id')
+    players = s.PrimaryKeyRelatedField(
+        queryset=Player.objects.all(), many=True)
 
     class Meta:
         model = TourneyTeam
-        fields = '__all__'
+        fields = ['team_id', 'players']
+        read_only_fields = fields
 
 
 class BaseTourneySerializer(BaseEventSerializer):
     tournament_id = s.IntegerField(source='pk', read_only=True)
     is_individual = s.BooleanField()
     maximum_teams = s.IntegerField(required=False, allow_null=True)
+    maximum_players = s.IntegerField(source='max_players', allow_null=True)
 
     class Meta:
         model = Tourney
@@ -294,6 +310,11 @@ class BaseTourneySerializer(BaseEventSerializer):
                 f'Number of teams must be between {minimal} and {maximal}!')
         return value
 
+    def validate_maximum_players(self, value):
+        if value is None:
+            return value
+        return super().validate_maximum_players(value)
+
 
 class TourneySerializer(BaseTourneySerializer):
     """Used for tournament creation."""
@@ -318,6 +339,22 @@ class TourneySerializer(BaseTourneySerializer):
             'players'
         ]
 
+    def validate(self, attrs):
+        if attrs['is_individual']:
+            attrs['maximum_teams'] = 1
+            if attrs['max_players'] is None:
+                raise s.ValidationError(
+                    {'maximum_players': 'The value must be integer.'}
+                )
+        else:
+            if attrs['maximum_teams'] is None:
+                raise s.ValidationError(
+                    {'maximum_teams': 'The value must be integer.'}
+                )
+            attrs['max_players'] = attrs[
+                'maximum_teams'] * EventIntEnums.TOURNEY_TEAM_CAPACITY
+        return attrs
+
     def create(self, validated_data):
         host = self.context['request'].user.player
         validated_data['host'] = host
@@ -332,18 +369,11 @@ class TourneySerializer(BaseTourneySerializer):
             ),
             **validated_data)
 
-        # tourney.players.add(host)
-        
-
-        if validated_data['is_individual']:
-            TourneyTeam.objects.create(
-                tourney=tourney
-            )
-            tourney.maximum_teams = 1
-        else:
-            max_teams = int(validated_data['maximum_teams'])
-            for x in range(max_teams):
-                TourneyTeam.objects.create(tourney=tourney)
+        max_teams = int(validated_data['maximum_teams'])
+        for _x in range(max_teams):
+            team = TourneyTeam.objects.create(tourney=tourney)
+            if _x == 0:
+                team.players.add(host)
 
         tourney.player_levels.set(levels)
         tourney_ct = ContentType.objects.get_for_model(Tourney)
@@ -359,7 +389,7 @@ class TourneySerializer(BaseTourneySerializer):
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
-        
+
         return tourney
 
     # def validate_players(self, value):
