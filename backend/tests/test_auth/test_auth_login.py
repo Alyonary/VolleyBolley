@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse, reverse_lazy
 from rest_framework import status
 
+from apps.players.models import Player
+
 User = get_user_model()
 
 
@@ -214,6 +216,7 @@ class TestPhoneNumberAuth:
             'city',
             'is_registered'
         }
+        user = Player.objects.filter(pk=player_json['player_id']).first().user
         for key in expected_keys:
             assert key in player_json
         assert player_json['avatar'] is None
@@ -225,6 +228,7 @@ class TestPhoneNumberAuth:
         assert player_json['country'] is None
         assert player_json['city'] is None
         assert player_json['is_registered'] is False
+        assert user.username == user.phone_number
 
     @pytest.mark.parametrize(
         'invalid_token_fixture,expected_status',
