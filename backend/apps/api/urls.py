@@ -15,6 +15,7 @@ from apps.api.views import (
     LogoutView,
     PhoneNumberLogin,
 )
+from apps.core.views import FAQView
 from apps.courts.views import CourtViewSet
 from apps.event.views import GameViewSet
 from apps.locations.views import CountryListView
@@ -86,4 +87,5 @@ urlpatterns = [
         schema_view.with_ui('redoc', cache_timeout=0),
         name='schema-redoc'
         ),
+    path('faq/', FAQView.as_view(), name='faq'),
 ]
