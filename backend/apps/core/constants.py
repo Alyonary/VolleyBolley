@@ -7,3 +7,5 @@ class GenderChoices(m.TextChoices):
     MIX = 'MIX', _('Mixed')
     MEN = 'MEN', _('Men')
     WOMEN = 'WOMEN', _('Women')
+
+DEFAULT_FAQ: str = 'default_faq'
