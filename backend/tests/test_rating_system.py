@@ -280,7 +280,6 @@ class TestGradeSystemDatabaseOperations:
                 ),
                 is_counted=False
             )
-            print(f'PLayer rated value {player1.rating.value}')
             
         player1.refresh_from_db()
         assert player1.rating.level_mark == 3

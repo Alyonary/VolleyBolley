@@ -24,6 +24,7 @@ scrape_configs:
         stream: stream
         attrs: attrs
         tag: attrs.tag
+        container: attrs.container
 
   - regex:
       expression: (?P<image_name>(?:[^|]*[^|])).(?P<container_name>(?:[^|]*[^|])).(?P<image_id>(?:[^|]*[^|])).(?P<container_id>(?:[^|]*[^|]))

@@ -7,7 +7,7 @@ services:
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
-      - ../monitoring/promtail-config.yaml:/etc/promtail/config.yml
+      - ../monitoring/promtail-config.yml:/etc/promtail/config.yml
     command: -config.file=/etc/promtail/config.yml
     privileged: true
 
@@ -17,7 +17,7 @@ services:
     ports:
       - "3100:3100"
     volumes:
-      - ../monitoring/loki-config.yaml:/etc/loki/local-config.yaml
+      - ../monitoring/loki-config.yml:/etc/loki/local-config.yml
 
   prometheus:
     image: prom/prometheus:latest
@@ -39,7 +39,7 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     volumes:
-      - ./grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+      - ../monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
       - grafanadata:/var/lib/grafana
 
   db:
@@ -163,3 +163,5 @@ volumes:
   redis_data:
   static:
   media:
+  grafanadata:
+  prometheusdata:
