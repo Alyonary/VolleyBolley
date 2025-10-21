@@ -7,13 +7,14 @@ def generate_json_response(
 ):
     """Lounge a pipeline to generate json response to client."""
     if not user:
-        return None
+        return
 
     serializer = get_serialized_data(user)
     strategy.request.oauth_response_data = serializer.data
     strategy.session_set('oauth_response_data', serializer.data)
 
-    return None
+    return
+
 
 def raise_oauth_success(
     strategy, details, backend, user=None, *args, **kwargs
@@ -27,4 +28,4 @@ def raise_oauth_success(
              or not hasattr(strategy.request, 'via_access_token'))
     ):
         raise OAuthSuccessException()
-    return None 
+    return

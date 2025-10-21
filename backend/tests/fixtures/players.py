@@ -118,6 +118,7 @@ def player_male_light(player_data):
     rating.save()
     return player
 
+
 @pytest.fixture
 def player_data_for_registration(countries_cities):
     return {
@@ -163,6 +164,7 @@ def player_not_default_data(countries_cities, active_user):
         ).first(),
 
     }
+
 
 @pytest.fixture
 def player_grade():

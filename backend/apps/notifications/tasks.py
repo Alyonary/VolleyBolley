@@ -55,7 +55,7 @@ def send_event_notification_task(self, event_id: int, notification_type: str):
                 'status': False,
                 'message': 'Push service is not available'
             }
-            
+
     return push_service.process_notifications_by_type(
         notification_type, event_id
     )
@@ -92,6 +92,7 @@ def retry_notification_task(self, token, notification_type, event_id=None):
             exc=e, countdown=RETRY_PUSH_TIME, max_retries=MAX_RETRIES - 1
         )
 
+
 @shared_task(bind=True)
 def inform_removed_players_task(
     self,
@@ -125,7 +126,7 @@ def procces_rate_notifications_for_recent_events():
     Find all games and tourneys ended an hour ago and send rate notifications.
     """
     from apps.event.models import Game, Tourney
-    
+
     hour_ago = timezone.now() - timedelta(hours=1)
     send_rate_notification_for_events(Game, hour_ago)
     send_rate_notification_for_events(Tourney, hour_ago)
@@ -134,12 +135,12 @@ def procces_rate_notifications_for_recent_events():
 def send_rate_notification_for_events(
     event_type: type,
     hour_ago: datetime
-    ) -> bool:
+) -> bool:
     """
     Sends notification to all players in the event to rate other players.
     """
     from apps.event.models import Game
-    
+
     events = event_type.objects.filter(
         end_time__gte=hour_ago,
         end_time__lt=timezone.now()
@@ -148,12 +149,12 @@ def send_rate_notification_for_events(
         notification_type = NotificationTypes.GAME_RATE
     else:
         notification_type = NotificationTypes.TOURNEY_RATE
-    
+
     for event in events:
         send_event_notification_task.delay(
             event.id,
             notification_type
-        )   
+        )
         event.is_active = False
         event.save()
     logger.info(
@@ -191,6 +192,7 @@ def create_notification_type_tables_task():
             f'Error initializing notification types: {str(e)}', exc_info=True
         )
         return False
+
 
 @worker_ready.connect
 def at_start(**kwargs):

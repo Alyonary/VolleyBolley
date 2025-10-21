@@ -8,6 +8,7 @@ from apps.locations.serializers import CountrySerializer
 
 class CountryListView(APIView):
     permission_classes = [AllowAny]
+
     def get(self, request):
         countries = Country.objects.prefetch_related('cities').all()
         serializer = CountrySerializer(countries, many=True)

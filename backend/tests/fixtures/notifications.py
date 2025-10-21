@@ -57,6 +57,7 @@ def users():
         'user4': user4, 'user5': user5, 'user6': user6
     }
 
+
 @pytest.fixture
 def players(users):
     """Creates test players associated with users."""
@@ -66,7 +67,7 @@ def players(users):
     player4 = Player.objects.create(user=users['user4'], is_registered=True)
     player5 = Player.objects.create(user=users['user5'], is_registered=True)
     player6 = Player.objects.create(user=users['user6'], is_registered=True)
-    
+
     return {
         'player1': player1, 'player2': player2, 'player3': player3,
         'player4': player4, 'player5': player5, 'player6': player6
@@ -81,25 +82,25 @@ def devices(players):
         player=players['player1'],
         is_active=True
     )
-    
+
     device2 = Device.objects.create(
         token='fcm_test_token_2',
         player=players['player2'],
         is_active=True
     )
-    
+
     device3 = Device.objects.create(
         token='fcm_test_token_3',
         player=players['player3'],
         is_active=False
     )
-    
+
     device4 = Device.objects.create(
         token='fcm_test_token_4',
         player=players['player3'],
         is_active=True
     )
-    
+
     return {
         'device1': device1,
         'device2': device2,
@@ -108,6 +109,7 @@ def devices(players):
         'all_devices': [device1, device2, device3, device4],
         'active_devices': [device1, device2, device4]
     }
+
 
 @pytest.fixture
 def sample_device(devices):
@@ -123,6 +125,7 @@ def device_tokens(devices):
         'all_tokens': [d.token for d in devices['all_devices']]
     }
 
+
 @pytest.fixture
 def fcm_token_data():
     """Returns a sample token data for FCM API tests."""
@@ -130,6 +133,7 @@ def fcm_token_data():
             'token': 'fcm-test-token-123',
             'platform': DeviceType.ANDROID
         }
+
 
 @pytest.fixture
 def fcm_token_url():
@@ -148,7 +152,7 @@ def user_with_player():
     """Create a user with player profile."""
     user = User.objects.create_user(
         username='testuser')
-    
+
     player = Player.objects.create(
         user=user,
         is_registered=True
@@ -176,12 +180,11 @@ def existing_device(user_with_registered_player):
     """Create an existing device for the second user."""
     player = user_with_registered_player.player
     token = 'existing-fcm-token'
-    device = Device.objects.create(
+    return Device.objects.create(
         token=token,
         player=player,
         platform=DeviceType.IOS
     )
-    return device
 
 
 @pytest.fixture
@@ -191,6 +194,7 @@ def invalid_fcm_token_data():
         {'platform': DeviceType.ANDROID},
         {'token': 'some-token', 'platform': 'invalid'}
     ]
+
 
 @pytest.fixture
 def all_notification_types(db):
@@ -207,19 +211,23 @@ def all_notification_types(db):
         notifications_objs[notif_type] = obj
     return notifications_objs
 
+
 @pytest.fixture
 def rate_notification_type(all_notification_types):
     return all_notification_types.get(NotificationTypes.GAME_RATE)
 
+
 @pytest.fixture
 def remove_notification_type(all_notification_types):
     return all_notification_types.get(NotificationTypes.GAME_REMOVED)
+
 
 @pytest.fixture
 def in_game_notification_type(all_notification_types):
     obj = all_notification_types.get(NotificationTypes.GAME_REMINDER)
     assert obj is not None, "GAME_REMINDER notification type not found in DB"
     return obj
+
 
 @pytest.fixture
 def sample_notification(
@@ -235,6 +243,7 @@ def sample_notification(
             in_game_notification_type
         ]
     )
+
 
 @pytest.fixture
 def notifications_objs(
@@ -260,7 +269,8 @@ def notifications_objs(
         'all_notifications': [notif1, notif2, notif3],
         'unread_notifications': [notif1, notif2]
     }
-    
+
+
 @pytest.fixture
 def game_for_notification(game_thailand):
     return game_thailand

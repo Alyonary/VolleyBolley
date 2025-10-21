@@ -18,7 +18,7 @@ class TestUserModel:
         assert user.first_name == 'Test'
         assert user.last_name == 'User'
 
-        
+
     def test_create_user_with_defaults(self):
         user = User.objects.create_user(
             username='testuser',

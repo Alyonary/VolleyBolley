@@ -72,10 +72,10 @@ class BaseGameSerializer(serializers.ModelSerializer):
         if start_time < timezone.now():
             raise serializers.ValidationError(
                 'Game start time can be in future.')
-        elif end_time < start_time:
+        if end_time < start_time:
             raise serializers.ValidationError(
                 'The end time of the game must be later than the start time.')
-        elif not start_time.tzinfo or not end_time.tzinfo:
+        if not start_time.tzinfo or not end_time.tzinfo:
             raise serializers.ValidationError(
                 'Time must include timezone information')
         return value
@@ -124,10 +124,9 @@ class GameSerializer(BaseGameSerializer):
         if payment is None:
             raise serializers.ValidationError(
                 'No payment account found for this payment type')
-        elif payment.payment_account is None:
+        if payment.payment_account is None:
             return 'Not defined'
-        else:
-            return payment.payment_account
+        return payment.payment_account
 
     def create(self, validated_data):
         host = self.context['request'].user.player
@@ -211,10 +210,10 @@ class GameInviteSerializer(serializers.ModelSerializer):
         if host == invited:
             raise serializers.ValidationError(
                 {'invited': 'You can not invite yourself.'})
-        elif invited in game.players.all():
+        if invited in game.players.all():
             raise serializers.ValidationError(
                 {'invited': 'This player is already participate in the game.'})
-        elif invited.rating.grade not in levels:
+        if invited.rating.grade not in levels:
             raise serializers.ValidationError(
                 {'invited': f'Level of the player {invited.rating.grade} '
                  'not allowed in this game. '

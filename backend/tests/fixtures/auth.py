@@ -13,6 +13,7 @@ def google_response():
         'name': 'Test User'
     }
 
+
 @pytest.fixture
 def real_google_id_token():
     return (
@@ -63,53 +64,53 @@ def firebase_response():
             },
             'sign_in_provider': 'phone',
         }
-}
+    }
 
 
 @pytest.fixture
 def firebase_response_no_user_id():
     '''Moke firebase response after token verification.
-    
+
     Invalid token: no field "user_id" in JSON response.
     '''
     return {
-    'iss': 'https://securetoken.google.com/your-project-id',
-    'aud': 'your-project-id',
-    'auth_time': 1672531200,
-    'sub': 'phone-auth-uid-123',
-    'phone_number': '+79123456789',
-}
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'sub': 'phone-auth-uid-123',
+        'phone_number': '+79123456789',
+    }
 
 
 @pytest.fixture
 def firebase_response_no_phone_number():
     '''Moke firebase response after token verification.
-    
+
     Invalid token: no field "phone_number" in JSON response.
     '''
     return {
-    'iss': 'https://securetoken.google.com/your-project-id',
-    'aud': 'your-project-id',
-    'auth_time': 1672531200,
-    'user_id': 'phone-auth-uid-123',
-    'sub': 'phone-auth-uid-123',
-}
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'user_id': 'phone-auth-uid-123',
+        'sub': 'phone-auth-uid-123',
+    }
 
 
 @pytest.fixture
 def firebase_response_bad_phone_number():
     '''Moke firebase response after token verification.
-    
+
     Invalid token: bad value in the field "phone_number" in JSON response.
     '''
     return {
-    'iss': 'https://securetoken.google.com/your-project-id',
-    'aud': 'your-project-id',
-    'auth_time': 1672531200,
-    'user_id': 'phone-auth-uid-123',
-    'sub': 'phone-auth-uid-123',
-    'phone_number': 'bad_phone_number',
-}
+        'iss': 'https://securetoken.google.com/your-project-id',
+        'aud': 'your-project-id',
+        'auth_time': 1672531200,
+        'user_id': 'phone-auth-uid-123',
+        'sub': 'phone-auth-uid-123',
+        'phone_number': 'bad_phone_number',
+    }
 
 
 @pytest.fixture
@@ -134,7 +135,7 @@ def firebase_fb_response():
             },
             'sign_in_provider': 'facebook.com',
         }
-}
+    }
 
 
 @pytest.fixture
@@ -159,7 +160,7 @@ def firebase_fb_response_no_email():
             },
             'sign_in_provider': 'facebook.com',
         }
-}
+    }
 
 
 @pytest.fixture
@@ -184,7 +185,7 @@ def firebase_fb_response_bad_email():
             },
             'sign_in_provider': 'facebook.com',
         }
-}
+    }
 
 
 @pytest.fixture
@@ -206,7 +207,7 @@ def firebase_fb_response_no_names():
             },
             'sign_in_provider': 'facebook.com',
         }
-}
+    }
 
 
 @pytest.fixture
@@ -236,7 +237,23 @@ def real_firebase_token():
 @pytest.fixture
 def real_fb_firebase_token():
     return (
-        ...
+        'eyJhbGciOiJSUzI1NiIsImtpZCI6ImE1YTAwNWU5N2NiMWU0MjczMDBlNTJjZGQ1MGYwY'
+        'jM2Y2Q4MDYyOWIiLCJ0eXAiOiJKV1QifQ.eyJuYW1lIjoiTklpa29sYWkgRXJlbWVua28'
+        'iLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDMuZ29vZ2xldXNlcmNvbnRlbnQuY29tL2EvQUNn'
+        'OG9jSUxueVdsMTJkbEE1RXN5TW9RR0liYVpCRHIyaEQwU3JEZXN4el94VldWRWxJQnl5b'
+        'U49czk2LWMiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vdm9sbG'
+        'V5Ym9sbGV5LTkwMDllIiwiYXVkIjoidm9sbGV5Ym9sbGV5LTkwMDllIiwiYXV0aF90aW1'
+        'lIjoxNzYwNTU3NDY4LCJ1c2VyX2lkIjoidFI1VzBnVlNmZlVVWGwwR2xZekF6cW1OM2ln'
+        'MiIsInN1YiI6InRSNVcwZ1ZTZmZVVVhsMEdsWXpBenFtTjNpZzIiLCJpYXQiOjE3NjA1N'
+        'Tc0NjgsImV4cCI6MTc2MDU2MTA2OCwiZW1haWwiOiJrb2xpYW4udWxuQGdtYWlsLmNvbS'
+        'IsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJmaXJlYmFzZSI6eyJpZGVudGl0aWVzIjp7Imd'
+        'vb2dsZS5jb20iOlsiMTA2ODk1NzQ5ODM5MjAzNjM1OTM5Il0sImVtYWlsIjpbImtvbGlh'
+        'bi51bG5AZ21haWwuY29tIl19LCJzaWduX2luX3Byb3ZpZGVyIjoiZ29vZ2xlLmNvbSJ9f'
+        'Q.dLNBTXhXGbEyS99oqXTSt1_6RpCg11n6N65w-5PjLdfphI_FQKHL3I7xVqKh1LDqQ2A'
+        'FODnJjmPCJ1ez1ODoWjef3rXS8xq7glQdwZMtnfiYmy-qW3HAjkaat1OW_2sx8wnEBVeS'
+        'LbarukjMU7ZgYh_pmrkNqR2F06x9kTTxBS1dJcDUZWn55PM_j3h1uk7xUWAULtwchhuY0'
+        'dHwh9HeaL5v2sAZBJAVJ238vC1lOaZ8aam-I55fOt-LiKebJ-iOeerH_sMdXzygnLan1B'
+        '1b_Hst9dYhP7YHmn7ousyHEpNQyn1HXxJu3as7frixTw_e43OTosXnHNQb9a8xOqd2jQ'
     )
 
 
@@ -248,6 +265,7 @@ def invalid_firebase_token():
 @pytest.fixture
 def refresh_token(active_user):
     return RefreshToken.for_user(active_user).__str__()
+
 
 @pytest.fixture
 def refresh_token_for_user_with_registered_player(user_with_registered_player):

@@ -28,7 +28,7 @@ class DeviceQuerySet(models.QuerySet):
         Return devices for all players participating in a specific game.
         """
         return self.active().filter(player__games_players=game_id)
-    
+
     def in_tourney(self, tourney_id):
         """
         Return devices for all players participating in a specific tourney.

@@ -31,7 +31,7 @@ class TestPlayerViewSet:
         response = client.get(url)
 
         assert response.status_code == expected_status
-        
+
         if client_fixture_name == 'auth_api_client_registered_player':
             expected_fields = (
                 'first_name',
@@ -82,7 +82,7 @@ class TestPlayerViewSet:
         other_player = bulk_create_registered_players[0]
         url = reverse('api:players-detail', args=[other_player.id])
         response = client.get(url)
-        
+
         assert response.status_code == expected_status
         if client_fixture_name == 'auth_api_client_registered_player':
             assert response.data['first_name'] == other_player.user.first_name
@@ -192,7 +192,7 @@ class TestPlayerViewSet:
         response = client.delete(url)
 
         assert response.status_code == expected_status
-        
+
         if client_fixture_name == 'auth_api_client_registered_player':
             assert not User.objects.filter(
                 id=response.wsgi_request.user.id
@@ -215,10 +215,10 @@ class TestPlayerViewSet:
         data = {'avatar': 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAA'
                           'AABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAA'
                           'AABJRU5ErkJggg=='}
-        
+
         response = client.put(url, data, format='json')
         assert response.status_code == expected_status
-        
+
         if client_fixture_name == 'auth_api_client_registered_player':
             assert Player.objects.get(user=response.wsgi_request.user).avatar
             me_url = reverse('api:players-me')
@@ -239,10 +239,10 @@ class TestPlayerViewSet:
     ):
         client = request.getfixturevalue(client_fixture_name)
         url = reverse('api:players-me-payments')
-        
+
         response = client.get(url)
         assert response.status_code == expected_status
-        
+
         if client_fixture_name == 'auth_api_client_registered_player':
             assert len(response.data['payments']) == len(BASE_PAYMENT_DATA)
             expected_fields = (
@@ -295,7 +295,7 @@ class TestPlayerViewSet:
 
         response = client.put(url, payment_data, format='json')
         assert response.status_code == expected_status
-        
+
         if client_fixture_name == 'auth_api_client_registered_player':
             payments = Payment.objects.filter(
                 player=user_generated_after_login.player
@@ -338,7 +338,7 @@ class TestPlayerViewSet:
                 },
             ]
         }
-        
+
         response = client.put(url, invalid_payment_data, format='json')
         assert response.status_code == expected_status
 
@@ -352,19 +352,19 @@ class TestPlayerViewSet:
         ],
     )
     def test_add_favorite(
-        self, request, client_fixture_name, expected_status, 
+        self, request, client_fixture_name, expected_status,
         bulk_create_registered_players
     ):
         client = request.getfixturevalue(client_fixture_name)
         other_player = bulk_create_registered_players[0]
         url = reverse('api:players-favorite', args=[other_player.id])
-        
+
         response = client.post(url)
         assert response.status_code == expected_status
-        
+
         if client_fixture_name == 'auth_api_client_registered_player':
             assert Favorite.objects.filter(
-                player=response.wsgi_request.user.player, 
+                player=response.wsgi_request.user.player,
                 favorite=other_player
             ).exists()
 
@@ -393,10 +393,10 @@ class TestPlayerViewSet:
         url = reverse('api:players-favorite', args=[other_player.id])
         response = client.delete(url)
         assert response.status_code == expected_status
-        
+
         if client_fixture_name == 'auth_api_client_registered_player':
             assert not Favorite.objects.filter(
-                player=user_with_registered_player.player, 
+                player=user_with_registered_player.player,
                 favorite=other_player
             ).exists()
 
@@ -414,10 +414,10 @@ class TestPlayerViewSet:
         bulk_create_registered_players
     ):
         client = request.getfixturevalue(client_fixture_name)
-        
+
         url = reverse('api:players-list')
         response = client.get(url)
-        
+
         assert response.status_code == expected_status
         if client_fixture_name == 'auth_api_client_registered_player':
             assert len(response.data) == 4

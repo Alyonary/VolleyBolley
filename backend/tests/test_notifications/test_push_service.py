@@ -161,10 +161,10 @@ class TestPushServiceNotificationMethods:
         in_game_notification_type,
         sample_device,
         game_for_notification
-        
+
     ):
         """Test single device notification with game_id."""
-        
+
         service = push_service_enabled
         assert game_for_notification is not None
         notif_in_db = Notifications.objects.filter(

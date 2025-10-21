@@ -41,4 +41,4 @@ def initialize_faq() -> None:
         load_faq_from_file(faq_file_path)
     except FileNotFoundError:
         logger.error('Faq file not found:')
-        return None
+        return

@@ -12,10 +12,10 @@ User = get_user_model()
 
 @pytest.mark.django_db
 class TestPlayerRegistration:
-    
+
     url = reverse('api:players-register')
     @pytest.mark.parametrize(
-        'player_fixture_data,expected_status,registered', 
+        'player_fixture_data,expected_status,registered',
         [
             ('player_data_for_registration', status.HTTP_200_OK, True),
             ('player_no_data_for_registration',
@@ -42,14 +42,14 @@ class TestPlayerRegistration:
            self.url, player_data, format='json'
         )
         player = Player.objects.get(user=user_generated_after_login)
-        
+
         assert response.status_code == expected_status
         assert player.is_registered is registered
-        
+
         if player_data != player_no_data_for_registration:
             assert response.data is None
             assert player.country.id == player_data['country']
-            assert player.city.id == player_data['city']     
+            assert player.city.id == player_data['city']
             assert not player.avatar
 
             if player_data == player_necessary_data_for_registration:

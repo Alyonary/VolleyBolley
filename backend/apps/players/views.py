@@ -29,17 +29,17 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     def get_serializer_class(self, *args, **kwargs):
         if self.action == "me":
             return PlayerBaseSerializer
-        elif self.action == 'put_delete_avatar':
+        if self.action == 'put_delete_avatar':
             return AvatarSerializer
-        elif self.action == 'register':
+        if self.action == 'register':
             return PlayerRegisterSerializer
-        elif self.action == 'get_put_payments':
+        if self.action == 'get_put_payments':
             if self.request.method == 'GET':
                 return PaymentsSerializer
             return PaymentSerializer
-        elif self.action == 'list':
+        if self.action == 'list':
             return PlayerListSerializer
-        elif self.action == 'favorite':
+        if self.action == 'favorite':
             return FavoriteSerializer
         return super().get_serializer_class(*args, **kwargs)
 
@@ -119,10 +119,9 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
                 return Response(status=status.HTTP_204_NO_CONTENT)
 
-            else:
-                raise Response(status=status.HTTP_404_NOT_FOUND)
+            raise Response(status=status.HTTP_404_NOT_FOUND)
 
-        elif self.request.method == 'PATCH':
+        if self.request.method == 'PATCH':
             serializer = self.get_serializer(
                 instance, data=request.data, partial=True
             )
@@ -135,7 +134,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                 serializer.errors, status=status.HTTP_400_BAD_REQUEST
             )
 
-        serializer=self.get_serializer(instance)
+        serializer = self.get_serializer(instance)
 
         return Response(
             status=status.HTTP_200_OK, data=serializer.data
@@ -224,7 +223,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             data=request.data,
             context={
                 'request': request,
-                'player': player, 
+                'player': player,
                 'favorite': favorite
             }
         )
