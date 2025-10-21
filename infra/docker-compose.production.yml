@@ -71,6 +71,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      backend:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "pgrep", "celery"]
@@ -90,6 +92,8 @@ services:
       db:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      backend:
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
