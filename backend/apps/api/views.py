@@ -87,13 +87,20 @@ class AuthIdTokenMixin():
         )
         serializer.is_valid(raise_exception=True)
         user_data_cleaned = serializer.save()
+        phone_number = user_data_cleaned['phone_number']
+        email = user_data_cleaned['email']
 
         # try to find user in DB by phone_number or email
-        user = User.objects.filter(
-            phone_number=user_data_cleaned['phone_number']
-        ).first() or User.objects.filter(
-            email=user_data_cleaned['email']
-        ).first()
+        if phone_number:
+            user = User.objects.filter(
+                phone_number=phone_number
+            ).first()
+
+        elif email:
+            user = User.objects.filter(email=email).first()
+
+        else:
+            user = None
 
         user = get_or_create_user(user, user_data_cleaned)
 
