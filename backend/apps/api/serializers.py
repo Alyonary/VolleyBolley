@@ -28,7 +28,7 @@ class LoginSerializer(serializers.Serializer):
 class GoogleUserDataSerializer(serializers.Serializer):
     """Serialize user data for google authentication."""
 
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=True)
     given_name = serializers.CharField(required=False)
     family_name = serializers.CharField(required=False)
     name = serializers.CharField(required=False)
@@ -55,6 +55,7 @@ class GoogleUserDataSerializer(serializers.Serializer):
 
         return {
             'email': email,
+            'username': email,
             'first_name': first_name,
             'last_name': last_name
         }
@@ -139,16 +140,13 @@ class FirebasePhoneSerializer(FirebaseBaseSerializer):
         phone_number = validated_data.get('phone_number')
         first_name, last_name = self.extract_name_last_name(validated_data)
         email = validated_data.get('email')
-        data = {
+        return {
             'phone_number': phone_number,
             'email': email,
             'first_name': first_name,
             'last_name': last_name,
+            'username': phone_number,
         }
-        if not email:
-            data.update({'username': phone_number})
-
-        return data
 
 
 class FirebaseFacebookSerializer(FirebaseBaseSerializer):
@@ -168,6 +166,7 @@ class FirebaseFacebookSerializer(FirebaseBaseSerializer):
             'email': email,
             'first_name': first_name,
             'last_name': last_name,
+            'username': email
         }
 
 
