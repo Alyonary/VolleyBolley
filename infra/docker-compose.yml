@@ -2,35 +2,52 @@ services:
   promtail:
     image: grafana/promtail:latest
     container_name: promtail
-    ports:
-      - "9080:9080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "9080"
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock
-      - ../monitoring/promtail-config.yml:/etc/promtail/config.yml
+      - ../infra/monitoring/promtail-config.yml:/etc/promtail/config.yml
     command: -config.file=/etc/promtail/config.yml
     privileged: true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:9080/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
 
   loki:
     image: grafana/loki:latest
     container_name: loki
-    ports:
-      - "3100:3100"
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "3100"
     volumes:
-      - ../monitoring/loki-config.yml:/etc/loki/local-config.yml
+      - ../infra/monitoring/loki-config.yml:/etc/loki/local-config.yml:ro
 
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
-    ports:
-      - "9090:9090"
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "9090"
     volumes:
-      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ../infra/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheusdata:/prometheus
 
   grafana:
     image: grafana/grafana:latest
     container_name: grafana
+    depends_on:
+      backend:
+        condition: service_healthy
     ports:
       - "3000:3000"
     env_file:
@@ -39,7 +56,7 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
     volumes:
-      - ../monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - ../infra/monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
       - grafanadata:/var/lib/grafana
 
   db:
@@ -109,6 +126,7 @@ services:
   celery_worker:
     container_name: volleybolley_celery_worker
     build: ../backend
+    entrypoint: []
     command: celery -A volleybolley worker -l info --concurrency=${CELERY_WORKER_CONCURRENCY:-2}
     env_file: ./.env
     environment:
