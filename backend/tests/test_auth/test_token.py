@@ -17,7 +17,6 @@ class TestTokens:
         assert 'access' in response.data
         assert isinstance(response.data.get('access'), str)
 
-
     def test_jwt_token_verify(self, api_client, refresh_token):
 
         url = reverse('api:token-verify')
