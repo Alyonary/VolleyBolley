@@ -398,8 +398,11 @@ SWAGGER_SETTINGS = {
                            '**Bearer <your_access_token>**\n\n'
                            'You can obtain the token through authentication'
                            ' endpoints:\n'
-                           '- Social media authorization\n'
-                           '- Firebase authorization (phone number)\n\n'
+                           '- Authenticate via Google (id_token)\n'
+                           '- Authenticate via Google (firebase id_token)\n'
+                           '- Authenticate via Facebook (firebase id_token)\n'
+                           '- Authenticate via phone number '
+                           '(firebase id_token)\n\n'
                            'Response will include JSON with access_token, '
                            'refresh_token and player data.'
         },
@@ -407,13 +410,19 @@ SWAGGER_SETTINGS = {
             'type': 'apiKey',
             'name': 'Authorization',
             'in': 'header',
-            'description': 'Alternative option with JWT prefix'
+            'description': 'Enter token in format: '
+                           'You can obtain the token through authentication'
+                           ' endpoints:\n'
+                           '- Authenticate via Google (id_token)\n'
+                           '- Authenticate via Google (firebase id_token)\n'
+                           '- Authenticate via Facebook (firebase id_token)\n'
+                           '- Authenticate via phone number '
+                           '(firebase id_token)\n\n'
+                           'Response will include JSON with access_token, '
+                           'refresh_token and player data.'
         }
     },
     'USE_SESSION_AUTH': False,
-
-    # Additional settings for better UX
-    # 'DEFAULT_AUTO_SCHEMA_CLASS': 'drf_yasg.inspectors.SwaggerAutoSchema',
 
     # Settings for Authorize button
     'SECURITY_REQUIREMENTS': [
