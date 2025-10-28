@@ -179,8 +179,8 @@ class AvatarSerializer(PlayerBaseSerializer):
 
 class PlayerAuthSerializer(PlayerBaseSerializer):
     """Serialize data of player after authentication."""
-    player_id = serializers.IntegerField(
-        source='id', read_only=True
+    player_id = serializers.PrimaryKeyRelatedField(
+        source='id', read_only=True, help_text='Integer type'
     )
 
     class Meta:

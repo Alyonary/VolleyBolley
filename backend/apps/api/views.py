@@ -119,10 +119,11 @@ class LogoutView(APIView):
     @swagger_auto_schema(
         tags=['auth'],
         operation_summary='Logout by blacklisting refresh token',
-        operation_description="""
-        Send users 'refresh_token' to logout.
+        operation_description="""Logout user.
 
         Blacklists users refresh_token.
+
+        Returns: no response body if logout is successful.
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -201,7 +202,12 @@ class GoogleLogin(APIView):
         tags=['auth'],
         operation_summary="Authenticate via Google (id_token)",
         operation_description="""
-        Send token_id received from google to be authenticated in the app.
+        Authenticate user in the app via 'id_token' received from Google.
+
+        Returns:
+        - access_token: JWT token for API access
+        - refresh_token: Token for refreshing access_token
+        - player: Player data associated with the user
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -367,8 +373,13 @@ class PhoneNumberLogin(APIView, AuthIdTokenMixin):
         tags=['auth'],
         operation_summary="Authenticate via phone number (firebase id_token)",
         operation_description="""
-        Send an 'id_token' received from the firebase application
-        during the authentication process via phone number.
+        Authenticate user in the app via 'id_token' received from the Firebase
+        application during the authentication process via phone number.
+
+        Returns:
+        - access_token: JWT token for API access
+        - refresh_token: Token for refreshing access_token
+        - player: Player data associated with the user
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -427,8 +438,13 @@ class FacebookLogin(APIView, AuthIdTokenMixin):
         tags=['auth'],
         operation_summary="Authenticate via Facebook (firebase id_token)",
         operation_description="""
-        Send an 'id_token' received from the firebase application
-        during the authentication process via Facebook.
+        Authenticate user in the app via 'id_token' received from the Firebase
+        application during the authentication process via Facebook.
+
+        Returns:
+        - access_token: JWT token for API access
+        - refresh_token: Token for refreshing access_token
+        - player: Player data associated with the user
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -487,8 +503,13 @@ class GoogleLoginV2(APIView, AuthIdTokenMixin):
         tags=['auth'],
         operation_summary="Authenticate via Google (firebase id_token)",
         operation_description="""
-        Send an 'id_token' received from the firebase application
-        during the authentication process via Google.
+        Authenticate user in the app via 'id_token' received from the Firebase
+        application during the authentication process via Google.
+
+        Returns:
+        - access_token: JWT token for API access
+        - refresh_token: Token for refreshing access_token
+        - player: Player data associated with the user
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,

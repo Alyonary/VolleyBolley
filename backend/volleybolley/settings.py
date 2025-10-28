@@ -411,6 +411,7 @@ SWAGGER_SETTINGS = {
             'name': 'Authorization',
             'in': 'header',
             'description': 'Enter token in format: '
+                           '**JWT <your_access_token>**\n\n'
                            'You can obtain the token through authentication'
                            ' endpoints:\n'
                            '- Authenticate via Google (id_token)\n'
