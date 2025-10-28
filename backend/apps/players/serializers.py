@@ -179,7 +179,7 @@ class AvatarSerializer(PlayerBaseSerializer):
 
 class PlayerAuthSerializer(PlayerBaseSerializer):
     """Serialize data of player after authentication."""
-    player_id = serializers.PrimaryKeyRelatedField(
+    player_id = serializers.IntegerField(
         source='id', read_only=True
     )
 

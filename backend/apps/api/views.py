@@ -1,7 +1,10 @@
 import logging
 
 from django.contrib.auth import get_user_model
-from django.shortcuts import redirect
+
+# TODO: remove after finishing integration test with frontend
+# teams.
+# from django.shortcuts import redirect
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from google.auth.transport import requests
@@ -13,16 +16,19 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.tokens import RefreshToken
 from social_core.exceptions import AuthForbidden
-from social_django.utils import (
-    load_backend,
-    load_strategy,
-)
 
+# TODO: remove after finishing integration test with frontend
+# teams.
+# from social_django.utils import (
+#     load_backend,
+#     load_strategy,
+# )
 from apps.api.serializers import (
     FirebaseFacebookSerializer,
     FirebaseGoogleSerializer,
     FirebasePhoneSerializer,
     GoogleUserDataSerializer,
+    LoginSerializer,
 )
 from apps.api.utils import (
     firebase_auth,
@@ -111,18 +117,49 @@ class LogoutView(APIView):
     """Logout view class."""
 
     @swagger_auto_schema(
+        tags=['auth'],
+        operation_summary='Logout by blacklisting refresh token',
+        operation_description="""
+        Send users 'refresh_token' to logout.
+
+        Blacklists users refresh_token.
+        """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
-            required=['refresh'],
             properties={
-                'refresh': openapi.Schema(
+                'refresh_token': openapi.Schema(
                     type=openapi.TYPE_STRING,
                     description='Refresh token to blacklist'),
             },
+            required=['refresh_token'],
         ),
-        responses={205: 'Reset Content', 400: 'Bad Request'},
-        operation_summary='Logout by blacklisting refresh token',
-        tags=['auth'],
+        responses={
+            205: 'Successful logout',
+            400: openapi.Response(
+                'Logout failed',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+            500: openapi.Response(
+                'Internal server error',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+        },
     )
     def post(self, request) -> Response:
         try:
@@ -137,67 +174,92 @@ class LogoutView(APIView):
             return Response(status=status.HTTP_205_RESET_CONTENT)
 
         except (ValidationError, TokenError) as e:
-            logger.error(f'Logout failure: {e}.')
+            error_msg = f'Logout failed: {e}.'
+            logger.error(error_msg)
 
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'error': error_msg}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         except Exception as e:
-            logger.error(f'Logout failure: {e}.')
+            error_msg = f'Internal server error: {e}.'
+            logger.error(error_msg)
 
-            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {'error': error_msg},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class GoogleLogin(APIView):
     """Authenticate user via google.
 
-    Client can use either access_token or token_id received from
-    google to be authenticated in the app.
-
-    Redirect client to base social-auth url ('api:social:begin')
-    if there is no data in request or request method is 'GET'.
+    Client can use token_id received from google
+    to be authenticated in the app.
     """
     @swagger_auto_schema(
+        tags=['auth'],
+        operation_summary="Authenticate via Google (id_token)",
+        operation_description="""
+        Send token_id received from google to be authenticated in the app.
+        """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
-                'access_token': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description='Google access token'
-                    ),
                 'id_token': openapi.Schema(
                     type=openapi.TYPE_STRING,
                     description='Google ID token'
                     ),
             },
-            anyOf=[
-                {'required': ['access_token']},
-                {'required': ['id_token']}
-            ],
+            required=['id_token'],
         ),
         responses={
             200: openapi.Response(
                 'Successful authentication',
-                GoogleUserDataSerializer
+                LoginSerializer,
                 ),
-            401: 'Authentication failed',
+            400: openapi.Response(
+                'Authentication failed',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+            500: openapi.Response(
+                'Internal server error',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
         },
-        operation_summary="Authenticate via Google (access_token or id_token)",
-        tags=['auth'],
     )
     def post(self, request):
         try:
             data = request.data
-            if 'access_token' in data:
-                if data['access_token']:
-                    logger.info(
-                        'Starting authentication via google access_token.'
-                    )
-
-                    return self._auth_via_access_token(
-                        request.data['access_token']
-                    )
-
-                raise ValidationError('Empty token.')
+            # TODO: remove after finishing integration test with frontend
+            # teams.
+            # if 'access_token' in data:
+            #     if data['access_token']:
+            #         logger.info(
+            #             'Starting authentication via google access_token.'
+            #         )
+            #
+            #         return self._auth_via_access_token(
+            #             request.data['access_token']
+            #         )
+            #
+            #     raise ValidationError('Empty token.')
 
             if 'id_token' in data:
                 if data['id_token']:
@@ -209,14 +271,18 @@ class GoogleLogin(APIView):
 
                 raise ValidationError('Empty token.')
 
-            logger.info(
-                'Redirected to authenticate via google without token.'
-            )
+            error_msg = 'No id_token in request body.'
+            logger.error(error_msg)
 
-            return redirect('api:social:begin', backend='google-oauth2')
+            raise ValidationError(error_msg)
+
+            # TODO: remove after finishing integration test with frontend
+            # teams.
+            #
+            # return redirect('api:social:begin', backend='google-oauth2')
 
         except ValidationError as e:
-            error_msg = f'validation error: {e}.'
+            error_msg = f'Validation error: {e}.'
             logger.error(error_msg)
 
             return Response(
@@ -234,7 +300,7 @@ class GoogleLogin(APIView):
             )
 
         except Exception as e:
-            error_msg = f'Unexpected error: {e}.'
+            error_msg = f'Internal server error: {e}.'
             logger.error(error_msg)
 
             return Response(
@@ -242,27 +308,30 @@ class GoogleLogin(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
-    @swagger_auto_schema(
-        operation_summary="Redirect to Google OAuth2 social auth",
-        responses={302: 'Redirect'},
-        tags=['auth'],
-    )
-    def get(self, request):
-        logger.info(
-            'Starting authentication via google without token.'
-        )
+    # TODO: remove after finishing integration test with frontend
+    # teams.
+    #
+    # @swagger_auto_schema(
+    #     operation_summary="Redirect to Google OAuth2 social auth",
+    #     responses={302: 'Redirect'},
+    #     tags=['auth'],
+    # )
+    # def get(self, request):
+    #     logger.info(
+    #         'Starting authentication via google without token.'
+    #     )
+    #
+    #     return redirect('api:social:begin', backend='google-oauth2')
 
-        return redirect('api:social:begin', backend='google-oauth2')
-
-    def _auth_via_access_token(self, token):
-        """Authenticate via 'access_token'."""
-        strategy = load_strategy(self.request)
-        backend = load_backend(strategy, 'google-oauth2', None)
-        strategy.session_set('via_access_token', True)
-        strategy.request.via_access_token = True
-        user = backend.do_auth(token)
-
-        return return_auth_response_or_raise_exception(user)
+    # def _auth_via_access_token(self, token):
+    #     """Authenticate via 'access_token'."""
+    #     strategy = load_strategy(self.request)
+    #     backend = load_backend(strategy, 'google-oauth2', None)
+    #     strategy.session_set('via_access_token', True)
+    #     strategy.request.via_access_token = True
+    #     user = backend.do_auth(token)
+    #
+    #     return return_auth_response_or_raise_exception(user)
 
     def _auth_via_id_token(self, token):
         """Authenticate via 'id_token'."""
@@ -281,6 +350,7 @@ class GoogleLogin(APIView):
         user = User.objects.filter(
             email=user_data_cleaned['email']
         ).first()
+        user_data_cleaned['username'] = user_data_cleaned['email']
         user = get_or_create_user(user, user_data_cleaned)
 
         return return_auth_response_or_raise_exception(user)
@@ -289,10 +359,58 @@ class GoogleLogin(APIView):
 class PhoneNumberLogin(APIView, AuthIdTokenMixin):
     """Authenticate user via phone number.
 
-    An id_token generated by the Firebase app should be provided
+    An 'id_token' generated by the Firebase app should be provided
     to authenticate a user.
     """
 
+    @swagger_auto_schema(
+        tags=['auth'],
+        operation_summary="Authenticate via phone number (firebase id_token)",
+        operation_description="""
+        Send an 'id_token' received from the firebase application
+        during the authentication process via phone number.
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Firebase ID token'
+                    ),
+            },
+            required=['id_token'],
+        ),
+        responses={
+            200: openapi.Response(
+                'Successful authentication',
+                LoginSerializer,
+                ),
+            400: openapi.Response(
+                'Authentication failed',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+            500: openapi.Response(
+                'Internal server error',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+        },
+    )
     def post(self, request):
 
         return self._post(request, FirebasePhoneSerializer)
@@ -305,6 +423,54 @@ class FacebookLogin(APIView, AuthIdTokenMixin):
     to authenticate a user.
     """
 
+    @swagger_auto_schema(
+        tags=['auth'],
+        operation_summary="Authenticate via Facebook (firebase id_token)",
+        operation_description="""
+        Send an 'id_token' received from the firebase application
+        during the authentication process via Facebook.
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Firebase ID token'
+                    ),
+            },
+            required=['id_token'],
+        ),
+        responses={
+            200: openapi.Response(
+                'Successful authentication',
+                LoginSerializer,
+                ),
+            400: openapi.Response(
+                'Authentication failed',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+            500: openapi.Response(
+                'Internal server error',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+        },
+    )
     def post(self, request):
 
         return self._post(request, FirebaseFacebookSerializer)
@@ -317,6 +483,54 @@ class GoogleLoginV2(APIView, AuthIdTokenMixin):
     to authenticate a user.
     """
 
+    @swagger_auto_schema(
+        tags=['auth'],
+        operation_summary="Authenticate via Google (firebase id_token)",
+        operation_description="""
+        Send an 'id_token' received from the firebase application
+        during the authentication process via Google.
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'id_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Firebase ID token'
+                    ),
+            },
+            required=['id_token'],
+        ),
+        responses={
+            200: openapi.Response(
+                'Successful authentication',
+                LoginSerializer,
+                ),
+            400: openapi.Response(
+                'Authentication failed',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+            500: openapi.Response(
+                'Internal server error',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+        },
+    )
     def post(self, request):
 
         return self._post(request, FirebaseGoogleSerializer)
