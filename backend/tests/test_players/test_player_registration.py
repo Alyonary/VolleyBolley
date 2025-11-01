@@ -14,6 +14,7 @@ User = get_user_model()
 class TestPlayerRegistration:
 
     url = reverse('api:players-register')
+
     @pytest.mark.parametrize(
         'player_fixture_data,expected_status,registered',
         [
@@ -64,7 +65,6 @@ class TestPlayerRegistration:
                 'date_of_birth'
             ]
             assert player.rating.grade == player_data['level']
-
 
     def test_player_registration_with_registered_player(
         self,

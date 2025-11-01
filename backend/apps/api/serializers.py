@@ -14,69 +14,37 @@ logger = logging.getLogger(__name__)
 class LoginSerializer(serializers.Serializer):
     """Serialize data after successful authentication of player."""
 
-    player = PlayerAuthSerializer(read_only=True)
+    player = PlayerAuthSerializer(
+        read_only=True,
+        help_text='Player data')
     access_token = serializers.CharField(
         max_length=APIEnums.TOKEN_MAX_LENGTH,
-        read_only=True
+        read_only=True,
+        help_text="JWT access token",
+        example="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
     )
     refresh_token = serializers.CharField(
         max_length=APIEnums.TOKEN_MAX_LENGTH,
-        read_only=True
+        read_only=True,
+        help_text="JWT refresh token",
+        example="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
     )
 
 
-class GoogleUserDataSerializer(serializers.Serializer):
-    """Serialize user data for google authentication."""
+class AuthBaseSerializer(serializers.Serializer):
+    """Generic authentication serializer."""
 
-    email = serializers.EmailField()
-    given_name = serializers.CharField(required=False)
-    family_name = serializers.CharField(required=False)
-    name = serializers.CharField(required=False)
-
-    def validate_email(self, value):
-        if not value:
-            error_msg = 'id_token has no user email'
-            logger.error(error_msg)
-            raise serializers.ValidationError(error_msg)
-        return value
-
-    def create(self, validated_data):
-        email = validated_data['email']
-        first_name = validated_data.get('given_name')
-        last_name = validated_data.get('family_name')
-        name = validated_data.get('name')
-
-        first_name = (first_name
-                      or (name.split()[0] if name
-                          else email.split('@')[0]))
-        last_name = (last_name
-                     or (name.split()[1] if name and len(name.split()) > 1
-                         else first_name))
-
-        return {
-            'email': email,
-            'first_name': first_name,
-            'last_name': last_name
-        }
-
-
-class FirebaseBaseSerializer(serializers.Serializer):
-    """Generic Firebase serializer."""
-
-    user_id = serializers.CharField(required=True)
     given_name = serializers.CharField(required=False, allow_blank=True)
     family_name = serializers.CharField(required=False, allow_blank=True)
     name = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False, allow_blank=True)
     phone_number = PhoneNumberField(required=False, allow_blank=True)
-    phone = PhoneNumberField(
-        required=False, allow_blank=True, source='firebase.identities.phone'
-    )
+    phone = PhoneNumberField(required=False, allow_blank=True)
 
     def extract_name_last_name(
         self, validated_data: dict[str, Any]
     ) -> tuple[str, str]:
-        """Extract users first and last names from Firebase id_token.
+        """Extract users first and last names from id_token.
 
         Returns:
             The tuple (first_name, last_name).
@@ -119,57 +87,87 @@ class FirebaseBaseSerializer(serializers.Serializer):
 
         return full_name, full_name
 
-
-class FirebasePhoneSerializer(FirebaseBaseSerializer):
-    """Serialize Firebase user data for auth via phone number."""
-
-    def validate(self, attrs):
-        attrs = super().validate(attrs)
-        attrs['phone_number'] = attrs.get('phone_number') or attrs.get('phone')
-
-        if not attrs['phone_number']:
-            raise exceptions.ValidationError(
-                'Missing phone_number in Firebase id_token.'
-            )
-
-        return attrs
-
-    def create(self, validated_data):
-        """Extract user data from Firebase response."""
-        phone_number = validated_data.get('phone_number')
+    def get_user_data(self, validated_data: dict[str, Any]) -> dict[str, Any]:
+        """Configure user data from 'id_token'."""
+        phone_number: str | None = validated_data.get('phone_number')
         first_name, last_name = self.extract_name_last_name(validated_data)
-        email = validated_data.get('email')
-        data = {
-            'phone_number': phone_number,
-            'email': email,
-            'first_name': first_name,
-            'last_name': last_name,
-        }
-        if not email:
-            data.update({'username': phone_number})
-
-        return data
-
-
-class FirebaseFacebookSerializer(FirebaseBaseSerializer):
-    """Serialize Firebase user data for auth via facebook."""
-
-    email = serializers.EmailField(required=True)
-
-    def create(self, validated_data):
-        """Extract user data from Firebase response."""
-        phone_number = (validated_data.get('phone_number') or
-                        validated_data.get('phone'))
-        first_name, last_name = self.extract_name_last_name(validated_data)
-        email = validated_data.get('email')
+        email: str | None = validated_data.get('email')
 
         return {
             'phone_number': phone_number,
             'email': email,
             'first_name': first_name,
             'last_name': last_name,
+            'username': self.get_username(validated_data)
         }
+
+    def get_username(self, validated_data: dict[str, Any]) -> str:
+        """Appropriate method should be implemented.
+
+        Rewrite this function in your authentication process.
+        """
+        raise NotImplementedError
+
+    def create(self, validated_data: dict[str, Any]) -> dict[str, Any]:
+        return self.get_user_data(validated_data)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        attrs['phone_number'] = attrs.get('phone_number') or attrs.get('phone')
+
+        return attrs
+
+
+class FirebaseBaseSerializer(AuthBaseSerializer):
+    """Generic Firebase serializer."""
+
+    user_id = serializers.CharField(required=True)
+    phone = PhoneNumberField(
+        required=False, allow_blank=True, source='firebase.identities.phone'
+    )
+
+
+class FirebasePhoneSerializer(FirebaseBaseSerializer):
+    """Serialize Firebase user data for auth via phone number."""
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+
+        if not attrs['phone_number']:
+            raise exceptions.ValidationError(
+                'Missing phone_number in id_token.'
+            )
+
+        return attrs
+
+    def get_username(self, validated_data: dict[str, Any]) -> str:
+        """Configure username from 'phone_number'."""
+        return validated_data.get('phone_number')
+
+
+class FirebaseFacebookSerializer(FirebaseBaseSerializer):
+    """Serialize Firebase user data for auth via facebook."""
+
+    email = serializers.EmailField(
+        required=True, allow_blank=False, allow_null=False
+    )
+
+    def get_username(self, validated_data: dict[str, Any]) -> str:
+        """Configure username from 'email'."""
+        return validated_data.get('email')
 
 
 class FirebaseGoogleSerializer(FirebaseFacebookSerializer):
     """Serialize Firebase user data for auth via google."""
+
+
+class GoogleUserDataSerializer(AuthBaseSerializer):
+    """Serialize user data for google authentication."""
+
+    email = serializers.EmailField(
+        required=True, allow_blank=False, allow_null=False
+    )
+
+    def get_username(self, validated_data: dict[str, Any]) -> str:
+        """Configure username from 'email'."""
+        return validated_data.get('email')

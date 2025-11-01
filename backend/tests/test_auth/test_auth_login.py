@@ -45,7 +45,6 @@ class TestGoogleAuth:
         )
         self._check_response(response)
 
-    @pytest.mark.skip(reason="method has been deprecated.")
     def test_auth_with_google_access_token_moke_google_response(
         self, api_client, google_response
     ):
@@ -114,13 +113,13 @@ class TestGoogleAuth:
     @pytest.mark.parametrize(
         'token_type, token_value, expected_status',
         [
-            # ('access_token', 'invalid-google-token',
-            # status.HTTP_400_BAD_REQUEST),
+            ('access_token', 'invalid-google-token',
+             status.HTTP_400_BAD_REQUEST),
             ('id_token', 'invalid-google-id-token',
              status.HTTP_400_BAD_REQUEST),
-            # ('access_token', '', status.HTTP_400_BAD_REQUEST),
+            ('access_token', '', status.HTTP_400_BAD_REQUEST),
             ('id_token', '', status.HTTP_400_BAD_REQUEST),
-            # (None, None, status.HTTP_302_FOUND)
+            (None, None, status.HTTP_400_BAD_REQUEST)
         ]
     )
     def test_auth_with_invalid_google_token(
