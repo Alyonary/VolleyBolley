@@ -5,7 +5,6 @@ RUN apk add --no-cache bash ca-certificates
 WORKDIR /opt/monitoring
 COPY . /opt/monitoring
 
-# нормализуем окончания строк и сделаем entrypoint исполняемым
 RUN if [ -f /opt/monitoring/monitoring-entrypoint.sh ]; then \
       sed -i 's/\r$//' /opt/monitoring/monitoring-entrypoint.sh && \
       chmod +x /opt/monitoring/monitoring-entrypoint.sh ; \
