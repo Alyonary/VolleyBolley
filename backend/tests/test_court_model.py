@@ -10,17 +10,12 @@ from apps.courts.models import Court, CourtLocation
 
 @pytest.mark.django_db
 class TestLocationTagModel:
-
     def test_create_location(
-            self,
-            location_for_court_data,
-            country_thailand,
-            city_in_thailand
+        self, location_for_court_data, country_thailand, city_in_thailand
     ):
-        location_for_court_data.update({
-            'country': country_thailand,
-            'city': city_in_thailand
-        })
+        location_for_court_data.update(
+            {'country': country_thailand, 'city': city_in_thailand}
+        )
         location = CourtLocation.objects.create(**location_for_court_data)
 
         assert location.longitude == location_for_court_data['longitude']
@@ -42,11 +37,8 @@ class TestLocationTagModel:
 
 @pytest.mark.django_db
 class TestCourtModel:
-
     def test_create_court_without_tags_contacts(
-            self,
-            court_data,
-            location_for_court_thailand
+        self, court_data, location_for_court_thailand
     ):
         court_data.update({'location': location_for_court_thailand})
         court = Court.objects.create(**court_data)
@@ -63,10 +55,7 @@ class TestCourtModel:
         assert Court.objects.all().count() == 0
 
     def test_create_court_with_tags(
-            self,
-            court_data,
-            tag_obj,
-            location_for_court_thailand
+        self, court_data, tag_obj, location_for_court_thailand
     ):
         court_data.update({'location': location_for_court_thailand})
         court = Court.objects.create(**court_data)
@@ -89,53 +78,59 @@ class TestCourtModel:
 
 @pytest.mark.django_db(transaction=True)
 class TestCourtApiModel:
-
     def test_api_url(self, api_client_thailand, court_list_url):
         response = api_client_thailand.get(court_list_url)
         assert response.status_code == HTTPStatus.OK
 
     def test_response_structure(
-            self,
-            api_client_thailand,
-            court_list_url,
-            court_api_response_data,
-            court_obj_with_tag,
-            contact_object
-            ):
+        self,
+        api_client_thailand,
+        court_list_url,
+        court_api_response_data,
+        court_obj_with_tag,
+        contact_object,
+    ):
         response = api_client_thailand.get(court_list_url)
         answer = response.data[0]
         assert answer.keys() == court_api_response_data.keys()
-        assert answer['contacts_list'] == court_api_response_data[
-            'contacts_list']
+        assert (
+            answer['contacts_list'] == court_api_response_data['contacts_list']
+        )
         assert answer['tag_list'] == court_api_response_data['tag_list']
-        assert answer['location'].keys() == court_api_response_data[
-            'location'].keys()
+        assert (
+            answer['location'].keys()
+            == court_api_response_data['location'].keys()
+        )
         assert answer['court_id'] == court_obj_with_tag.id
 
     def test_filter_response(
-            self,
-            api_client_cyprus,
-            player_cyprus,
-            court_list_url,
-            court_cyprus,
-            court_thailand
-            ):
+        self,
+        api_client_cyprus,
+        player_cyprus,
+        court_list_url,
+        court_cyprus,
+        court_thailand,
+    ):
         court_list_url += '?search=Cy'
         response = api_client_cyprus.get(court_list_url)
         assert Court.objects.all().count() == 2
         assert len(response.data) == 1
-        assert response.data[0][
-            'location']['court_name'] == court_cyprus.location.court_name
-        assert response.data[0][
-            'location']['court_name'] != court_thailand.location.court_name
+        assert (
+            response.data[0]['location']['court_name']
+            == court_cyprus.location.court_name
+        )
+        assert (
+            response.data[0]['location']['court_name']
+            != court_thailand.location.court_name
+        )
 
     def test_filter_qs_for_player(
-            self,
-            court_list_url,
-            court_cyprus,
-            court_thailand,
-            api_client_thailand,
-            player_thailand
+        self,
+        court_list_url,
+        court_cyprus,
+        court_thailand,
+        api_client_thailand,
+        player_thailand,
     ):
         response = api_client_thailand.get(court_list_url)
         assert Court.objects.count() == 2

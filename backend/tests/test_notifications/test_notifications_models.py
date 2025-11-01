@@ -28,19 +28,14 @@ class TestNotificationsModel:
         notif = Notifications.objects.create(
             player=player,
             notification_type=rate_notification_type,
-            is_read=True
+            is_read=True,
         )
         assert notif.id is not None
         assert notif.is_read is False
 
-    @pytest.mark.parametrize(
-        'notif_type', list(NOTIFICATION_INIT_DATA.keys())
-    )
+    @pytest.mark.parametrize('notif_type', list(NOTIFICATION_INIT_DATA.keys()))
     def test_notification_type_choices_param(
-        self,
-        players,
-        all_notification_types,
-        notif_type
+        self, players, all_notification_types, notif_type
     ):
         """
         Test that all notification types fixture.
@@ -49,8 +44,7 @@ class TestNotificationsModel:
         player = players['player1']
         notification_type_obj = all_notification_types[notif_type]
         notif = Notifications.objects.create(
-            player=player,
-            notification_type=notification_type_obj
+            player=player, notification_type=notification_type_obj
         )
         assert notif.notification_type == notification_type_obj
         assert notif.notification_type.type == notif_type
@@ -71,34 +65,54 @@ class TestNotificationsBaseModel:
         self,
         rate_notification_type,
         remove_notification_type,
-        in_game_notification_type
+        in_game_notification_type,
     ):
         """Test NotificationsBase fields from fixtures."""
         assert rate_notification_type.type == NotificationTypes.GAME_RATE
-        assert rate_notification_type.title == NOTIFICATION_INIT_DATA[
-            NotificationTypes.GAME_RATE]['title']
-        assert rate_notification_type.body == NOTIFICATION_INIT_DATA[
-            NotificationTypes.GAME_RATE]['body']
-        assert rate_notification_type.screen == NOTIFICATION_INIT_DATA[
-            NotificationTypes.GAME_RATE]['screen']
+        assert (
+            rate_notification_type.title
+            == NOTIFICATION_INIT_DATA[NotificationTypes.GAME_RATE]['title']
+        )
+        assert (
+            rate_notification_type.body
+            == NOTIFICATION_INIT_DATA[NotificationTypes.GAME_RATE]['body']
+        )
+        assert (
+            rate_notification_type.screen
+            == NOTIFICATION_INIT_DATA[NotificationTypes.GAME_RATE]['screen']
+        )
 
         assert remove_notification_type.type == NotificationTypes.GAME_REMOVED
-        assert remove_notification_type.title == NOTIFICATION_INIT_DATA[
-            NotificationTypes.GAME_REMOVED]['title']
-        assert remove_notification_type.body == NOTIFICATION_INIT_DATA[
-            NotificationTypes.GAME_REMOVED]['body']
-        assert remove_notification_type.screen == NOTIFICATION_INIT_DATA[
-            NotificationTypes.GAME_REMOVED]['screen']
+        assert (
+            remove_notification_type.title
+            == NOTIFICATION_INIT_DATA[NotificationTypes.GAME_REMOVED]['title']
+        )
+        assert (
+            remove_notification_type.body
+            == NOTIFICATION_INIT_DATA[NotificationTypes.GAME_REMOVED]['body']
+        )
+        assert (
+            remove_notification_type.screen
+            == NOTIFICATION_INIT_DATA[NotificationTypes.GAME_REMOVED]['screen']
+        )
 
         assert (
             in_game_notification_type.type == NotificationTypes.GAME_REMINDER
         )
-        assert in_game_notification_type.title == NOTIFICATION_INIT_DATA[
-            NotificationTypes.GAME_REMINDER]['title']
-        assert in_game_notification_type.body == NOTIFICATION_INIT_DATA[
-            NotificationTypes.GAME_REMINDER]['body']
-        assert in_game_notification_type.screen == NOTIFICATION_INIT_DATA[
-            NotificationTypes.GAME_REMINDER]['screen']
+        assert (
+            in_game_notification_type.title
+            == NOTIFICATION_INIT_DATA[NotificationTypes.GAME_REMINDER]['title']
+        )
+        assert (
+            in_game_notification_type.body
+            == NOTIFICATION_INIT_DATA[NotificationTypes.GAME_REMINDER]['body']
+        )
+        assert (
+            in_game_notification_type.screen
+            == NOTIFICATION_INIT_DATA[NotificationTypes.GAME_REMINDER][
+                'screen'
+            ]
+        )
 
     def test_unique_type_constraint(self, rate_notification_type):
         """Test unique constraint on type field."""
@@ -107,7 +121,7 @@ class TestNotificationsBaseModel:
                 type=NotificationTypes.GAME_RATE,
                 title='Duplicate Rate',
                 body='Duplicate body',
-                screen='rate'
+                screen='rate',
             )
 
     def test_initial_data_population(self):

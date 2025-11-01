@@ -22,10 +22,14 @@ def raise_oauth_success(
     """Raise exception to break redirect after successful social auth."""
     if (
         user
-        and (strategy.session_get('oauth_response_data')
-             or strategy.request.oauth_response_data)
-        and (not strategy.session_get('via_access_token')
-             or not hasattr(strategy.request, 'via_access_token'))
+        and (
+            strategy.session_get('oauth_response_data')
+            or strategy.request.oauth_response_data
+        )
+        and (
+            not strategy.session_get('via_access_token')
+            or not hasattr(strategy.request, 'via_access_token')
+        )
     ):
         raise OAuthSuccessException()
     return

@@ -76,9 +76,7 @@ class TestPushServiceInitialization:
             return True
 
         monkeypatch.setattr(
-            PushService,
-            '_initialize_firebase',
-            mock_initialize_firebase
+            PushService, '_initialize_firebase', mock_initialize_firebase
         )
         monkeypatch.setattr(
             PushService,
@@ -160,8 +158,7 @@ class TestPushServiceNotificationMethods:
         push_service_enabled,
         in_game_notification_type,
         sample_device,
-        game_for_notification
-
+        game_for_notification,
     ):
         """Test single device notification with game_id."""
 
@@ -179,7 +176,7 @@ class TestPushServiceNotificationMethods:
             event_id=game_for_notification.id,
         )
         assert result is True
-        #check that notification was created in DB
+        # check that notification was created in DB
         notif_in_db = Notifications.objects.filter(
             player=sample_device.player,
             game=game_for_notification,
@@ -323,9 +320,7 @@ class TestPushServiceErrorHandling:
             raise Exception('Notification creation failed')
 
         monkeypatch.setattr(
-            service,
-            'send_push_notifications',
-            mock_send_push_notifications
+            service, 'send_push_notifications', mock_send_push_notifications
         )
 
         result = service.process_notifications_by_type(

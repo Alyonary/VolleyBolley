@@ -14,22 +14,20 @@ from apps.core.signals import load_faq
 class TestFAQModel:
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.faq1 = FAQ.objects.create(content="FAQ 1", is_active=False)
-        self.faq2 = FAQ.objects.create(content="FAQ 2", is_active=False)
+        self.faq1 = FAQ.objects.create(content='FAQ 1', is_active=False)
+        self.faq2 = FAQ.objects.create(content='FAQ 2', is_active=False)
 
     def test_create_faq(self):
-        faq = FAQ.objects.create(content="New FAQ", is_active=False)
-        assert faq.content == "New FAQ"
+        faq = FAQ.objects.create(content='New FAQ', is_active=False)
+        assert faq.content == 'New FAQ'
         assert not faq.is_active
-        assert faq.name.startswith("faq ")  # name is auto-generated
+        assert faq.name.startswith('faq ')  # name is auto-generated
 
     def test_create_faq_with_name(self):
         faq = FAQ.objects.create(
-            content="Named FAQ",
-            is_active=False,
-            name="custom_name"
+            content='Named FAQ', is_active=False, name='custom_name'
         )
-        assert faq.name == "custom_name"
+        assert faq.name == 'custom_name'
 
     def test_activate_faq_deactivates_others(self):
         self.faq1.is_active = True
@@ -58,7 +56,7 @@ class TestFAQModel:
         FAQ.objects.all().delete()
         faqs_quantity = random.randint(5, 10)
         for i in range(faqs_quantity):
-            FAQ.objects.create(content=f"FAQ {i}", is_active=True)
+            FAQ.objects.create(content=f'FAQ {i}', is_active=True)
         assert FAQ.objects.filter(is_active=True).count() == 1
         assert FAQ.objects.all().count() == faqs_quantity
 
@@ -78,15 +76,11 @@ class TestFAQModel:
         Test that FAQ name must be unique.
         """
         FAQ.objects.create(
-            content="Unique FAQ",
-            is_active=False,
-            name="unique_name"
+            content='Unique FAQ', is_active=False, name='unique_name'
         )
         with pytest.raises(IntegrityError):
             FAQ.objects.create(
-                content="Another FAQ",
-                is_active=False,
-                name="unique_name"
+                content='Another FAQ', is_active=False, name='unique_name'
             )
 
     def test_auto_generated_name_is_unique(self):
@@ -94,47 +88,50 @@ class TestFAQModel:
         Test that auto-generated FAQ names are unique.
         """
         FAQ.objects.all().delete()
-        faq1 = FAQ.objects.create(content="Auto 1", is_active=False)
-        faq2 = FAQ.objects.create(content="Auto 2", is_active=False)
+        faq1 = FAQ.objects.create(content='Auto 1', is_active=False)
+        faq2 = FAQ.objects.create(content='Auto 2', is_active=False)
         assert faq1.name != faq2.name
-        assert faq1.name.startswith("faq ")
-        assert faq2.name.startswith("faq ")
+        assert faq1.name.startswith('faq ')
+        assert faq2.name.startswith('faq ')
+
 
 @pytest.mark.django_db
 def test_faq_api_returns_active_faq(auth_api_client_registered_player):
     faq = FAQ.get_active()
     if not faq:
-        faq = FAQ.objects.create(content="API FAQ", is_active=True)
+        faq = FAQ.objects.create(content='API FAQ', is_active=True)
     else:
-        faq.content = "API FAQ"
+        faq.content = 'API FAQ'
         faq.is_active = True
         faq.save()
-    url = reverse("api:faq")
+    url = reverse('api:faq')
     response = auth_api_client_registered_player.get(url)
     assert response.status_code == status.HTTP_200_OK
-    assert response.data["faq"] == faq.content
+    assert response.data['faq'] == faq.content
+
 
 @pytest.mark.django_db
 def test_faq_api_returns_404_if_no_active_faq(
-    auth_api_client_registered_player
+    auth_api_client_registered_player,
 ):
     FAQ.objects.all().delete()
-    url = reverse("api:faq")
+    url = reverse('api:faq')
     response = auth_api_client_registered_player.get(url)
     assert response.status_code == status.HTTP_404_NOT_FOUND
-    assert "No active FAQ available." in response.data["faq"]
+    assert 'No active FAQ available.' in response.data['faq']
+
 
 @pytest.mark.django_db
 def test_faq_api_permission_denied(api_client):
-    url = reverse("api:faq")
+    url = reverse('api:faq')
     response = api_client.get(url)
     assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
+
 @pytest.mark.django_db
 def test_faq_api_for_unregistered_player(
-    auth_api_client_with_not_registered_player
+    auth_api_client_with_not_registered_player,
 ):
-    url = reverse("api:faq")
+    url = reverse('api:faq')
     response = auth_api_client_with_not_registered_player.get(url)
     assert response.status_code == status.HTTP_403_FORBIDDEN
-

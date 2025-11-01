@@ -26,11 +26,10 @@ def procces_rate_players_request(self, request, *args, **kwargs) -> Response:
     if self.request.method == 'GET':
         valid_players = rater_player.get_players_to_rate(event)
         serializer = PlayerShortSerializer(valid_players, many=True)
-        return Response({"players": serializer.data})
+        return Response({'players': serializer.data})
 
     serializer = PlayerRateSerializer(
-        data=request.data,
-        context={'request': request, 'event': event}
+        data=request.data, context={'request': request, 'event': event}
     )
     serializer.is_valid(raise_exception=True)
     serializer.save()
@@ -47,15 +46,13 @@ def procces_rate_notifications_for_recent_events():
 
 
 def send_rate_notification_for_events(
-    event_type: type[Game | Tourney],
-    hour_ago: datetime
+    event_type: type[Game | Tourney], hour_ago: datetime
 ) -> bool:
     """
     Sends notification to all players in the event to rate other players.
     """
     events = event_type.objects.filter(
-        end_time__gte=hour_ago,
-        end_time__lt=timezone.now()
+        end_time__gte=hour_ago, end_time__lt=timezone.now()
     )
     if issubclass(event_type, Game):
         notification_type = NotificationTypes.GAME_RATE
@@ -63,10 +60,7 @@ def send_rate_notification_for_events(
         notification_type = NotificationTypes.TOURNEY_RATE
 
     for event in events:
-        send_event_notification_task.delay(
-            event.id,
-            notification_type
-        )
+        send_event_notification_task.delay(event.id, notification_type)
         event.is_active = False
         event.save()
     return True

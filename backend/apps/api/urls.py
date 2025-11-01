@@ -29,9 +29,7 @@ api_v1.register(r'courts', CourtViewSet, basename='courts')
 api_v1.register(r'players', PlayerViewSet, basename='players')
 api_v1.register(r'games', GameViewSet, basename='games')
 api_v1.register(
-    r'notifications',
-    NotificationsViewSet,
-    basename='notifications'
+    r'notifications', NotificationsViewSet, basename='notifications'
 )
 
 schema_view = get_schema_view(
@@ -54,7 +52,7 @@ urlpatterns = [
     path(
         'auth/google/login/v2/',
         GoogleLoginV2.as_view(),
-        name='google-login-v2'
+        name='google-login-v2',
     ),
     path(
         'auth/phone-number/login/',
@@ -62,9 +60,7 @@ urlpatterns = [
         name='phone-number-login',
     ),
     path(
-        'auth/facebook/login',
-        FacebookLogin.as_view(),
-        name='facebook-login'
+        'auth/facebook/login', FacebookLogin.as_view(), name='facebook-login'
     ),
     path(
         'auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'
@@ -74,18 +70,18 @@ urlpatterns = [
     re_path(
         r'^swagger(?P<format>\.json|\.yaml)$',
         schema_view.without_ui(cache_timeout=0),
-        name='schema-json'
-        ),
+        name='schema-json',
+    ),
     path(
         'swagger/',
         schema_view.with_ui('swagger', cache_timeout=0),
-        name='schema-swagger-ui'
-        ),
+        name='schema-swagger-ui',
+    ),
     # ReDoc UI (alternative API docs UI)
     path(
         'redoc/',
         schema_view.with_ui('redoc', cache_timeout=0),
-        name='schema-redoc'
-        ),
+        name='schema-redoc',
+    ),
     path('faq/', FAQView.as_view(), name='faq'),
 ]

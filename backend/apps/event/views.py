@@ -22,38 +22,40 @@ from apps.event.serializers import (
 from apps.event.utils import procces_rate_players_request
 
 
-class GameViewSet(GenericViewSet,
-                  CreateModelMixin,
-                  RetrieveModelMixin,
-                  DestroyModelMixin):
+class GameViewSet(
+    GenericViewSet, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
+):
     """Provides CRUD operations for the Game model."""
+
     permission_classes = (IsHostOrReadOnly,)
     http_method_names = ['get', 'post', 'delete']
 
     def get_queryset(self):
         player = getattr(self.request.user, 'player', None)
-        if (player is None or
-                player.country is None or
-                self.action in ('joining_game', 'delete_invitation')):
-            return Game.objects.all().select_related(
-                    'host', 'court').prefetch_related('players')
-        return Game.objects.player_located_games(player).select_related(
-                    'host', 'court').prefetch_related('players')
+        if (
+            player is None
+            or player.country is None
+            or self.action in ('joining_game', 'delete_invitation')
+        ):
+            return (
+                Game.objects.all()
+                .select_related('host', 'court')
+                .prefetch_related('players')
+            )
+        return (
+            Game.objects.player_located_games(player)
+            .select_related('host', 'court')
+            .prefetch_related('players')
+        )
 
     def get_serializer_class(self, *args, **kwargs):
-        if self.action in (
-                            'retrieve',
-                            'joining_game'):
+        if self.action in ('retrieve', 'joining_game'):
             return GameDetailSerializer
 
         if self.action == 'invite_players':
             return GameInviteSerializer
 
-        if self.action in (
-                            'my_games',
-                            'archive',
-                            'invites',
-                            'upcoming'):
+        if self.action in ('my_games', 'archive', 'invites', 'upcoming'):
             return GameShortSerializer
         return GameSerializer
 
@@ -68,21 +70,13 @@ class GameViewSet(GenericViewSet,
         host_id = request.user.player.id
         for player_id in request.data['players']:
             serializer = self.get_serializer(
-                    data={
-                        'host': host_id,
-                        'invited': player_id,
-                        'game': game_id
-                    }
+                data={'host': host_id, 'invited': player_id, 'game': game_id}
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
         return Response(status=status.HTTP_201_CREATED)
 
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='preview'
-    )
+    @action(methods=['get'], detail=False, url_path='preview')
     def preview(self, request, *args, **kwargs):
         """Returns the time of the next game and the number of invitations."""
 
@@ -91,17 +85,21 @@ class GameViewSet(GenericViewSet,
             upcoming_game_time = upcoming_game.start_time
         else:
             upcoming_game_time = None
-        invites = GameInvitation.objects.filter(
-            invited=request.user.player).values('game').distinct().count()
+        invites = (
+            GameInvitation.objects.filter(invited=request.user.player)
+            .values('game')
+            .distinct()
+            .count()
+        )
         return Response(
-                data={'upcoming_game_time': upcoming_game_time,
-                      'invites': invites}, status=status.HTTP_200_OK)
+            data={
+                'upcoming_game_time': upcoming_game_time,
+                'invites': invites,
+            },
+            status=status.HTTP_200_OK,
+        )
 
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='my-games'
-    )
+    @action(methods=['get'], detail=False, url_path='my-games')
     def my_games(self, request, *args, **kwargs):
         """Retrieves the list of games created by the user."""
 
@@ -110,11 +108,7 @@ class GameViewSet(GenericViewSet,
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='archive'
-    )
+    @action(methods=['get'], detail=False, url_path='archive')
     def archive_games(self, request, *args, **kwargs):
         """Retrieves the list of archived games related to user."""
 
@@ -123,11 +117,7 @@ class GameViewSet(GenericViewSet,
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='invites'
-    )
+    @action(methods=['get'], detail=False, url_path='invites')
     def invited_games(self, request, *args, **kwargs):
         """Retrieving upcoming games to which the player has been invited."""
 
@@ -136,11 +126,7 @@ class GameViewSet(GenericViewSet,
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='upcoming'
-    )
+    @action(methods=['get'], detail=False, url_path='upcoming')
     def upcoming_games(self, request, *args, **kwargs):
         """Retrieving upcoming games that the player participates in."""
 
@@ -153,7 +139,7 @@ class GameViewSet(GenericViewSet,
         methods=['post'],
         detail=True,
         url_path='join-game',
-        permission_classes=[IsAuthenticated]
+        permission_classes=[IsAuthenticated],
     )
     def joining_game(self, request, *args, **kwargs):
         """Adding a user to the game and removing the invitation."""
@@ -164,11 +150,11 @@ class GameViewSet(GenericViewSet,
             is_joined = {'is_joined': True}
             game.players.add(player)
             GameInvitation.objects.filter(
-                Q(game=game) & Q(invited=player)).delete()
+                Q(game=game) & Q(invited=player)
+            ).delete()
         else:
             is_joined = {'is_joined': False}
-        serializer = self.get_serializer(
-            game, context={'request': request})
+        serializer = self.get_serializer(game, context={'request': request})
         data = serializer.data.copy()
         data.update(is_joined)
         return Response(data=data, status=status.HTTP_200_OK)
@@ -177,13 +163,14 @@ class GameViewSet(GenericViewSet,
         methods=['delete'],
         detail=True,
         url_path='invites',
-        permission_classes=[IsAuthenticated]
+        permission_classes=[IsAuthenticated],
     )
     def delete_invitation(self, request, *args, **kwargs):
         game = self.get_object()
         player = request.user.player
         delete_count, dt = GameInvitation.objects.filter(
-            Q(game=game) & Q(invited=player)).delete()
+            Q(game=game) & Q(invited=player)
+        ).delete()
         if not delete_count:
             return Response(
                 data={'error': _('The invitation does not exist!')},
@@ -195,7 +182,7 @@ class GameViewSet(GenericViewSet,
         methods=['get', 'post'],
         detail=True,
         url_path='rate-players',
-        permission_classes=[IsHostOrReadOnly]
+        permission_classes=[IsHostOrReadOnly],
     )
     def rate_players(self, request, *args, **kwargs):
         """

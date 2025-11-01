@@ -4,7 +4,7 @@ from apps.locations.models import City, Country
 
 
 class CitySerializer(serializers.ModelSerializer):
-    '''Serializer for City model.'''
+    """Serializer for City model."""
 
     city_id = serializers.IntegerField(source='id', read_only=True)
     city_name = serializers.CharField(source='name', read_only=True)
@@ -15,7 +15,7 @@ class CitySerializer(serializers.ModelSerializer):
 
 
 class CountrySerializer(serializers.ModelSerializer):
-    '''Serializer for Country model with nested cities.'''
+    """Serializer for Country model with nested cities."""
 
     country_id = serializers.IntegerField(source='id', read_only=True)
     country_name = serializers.CharField(source='name', read_only=True)
@@ -68,6 +68,6 @@ class CityCreateSerializer(serializers.ModelSerializer):
         if name and country:
             if City.objects.filter(name=name, country=country).exists():
                 raise serializers.ValidationError(
-                        'City with this name and country already exists.'
+                    'City with this name and country already exists.'
                 )
         return attrs

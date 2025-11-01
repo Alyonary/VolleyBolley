@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-class AuthIdTokenMixin():
+class AuthIdTokenMixin:
     """Mix a special auth method to API views.
 
     Provide the method to authenticate a user via the firebase id_token.
@@ -82,9 +82,7 @@ class AuthIdTokenMixin():
     def auth_via_id_token(self, id_token, serializer):
         """Authenticate using Firebase ID token from frontend."""
 
-        serializer = serializer(
-            data=firebase_auth.verify_id_token(id_token)
-        )
+        serializer = serializer(data=firebase_auth.verify_id_token(id_token))
         serializer.is_valid(raise_exception=True)
         user_data_cleaned = serializer.save()
         phone_number = user_data_cleaned['phone_number']
@@ -92,9 +90,7 @@ class AuthIdTokenMixin():
 
         # try to find user in DB by phone_number or email
         if phone_number:
-            user = User.objects.filter(
-                phone_number=phone_number
-            ).first()
+            user = User.objects.filter(phone_number=phone_number).first()
 
         elif email:
             user = User.objects.filter(email=email).first()
@@ -117,7 +113,8 @@ class LogoutView(APIView):
             properties={
                 'refresh': openapi.Schema(
                     type=openapi.TYPE_STRING,
-                    description='Refresh token to blacklist'),
+                    description='Refresh token to blacklist',
+                ),
             },
         ),
         responses={205: 'Reset Content', 400: 'Bad Request'},
@@ -156,32 +153,27 @@ class GoogleLogin(APIView):
     Redirect client to base social-auth url ('api:social:begin')
     if there is no data in request or request method is 'GET'.
     """
+
     @swagger_auto_schema(
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             properties={
                 'access_token': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description='Google access token'
-                    ),
+                    type=openapi.TYPE_STRING, description='Google access token'
+                ),
                 'id_token': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description='Google ID token'
-                    ),
+                    type=openapi.TYPE_STRING, description='Google ID token'
+                ),
             },
-            anyOf=[
-                {'required': ['access_token']},
-                {'required': ['id_token']}
-            ],
+            anyOf=[{'required': ['access_token']}, {'required': ['id_token']}],
         ),
         responses={
             200: openapi.Response(
-                'Successful authentication',
-                GoogleUserDataSerializer
-                ),
+                'Successful authentication', GoogleUserDataSerializer
+            ),
             401: 'Authentication failed',
         },
-        operation_summary="Authenticate via Google (access_token or id_token)",
+        operation_summary='Authenticate via Google (access_token or id_token)',
         tags=['auth'],
     )
     def post(self, request):
@@ -201,17 +193,13 @@ class GoogleLogin(APIView):
 
             if 'id_token' in data:
                 if data['id_token']:
-                    logger.info(
-                        'Starting authentication via google id_token.'
-                    )
+                    logger.info('Starting authentication via google id_token.')
 
                     return self._auth_via_id_token(data['id_token'])
 
                 raise ValidationError('Empty token.')
 
-            logger.info(
-                'Redirected to authenticate via google without token.'
-            )
+            logger.info('Redirected to authenticate via google without token.')
 
             return redirect('api:social:begin', backend='google-oauth2')
 
@@ -243,14 +231,12 @@ class GoogleLogin(APIView):
             )
 
     @swagger_auto_schema(
-        operation_summary="Redirect to Google OAuth2 social auth",
+        operation_summary='Redirect to Google OAuth2 social auth',
         responses={302: 'Redirect'},
         tags=['auth'],
     )
     def get(self, request):
-        logger.info(
-            'Starting authentication via google without token.'
-        )
+        logger.info('Starting authentication via google without token.')
 
         return redirect('api:social:begin', backend='google-oauth2')
 
@@ -268,9 +254,7 @@ class GoogleLogin(APIView):
         """Authenticate via 'id_token'."""
 
         user_data_verified = id_token.verify_oauth2_token(
-            token,
-            requests.Request(),
-            SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+            token, requests.Request(), SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
         )
         if not user_data_verified:
             raise ValidationError('Invalid or expired google id_token')
@@ -278,9 +262,7 @@ class GoogleLogin(APIView):
         serializer = GoogleUserDataSerializer(data=user_data_verified)
         serializer.is_valid(raise_exception=True)
         user_data_cleaned = serializer.save()
-        user = User.objects.filter(
-            email=user_data_cleaned['email']
-        ).first()
+        user = User.objects.filter(email=user_data_cleaned['email']).first()
         user = get_or_create_user(user, user_data_cleaned)
 
         return return_auth_response_or_raise_exception(user)
@@ -294,7 +276,6 @@ class PhoneNumberLogin(APIView, AuthIdTokenMixin):
     """
 
     def post(self, request):
-
         return self._post(request, FirebasePhoneSerializer)
 
 
@@ -306,7 +287,6 @@ class FacebookLogin(APIView, AuthIdTokenMixin):
     """
 
     def post(self, request):
-
         return self._post(request, FirebaseFacebookSerializer)
 
 
@@ -318,5 +298,4 @@ class GoogleLoginV2(APIView, AuthIdTokenMixin):
     """
 
     def post(self, request):
-
         return self._post(request, FirebaseGoogleSerializer)

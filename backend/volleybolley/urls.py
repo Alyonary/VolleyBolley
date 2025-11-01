@@ -10,23 +10,21 @@ urlpatterns = [
     path(
         'privacy/',
         TemplateView.as_view(template_name='privacy.html'),
-        name='privacy'
+        name='privacy',
     ),
     path(
         'terms/',
         TemplateView.as_view(template_name='terms.html'),
-        name='terms'
+        name='terms',
     ),
-    path(
-        '',
-        TemplateView.as_view(template_name='index.html'),
-        name='index'
-    ),
+    path('', TemplateView.as_view(template_name='index.html'), name='index'),
     path('', include('django_prometheus.urls')),
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL,
-                          document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL,
-                          document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(
+        settings.STATIC_URL, document_root=settings.STATIC_ROOT
+    )
+    urlpatterns += static(
+        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
+    )

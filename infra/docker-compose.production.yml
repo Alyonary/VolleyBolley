@@ -61,6 +61,7 @@ services:
     container_name: volleybolley_celery_worker
     image: dorofrik/volleybolley-backend
     command: celery -A volleybolley worker -l info --concurrency=${CELERY_WORKER_CONCURRENCY:-2}
+    entrypoint: []
     env_file: .env
     environment:
       - REDIS_HOST=redis
@@ -86,6 +87,7 @@ services:
     image: dorofrik/volleybolley-backend
     command: celery -A volleybolley beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file: .env
+    entrypoint: []
     environment:
       - REDIS_HOST=redis
     depends_on:
@@ -102,6 +104,75 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+
+  monitoring_init:
+    image: dorofrik/volley-monitoring:latest
+    container_name: monitoring_init
+    volumes:
+      - monitoring_data:/target
+    command: ["--copy-only"]
+    restart: "no"
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: volleybolley-promtail
+    expose:
+      - "9080"
+    privileged: true
+    volumes:
+      - ../monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yml
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  loki:
+    image: grafana/loki:latest
+    container_name: volleybolley-loki
+    expose:
+      - "3100"
+    volumes:
+      - ../monitoring/loki-config.yml:/etc/loki/local-config.yml:ro
+    command: -config.file=/etc/loki/local-config.yml
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: volleybolley-prometheus
+    expose:
+      - "9090"
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
+      - GF_PROVISIONING_ENABLE=true
+    volumes:
+      - ../monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - grafana_data:/var/lib/grafana
 
   nginx:
     container_name: volleybolley-proxy
@@ -121,3 +192,6 @@ volumes:
   redis_data:
   static:
   media:
+  grafana_data:
+  monitoring_data:
+  prometheus_data:

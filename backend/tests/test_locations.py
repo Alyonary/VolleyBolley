@@ -7,17 +7,17 @@ from apps.locations.models import Country
 
 @pytest.mark.django_db
 class TestCountriesAPI:
-    '''Tests for Countries API endpoint.'''
+    """Tests for Countries API endpoint."""
 
     def test_endpoint_accessibility(self, api_client):
-        '''Test that countries endpoint is accessible - status 200.'''
+        """Test that countries endpoint is accessible - status 200."""
         url = reverse('api:countries')
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
 
     def test_response_structure(self, api_client):
-        '''Test response has correct JSON structure.
+        """Test response has correct JSON structure.
 
         Expected structure:
         {
@@ -34,7 +34,7 @@ class TestCountriesAPI:
                 }
             ]
         }
-        '''
+        """
         url = reverse('api:countries')
         response = api_client.get(url)
 
@@ -56,7 +56,7 @@ class TestCountriesAPI:
                 assert 'city_name' in city
 
     def test_empty_database(self, api_client):
-        '''Test API with empty database.'''
+        """Test API with empty database."""
         url = reverse('api:countries')
         response = api_client.get(url)
 
@@ -64,7 +64,7 @@ class TestCountriesAPI:
         assert response.data['countries'] == []
 
     def test_country_without_cities(self, api_client):
-        '''Test country that has no cities.'''
+        """Test country that has no cities."""
         Country.objects.create(name='Empty Country')
 
         url = reverse('api:countries')
@@ -74,15 +74,18 @@ class TestCountriesAPI:
 
         countries_data = response.data['countries']
         empty_country = next(
-            (c for c in countries_data
-             if c['country_name'] == 'Empty Country'),
-            None
+            (
+                c
+                for c in countries_data
+                if c['country_name'] == 'Empty Country'
+            ),
+            None,
         )
         assert empty_country is not None
         assert empty_country['cities'] == []
 
     def test_http_methods(self, api_client):
-        '''Test that only GET method is allowed.'''
+        """Test that only GET method is allowed."""
         url = reverse('api:countries')
 
         response = api_client.get(url)
@@ -101,11 +104,9 @@ class TestCountriesAPI:
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
     def test_countries_alphabetical_sorting(
-        self,
-        api_client,
-        countries_cities
+        self, api_client, countries_cities
     ):
-        '''Test that countries are sorted alphabetically.'''
+        """Test that countries are sorted alphabetically."""
         Country.objects.create(name='Vietnam')
         Country.objects.create(name='Malaysia')
 

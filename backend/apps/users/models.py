@@ -24,12 +24,12 @@ class User(AbstractUser):
         max_length=MAX_LENGTH,
         unique=True,
         help_text=(
-            f"Required. {MAX_LENGTH} characters or fewer. "
-            "Letters, digits and @/./+/-/_ only."
+            f'Required. {MAX_LENGTH} characters or fewer. '
+            'Letters, digits and @/./+/-/_ only.'
         ),
         validators=[username_validator],
         error_messages={
-            "unique": "A user with that username already exists.",
+            'unique': 'A user with that username already exists.',
         },
     )
     first_name = models.CharField(
@@ -38,9 +38,7 @@ class User(AbstractUser):
     last_name = models.CharField(
         _('Last name'), max_length=MAX_LENGTH, blank=False
     )
-    email = models.EmailField(
-        _('email'), blank=True, null=True
-    )
+    email = models.EmailField(_('email'), blank=True, null=True)
 
     class Meta:
         verbose_name = _('User')

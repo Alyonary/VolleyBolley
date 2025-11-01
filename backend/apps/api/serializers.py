@@ -16,12 +16,10 @@ class LoginSerializer(serializers.Serializer):
 
     player = PlayerAuthSerializer(read_only=True)
     access_token = serializers.CharField(
-        max_length=APIEnums.TOKEN_MAX_LENGTH,
-        read_only=True
+        max_length=APIEnums.TOKEN_MAX_LENGTH, read_only=True
     )
     refresh_token = serializers.CharField(
-        max_length=APIEnums.TOKEN_MAX_LENGTH,
-        read_only=True
+        max_length=APIEnums.TOKEN_MAX_LENGTH, read_only=True
     )
 
 
@@ -46,18 +44,18 @@ class GoogleUserDataSerializer(serializers.Serializer):
         last_name = validated_data.get('family_name')
         name = validated_data.get('name')
 
-        first_name = (first_name
-                      or (name.split()[0] if name
-                          else email.split('@')[0]))
-        last_name = (last_name
-                     or (name.split()[1] if name and len(name.split()) > 1
-                         else first_name))
+        first_name = first_name or (
+            name.split()[0] if name else email.split('@')[0]
+        )
+        last_name = last_name or (
+            name.split()[1] if name and len(name.split()) > 1 else first_name
+        )
 
         return {
             'email': email,
             'username': email,
             'first_name': first_name,
-            'last_name': last_name
+            'last_name': last_name,
         }
 
 
@@ -101,7 +99,7 @@ class FirebaseBaseSerializer(serializers.Serializer):
 
         return (
             PlayerStrEnums.DEFAULT_FIRST_NAME.value,
-            PlayerStrEnums.DEFAULT_LAST_NAME.value
+            PlayerStrEnums.DEFAULT_LAST_NAME.value,
         )
 
     def configure_from_email(self, email: str) -> tuple[str, str]:
@@ -156,8 +154,9 @@ class FirebaseFacebookSerializer(FirebaseBaseSerializer):
 
     def create(self, validated_data):
         """Extract user data from Firebase response."""
-        phone_number = (validated_data.get('phone_number') or
-                        validated_data.get('phone'))
+        phone_number = validated_data.get(
+            'phone_number'
+        ) or validated_data.get('phone')
         first_name, last_name = self.extract_name_last_name(validated_data)
         email = validated_data.get('email')
 
@@ -166,7 +165,7 @@ class FirebaseFacebookSerializer(FirebaseBaseSerializer):
             'email': email,
             'first_name': first_name,
             'last_name': last_name,
-            'username': email
+            'username': email,
         }
 
 
