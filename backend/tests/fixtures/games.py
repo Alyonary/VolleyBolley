@@ -15,22 +15,26 @@ User = get_user_model()
 
 @pytest.fixture
 def country_thailand():
-    return Country.objects.create(name='Thailand')
+    return Country.objects.get_or_create(name='Thailand')[0]
 
 
 @pytest.fixture
 def city_in_thailand(country_thailand):
-    return City.objects.create(name='Pattaya', country=country_thailand)
+    return City.objects.get_or_create(
+        name='Pattaya', country=country_thailand
+    )[0]
 
 
 @pytest.fixture
 def country_cyprus():
-    return Country.objects.create(name='Cyprus')
+    return Country.objects.get_or_create(name='Cyprus')[0]
 
 
 @pytest.fixture
 def city_in_cyprus(country_cyprus):
-    return City.objects.create(name='Limassol', country=country_cyprus)
+    return City.objects.get_or_create(
+        name='Limassol', country=country_cyprus
+    )[0]
 
 
 @pytest.fixture
@@ -99,8 +103,7 @@ def game_for_args(game_thailand):
 
 @pytest.fixture
 def client():
-    client = APIClient()
-    return client
+    return APIClient()
 
 
 @pytest.fixture
@@ -180,7 +183,7 @@ def game_create_data(
 ):
     start_time = timezone.now() + timedelta(days=2)
     end_time = start_time + timedelta(hours=2)
-    
+
     return {
         'court_id': court_thailand.id,
         'message': 'Hi! Just old',
@@ -207,7 +210,7 @@ def player_thailand_female_pro(country_thailand):
         password='test4@games.com',
         phone_number='+82648129229',
     )
-    player =  Player.objects.create(
+    player = Player.objects.create(
         user=user,
         gender='FEMALE',
         country=country_thailand,
@@ -227,7 +230,7 @@ def three_games_thailand(game_data):
         working_data['message'] = f'Test game {i+1} in Thailand'
         players = working_data.pop('players')
         levels = working_data.pop('player_levels')
-        
+
         start_time = working_data['start_time'] + timedelta(hours=i*4)
         end_time = working_data['end_time'] + timedelta(hours=i*4)
         working_data['start_time'] = start_time
@@ -237,5 +240,5 @@ def three_games_thailand(game_data):
         game.players.set(players)
         game.player_levels.set(levels)
         games.append(game)
-    
+
     return games

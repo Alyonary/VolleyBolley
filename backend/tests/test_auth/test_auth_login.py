@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse, reverse_lazy
 from rest_framework import status
 
+from apps.players.models import Player
+
 User = get_user_model()
 
 
@@ -74,7 +76,7 @@ class TestGoogleAuth:
             self._check_moke_data_response(response, google_response)
 
     def _check_response(self, response):
-        
+
         assert response.status_code == status.HTTP_200_OK
         access_token = response.data.get('access_token', None)
         refresh_token = response.data.get('refresh_token', None)
@@ -126,7 +128,7 @@ class TestGoogleAuth:
         data = {}
         if token_type:
             data[token_type] = token_value
-        
+
         response = api_client.post(
             self.url,
             data,
@@ -183,7 +185,7 @@ class TestPhoneNumberAuth:
         self, api_client, firebase_response
     ):
         with patch(
-            'apps.api.utils.firebase_auth.verify_id_token', 
+            'apps.api.utils.firebase_auth.verify_id_token',
             return_value=firebase_response
         ):
             response = api_client.post(
@@ -191,11 +193,11 @@ class TestPhoneNumberAuth:
                 {'id_token': 'fake-firebase-id-token'},
                 format='json'
             )
-            
+
             self._check_response(response)
 
     def _check_response(self, response):
-        
+
         assert response.status_code == status.HTTP_200_OK
         access_token = response.data.get('access_token', None)
         refresh_token = response.data.get('refresh_token', None)
@@ -214,6 +216,7 @@ class TestPhoneNumberAuth:
             'city',
             'is_registered'
         }
+        user = Player.objects.filter(pk=player_json['player_id']).first().user
         for key in expected_keys:
             assert key in player_json
         assert player_json['avatar'] is None
@@ -225,6 +228,7 @@ class TestPhoneNumberAuth:
         assert player_json['country'] is None
         assert player_json['city'] is None
         assert player_json['is_registered'] is False
+        assert user.username == user.phone_number
 
     @pytest.mark.parametrize(
         'invalid_token_fixture,expected_status',
@@ -241,7 +245,7 @@ class TestPhoneNumberAuth:
     ):
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
-            'apps.api.utils.firebase_auth.verify_id_token', 
+            'apps.api.utils.firebase_auth.verify_id_token',
             return_value=invalid_token
         ):
             response = api_client.post(
@@ -255,7 +259,7 @@ class TestPhoneNumberAuth:
     def test_auth_with_real_firebase_token(
         self, api_client, real_firebase_token
     ):
-        
+
         response = api_client.post(
                 self.url,
                 {'id_token': real_firebase_token},
@@ -295,7 +299,7 @@ class TestFacebookAuth:
     def test_auth_with_real_firebase_token(
         self, api_client, real_fb_firebase_token
     ):
-        
+
         response = api_client.post(
                 self.url,
                 {'id_token': real_fb_firebase_token},
@@ -305,7 +309,7 @@ class TestFacebookAuth:
         self._check_response(response)
 
     def _check_response(self, response):
-        
+
         assert response.status_code == status.HTTP_200_OK
         access_token = response.data.get('access_token', None)
         refresh_token = response.data.get('refresh_token', None)
@@ -347,7 +351,7 @@ class TestFacebookAuth:
     ):
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
-            'apps.api.utils.firebase_auth.verify_id_token', 
+            'apps.api.utils.firebase_auth.verify_id_token',
             return_value=invalid_token
         ):
             response = api_client.post(
@@ -361,7 +365,7 @@ class TestFacebookAuth:
         self, api_client, firebase_fb_response
     ):
         with patch(
-            'apps.api.utils.firebase_auth.verify_id_token', 
+            'apps.api.utils.firebase_auth.verify_id_token',
             return_value=firebase_fb_response
         ):
             response = api_client.post(
@@ -369,7 +373,107 @@ class TestFacebookAuth:
                 {'id_token': 'fake-firebase-id-token'},
                 format='json'
             )
-            
+
+            self._check_response(response)
+            assert response.data.get('player').get('first_name') == 'Test'
+            assert response.data.get('player').get('last_name') == 'User'
+
+
+@pytest.mark.django_db
+class TestFirebaseGoogleAuth:
+    """Test auth with moke firebase answer."""
+
+    url = reverse_lazy('api:google-login-v2')
+
+    def test_auth_with_invalid_firebase_token(
+        self, api_client, invalid_firebase_token
+    ):
+        response = api_client.post(
+            self.url,
+            {'id_token': invalid_firebase_token},
+            format='json'
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.skip(reason="skipped until fresh token will be provided")
+    def test_auth_with_real_firebase_token(
+        self, api_client, real_fb_firebase_token
+    ):
+
+        response = api_client.post(
+                self.url,
+                {'id_token': real_fb_firebase_token},
+                format='json'
+            )
+
+        self._check_response(response)
+
+    def _check_response(self, response):
+
+        assert response.status_code == status.HTTP_200_OK
+        access_token = response.data.get('access_token', None)
+        refresh_token = response.data.get('refresh_token', None)
+        player_json = response.data.get('player', None)
+        assert isinstance(access_token, str)
+        assert isinstance(refresh_token, str)
+        expected_keys = {
+            'player_id',
+            'avatar',
+            'first_name',
+            'last_name',
+            'gender',
+            'date_of_birth',
+            'level',
+            'country',
+            'city',
+            'is_registered'
+        }
+        for key in expected_keys:
+            assert key in player_json
+        assert player_json['avatar'] is None
+        assert player_json['gender'] == 'MALE'
+        assert player_json['date_of_birth'] == '2000-01-01'
+        assert player_json['level'] == 'LIGHT'
+        assert player_json['country'] is None
+        assert player_json['city'] is None
+        assert player_json['is_registered'] is False
+
+    @pytest.mark.parametrize(
+        'invalid_token_fixture,expected_status',
+        [
+            ('firebase_fb_response_no_email', status.HTTP_400_BAD_REQUEST),
+            ('firebase_fb_response_bad_email', status.HTTP_400_BAD_REQUEST),
+            ('empty_token', status.HTTP_400_BAD_REQUEST)
+        ]
+    )
+    def test_auth_with_invalid_firebase_token_and_moke_response(
+        self, request, api_client, invalid_token_fixture, expected_status
+    ):
+        invalid_token = request.getfixturevalue(invalid_token_fixture)
+        with patch(
+            'apps.api.utils.firebase_auth.verify_id_token',
+            return_value=invalid_token
+        ):
+            response = api_client.post(
+                self.url,
+                {'id_token': 'fake-firebase-id-token'},
+                format='json'
+            )
+            assert response.status_code == expected_status
+
+    def test_auth_with_moke_firebase_response(
+        self, api_client, firebase_fb_response
+    ):
+        with patch(
+            'apps.api.utils.firebase_auth.verify_id_token',
+            return_value=firebase_fb_response
+        ):
+            response = api_client.post(
+                self.url,
+                {'id_token': 'fake-firebase-id-token'},
+                format='json'
+            )
+
             self._check_response(response)
             assert response.data.get('player').get('first_name') == 'Test'
             assert response.data.get('player').get('last_name') == 'User'

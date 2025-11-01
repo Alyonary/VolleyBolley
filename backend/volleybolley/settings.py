@@ -1,5 +1,4 @@
 import os
-import sys
 from datetime import timedelta
 from pathlib import Path
 from django.core.management.utils import get_random_secret_key
@@ -15,8 +14,6 @@ if ENV_PATH.exists():
     load_dotenv(ENV_PATH)
 else:
     load_dotenv()
-
-load_dotenv()
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
@@ -115,7 +112,6 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', 5432)
     }
 }
-
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -248,6 +244,8 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
+AUTO_CREATE_DEFAULT_SUPERUSER = os.getenv('AUTO_CREATE_DEFAULT_SUPERUSER', False)
+MANY_SUPERUSERS = os.getenv('MANY_SUPERUSERS', False)
 
 LOGGING = {
     'version': 1,
@@ -344,10 +342,15 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
-    #    'root': {
-    #        'handlers': ['console'],
-    #        'level': 'INFO',
-    #    },
+        'apps.users': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # 'root': {
+        #     'handlers': ['console'],
+        #     'level': 'INFO',
+        # },
     },
 }
 

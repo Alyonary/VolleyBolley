@@ -4,6 +4,7 @@ from typing import Any
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import exceptions, serializers
 
+from apps.api.enums import APIEnums
 from apps.players.constants import PlayerStrEnums
 from apps.players.serializers import PlayerAuthSerializer
 
@@ -15,11 +16,11 @@ class LoginSerializer(serializers.Serializer):
 
     player = PlayerAuthSerializer(read_only=True)
     access_token = serializers.CharField(
-        max_length=1000,
+        max_length=APIEnums.TOKEN_MAX_LENGTH,
         read_only=True
     )
     refresh_token = serializers.CharField(
-        max_length=1000,
+        max_length=APIEnums.TOKEN_MAX_LENGTH,
         read_only=True
     )
 
@@ -27,7 +28,7 @@ class LoginSerializer(serializers.Serializer):
 class GoogleUserDataSerializer(serializers.Serializer):
     """Serialize user data for google authentication."""
 
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=True)
     given_name = serializers.CharField(required=False)
     family_name = serializers.CharField(required=False)
     name = serializers.CharField(required=False)
@@ -54,6 +55,7 @@ class GoogleUserDataSerializer(serializers.Serializer):
 
         return {
             'email': email,
+            'username': email,
             'first_name': first_name,
             'last_name': last_name
         }
@@ -74,16 +76,16 @@ class FirebaseBaseSerializer(serializers.Serializer):
 
     def extract_name_last_name(
         self, validated_data: dict[str, Any]
-    ) -> tuple[str]:
+    ) -> tuple[str, str]:
         """Extract users first and last names from Firebase id_token.
-        
+
         Returns:
             The tuple (first_name, last_name).
         """
-        first_name = validated_data.get('given_name')
-        last_name = validated_data.get('family_name')
-        full_name = validated_data.get('name')
-        email = validated_data.get('email')
+        first_name: str | None = validated_data.get('given_name')
+        last_name: str | None = validated_data.get('family_name')
+        full_name: str | None = validated_data.get('name')
+        email: str | None = validated_data.get('email')
 
         if first_name and last_name:
             return first_name, last_name
@@ -101,10 +103,10 @@ class FirebaseBaseSerializer(serializers.Serializer):
             PlayerStrEnums.DEFAULT_FIRST_NAME.value,
             PlayerStrEnums.DEFAULT_LAST_NAME.value
         )
-    
-    def configure_from_email(self, email: str) -> tuple[str]:
+
+    def configure_from_email(self, email: str) -> tuple[str, str]:
         """Configure first_name, last_name from users email.
-        
+
         Returns:
             The tuple (first_name, last_name).
         """
@@ -125,10 +127,12 @@ class FirebasePhoneSerializer(FirebaseBaseSerializer):
     def validate(self, attrs):
         attrs = super().validate(attrs)
         attrs['phone_number'] = attrs.get('phone_number') or attrs.get('phone')
+
         if not attrs['phone_number']:
             raise exceptions.ValidationError(
                 'Missing phone_number in Firebase id_token.'
             )
+
         return attrs
 
     def create(self, validated_data):
@@ -136,12 +140,12 @@ class FirebasePhoneSerializer(FirebaseBaseSerializer):
         phone_number = validated_data.get('phone_number')
         first_name, last_name = self.extract_name_last_name(validated_data)
         email = validated_data.get('email')
-
         return {
             'phone_number': phone_number,
             'email': email,
             'first_name': first_name,
             'last_name': last_name,
+            'username': phone_number,
         }
 
 
@@ -162,4 +166,9 @@ class FirebaseFacebookSerializer(FirebaseBaseSerializer):
             'email': email,
             'first_name': first_name,
             'last_name': last_name,
+            'username': email
         }
+
+
+class FirebaseGoogleSerializer(FirebaseFacebookSerializer):
+    """Serialize Firebase user data for auth via google."""

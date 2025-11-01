@@ -1,8 +1,9 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from .enums import CoreFieldLength
-from .models import (
+from apps.core.enums import CoreFieldLength
+from apps.core.models import (
+    FAQ,
     Contact,
     CurrencyType,
     GameLevel,
@@ -70,7 +71,7 @@ class InfoSectionAdmin(admin.ModelAdmin):
                 + '...'
             )
             if obj.content
-                and (
+            and (
                     len(obj.content)
                     > CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value
                 )
@@ -96,3 +97,19 @@ class CurrencyTypeAdmin(admin.ModelAdmin):
     ordering = ('currency_type',)
     empty_value_display = _('Not defined')
     list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
+
+@admin.register(FAQ)
+class FAQAdmin(admin.ModelAdmin):
+    list_display = ('id', 'name', 'is_active', 'created_at', 'updated_at')
+    list_display_links = ('id', 'name')
+    search_fields = ('name',)
+    list_filter = ('is_active',)
+    ordering = ('-created_at',)
+    empty_value_display = _('Not defined')
+    list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
+
+    def save_model(self, request, obj, form, change):
+        """Ensure only one FAQ is active at a time."""
+        if obj.is_active:
+            FAQ.objects.exclude(id=obj.id).update(is_active=False)
+        super().save_model(request, obj, form, change)

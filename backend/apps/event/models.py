@@ -14,10 +14,10 @@ class GameQuerySet(m.query.QuerySet):
         city = getattr(player, 'city', None)
         if country is None or city is None:
             return self
-        elif player.country.name == 'Cyprus':
+        if player.country.name == 'Cyprus':
             return self.filter(
                 court__location__country=player.country)
-        elif player.country.name == 'Thailand':
+        if player.country.name == 'Thailand':
             return self.filter(court__location__city=player.city)
         return self
 
@@ -120,9 +120,9 @@ class GameInvitation(m.Model):
         verbose_name_plural = _('Game invitations')
 
     def __str__(self):
-        discription = str(_(
-            f'Invitation in {self.game} for {self.invited}'))
-        return discription
+        return str(_(
+            f'Invitation in {self.game} for {self.invited}'
+        ))
 
 
 class Game(EventMixin, CreatedUpdatedMixin):

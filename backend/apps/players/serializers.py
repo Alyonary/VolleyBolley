@@ -8,7 +8,8 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from apps.event.models import Game, Tourney
-from apps.players.constants import PlayerIntEnums
+from apps.locations.models import City, Country
+from apps.players.constants import Genders, Grades, PlayerIntEnums
 from apps.players.exceptions import (
     DuplicateVoteError,
     InvalidRatingError,
@@ -19,7 +20,12 @@ from apps.players.exceptions import (
     RatingLimitError,
     SelfRatingError,
 )
-from apps.players.models import Favorite, Payment, Player, PlayerRatingVote
+from apps.players.models import (
+    Favorite,
+    Payment,
+    Player,
+    PlayerRatingVote,
+)
 from apps.players.rating import GradeSystem
 
 
@@ -28,8 +34,8 @@ class Base64ImageField(serializers.ImageField):
 
     def to_internal_value(self, data):
         if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
+            data_format, imgstr = data.split(';base64,')
+            ext = data_format.split('/')[-1]
             data = ContentFile(
                 base64.b64decode(imgstr), name='temp.' + ext
             )
@@ -112,8 +118,11 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
         required=False
     )
     avatar = Base64ImageField(read_only=True)
-    level = serializers.PrimaryKeyRelatedField(
-        source='rating.grade', read_only=True
+    level = serializers.ChoiceField(
+        choices=Grades.choices,
+        source='rating.grade',
+        required=False,
+        read_only=True,
     )
 
     class Meta:
@@ -128,22 +137,34 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
             'city',
             'avatar'
         )
+        read_only_fields = (
+            'gender',
+            'level',
+            'avatar'
+        )
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('user', {})
+        country = validated_data.pop('country', None)
+        city = validated_data.pop('city', None)
         for attr, value in user_data.items():
-            setattr(instance.user, attr, value)
+            if value:
+                setattr(instance.user, attr, value)
+
+        if country is not None:
+            instance.country = country
+
+        if city is not None:
+            instance.city = city
 
         instance.user.save()
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        instance.is_registered = True
 
         instance.save()
 
         return instance
-
 
 
 class AvatarSerializer(PlayerBaseSerializer):
@@ -193,20 +214,23 @@ class PlayerAuthSerializer(PlayerBaseSerializer):
 class PlayerRegisterSerializer(PlayerBaseSerializer):
     """Serialize data for player registration."""
 
-    first_name = serializers.CharField(
-        source='user.first_name',
-        max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
-        required=True
+    country = serializers.PrimaryKeyRelatedField(
+        required=True, queryset=Country.objects.all()
     )
-    last_name = serializers.CharField(
-        source='user.last_name',
-        max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
-        required=True
+    city = serializers.PrimaryKeyRelatedField(
+        required=True, queryset=City.objects.all()
     )
+    level = serializers.ChoiceField(
+        choices=Grades.choices,
+        source='rating.grade',
+        required=True,
+        write_only=True,
+    )
+    gender = serializers.ChoiceField(
+        choices=Genders.choices, required=False
+        )
 
-
-    class Meta:
-        model = Player
+    class Meta(PlayerBaseSerializer.Meta):
         fields = (
             'first_name',
             'last_name',
@@ -214,13 +238,24 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
             'date_of_birth',
             'country',
             'city',
+            'level',
         )
+        read_only_fields = ()
 
-    def create(self, validated_data):
-        level = validated_data.pop('level', None)
-        player = Player.objects.create(**validated_data)
-        player.level = level
-        return player
+    def update(self, instance, validated_data):
+        rating_data = validated_data.pop('rating', {})
+
+        instance = super().update(instance, validated_data)
+
+        for attr, value in rating_data.items():
+            if value:
+                setattr(instance.rating, attr, value)
+
+        instance.rating.save()
+        instance.is_registered = True
+        instance.save()
+
+        return instance
 
 
 class PlayerListSerializer(PlayerBaseSerializer):
@@ -294,6 +329,7 @@ class PlayerGameSerializer(PlayerAuthSerializer):
     level = serializers.CharField(
         source='rating.grade', read_only=True
     )
+
     class Meta:
         model = Player
         fields = (
@@ -323,7 +359,7 @@ class PlayerRateItemSerializer(serializers.Serializer):
     """
 
     player_id = serializers.IntegerField(
-        validators=[MinValueValidator(1)], 
+        validators=[MinValueValidator(1)],
         help_text="player_id must be a positive integer."
     )
     level_changed = serializers.ChoiceField(
@@ -344,7 +380,7 @@ class PlayerRateItemSerializer(serializers.Serializer):
                 "level_changed must be one of: 'UP', 'DOWN', 'CONFIRM'."
             )
         return value
-    
+
     def validate(self, data):
         """
         Validates rating limits and calculates rating value for one player.
@@ -352,7 +388,7 @@ class PlayerRateItemSerializer(serializers.Serializer):
         request = self.context.get('request')
         event: Game | Tourney = self.context.get('event')
         rater_player: Player = request.user.player
-        
+
         try:
             rated_player = Player.objects.get(id=data['player_id'])
         except Player.DoesNotExist as e:
@@ -364,19 +400,19 @@ class PlayerRateItemSerializer(serializers.Serializer):
             raise SelfRatingError(
                 "You cannot rate yourself."
             )
-        
+
         if not event.players.filter(id=rater_player.id).exists():
             raise ParticipationError(
                 "You can rate only players in events you participated in."
             )
-        
+
         if not event.players.filter(id=rated_player.id).exists():
             raise ParticipationError(
                 f"You can rate only players in events you participated in. "
                 f"Player {rated_player.user.username} did not participate "
                 "in this event."
             )
-        
+
         if PlayerRatingVote.objects.filter(
             rater=rater_player,
             rated=rated_player,
@@ -387,7 +423,7 @@ class PlayerRateItemSerializer(serializers.Serializer):
                 f"You have already rated player {rated_player.user.username} "
                 "in this event."
             )
-        
+
         two_months_ago = timezone.now() - timedelta(
             days=PlayerIntEnums.PLAYER_VOTE_LIMIT.value
         )
@@ -403,10 +439,10 @@ class PlayerRateItemSerializer(serializers.Serializer):
             )
         try:
             value = GradeSystem.get_value(
-                rater = rater_player,
-                rated = rated_player,
-                level_change = data['level_changed']
-            ) 
+                rater=rater_player,
+                rated=rated_player,
+                level_change=data['level_changed']
+            )
             return {
                 'rater': rater_player.id,
                 'rated_player': rated_player.id,
@@ -414,6 +450,7 @@ class PlayerRateItemSerializer(serializers.Serializer):
             }
         except InvalidRatingError as e:
             raise e
+
 
 class PlayerRateSerializer(serializers.Serializer):
     """
@@ -448,10 +485,10 @@ class PlayerRateSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     "level_changed must be one of: 'UP', 'DOWN', 'CONFIRM'."
                 ) from e
-            except (PlayerNotExistsError, 
-                    SelfRatingError, 
-                    ParticipationError, 
-                    DuplicateVoteError, 
+            except (PlayerNotExistsError,
+                    SelfRatingError,
+                    ParticipationError,
+                    DuplicateVoteError,
                     RatingLimitError,
                     InvalidRatingError):
                 continue
@@ -464,6 +501,7 @@ class PlayerRateSerializer(serializers.Serializer):
         votes = []
         results = []
         event = self.context.get('event')
+
         for item in validated_data['players']:
             rater_player = Player.objects.get(id=item['rater'])
             rated_player = Player.objects.get(id=item['rated_player'])
@@ -483,7 +521,7 @@ class PlayerRateSerializer(serializers.Serializer):
                 'rated_player': item['rated_player'],
                 'value': item['value']
             })
-        
+
         if votes:
             PlayerRatingVote.objects.bulk_create(votes)
         return {'players': results}

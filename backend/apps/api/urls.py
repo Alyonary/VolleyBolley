@@ -11,9 +11,11 @@ from rest_framework_simplejwt.views import (
 from apps.api.views import (
     FacebookLogin,
     GoogleLogin,
+    GoogleLoginV2,
     LogoutView,
     PhoneNumberLogin,
 )
+from apps.core.views import FAQView
 from apps.courts.views import CourtViewSet
 from apps.event.views import GameViewSet
 from apps.locations.views import CountryListView
@@ -50,6 +52,11 @@ urlpatterns = [
     path('auth/logout/', LogoutView.as_view(), name='logout'),
     path('auth/google/login/', GoogleLogin.as_view(), name='google-login'),
     path(
+        'auth/google/login/v2/',
+        GoogleLoginV2.as_view(),
+        name='google-login-v2'
+    ),
+    path(
         'auth/phone-number/login/',
         PhoneNumberLogin.as_view(),
         name='phone-number-login',
@@ -80,4 +87,5 @@ urlpatterns = [
         schema_view.with_ui('redoc', cache_timeout=0),
         name='schema-redoc'
         ),
+    path('faq/', FAQView.as_view(), name='faq'),
 ]

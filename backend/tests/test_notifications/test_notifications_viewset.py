@@ -80,9 +80,9 @@ class TestNotificationsViewSet:
         data = response.json()
         assert 'notifications' in data
         assert len(data['notifications']) == 0
-        
-  
-        
+
+
+
     def test_patch_notifications_success(
         self,
         authenticated_client,

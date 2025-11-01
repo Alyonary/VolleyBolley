@@ -253,7 +253,7 @@ class PushService:
             if not notification:
                 logger.error(
                     f'Notification type {notification_type} not found'
-            )
+                )
                 return {
                     'status': False,
                     'message': f'Error: Notification type {notification_type} '
@@ -269,8 +269,8 @@ class PushService:
             )
             return {
                 'status': True,
-                'message':stats_msg,
-            }     
+                'message': stats_msg,
+            }
         except Exception as e:
             err_msg = (
                 f'Error processing notification type {notification_type}: '
@@ -298,21 +298,22 @@ class PushService:
         Returns:
             QuerySet: QuerySet of Device objects to send notifications to.
         """
+        devices: list[Device]
         if (
             notification_type == NotificationTypes.GAME_REMINDER
             or notification_type == NotificationTypes.GAME_RATE
         ):
-            devices: list[Device] = Device.objects.in_game(event_id)
+            devices = Device.objects.in_game(event_id)
         elif notification_type in [
             NotificationTypes.GAME_INVITE,
             NotificationTypes.TOURNEY_INVITE
         ]:
-            devices: list[Device] = Device.objects.by_player(player_id)
-        elif notification_type in[
+            devices = Device.objects.by_player(player_id)
+        elif notification_type in [
             NotificationTypes.TOURNEY_REMINDER,
             NotificationTypes.TOURNEY_RATE
         ]:
-            devices: list[Device] = Device.objects.in_tourney(event_id)
+            devices = Device.objects.in_tourney(event_id)
         else:
             devices = []
             logger.warning(f'Unknown notification type: {notification_type}')
@@ -329,10 +330,9 @@ class PushService:
         Returns:
             Notification: NotificationsBase object with title, body, screen.
         """
-        notification = NotificationsBase.objects.get(
+        return NotificationsBase.objects.get(
             type=notification_type
-        )   
-        return notification
+        )
 
     @service_required
     def send_push_notifications(
@@ -340,7 +340,7 @@ class PushService:
         devices: list[Device],
         notification: NotificationsBase,
         event_id: int | None = None,
-    ) -> bool | None:
+    ) -> dict[str, int]:
         """
         Send push notifications to multiple devices.
         Args:

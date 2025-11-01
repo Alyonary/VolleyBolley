@@ -31,10 +31,10 @@ def push_service_enabled(
 
     def mock_check_fcm(self):
         return True
-    
+
     def mock_check_celery_availability(self):
         return True
-    
+
     monkeypatch.setattr(
         PushService,
         '_initialize_firebase',
@@ -76,7 +76,7 @@ def push_service_disabled(reset_push_service, monkeypatch):
         PushService,
         '_initialize_firebase',
         mock_initialize_firebase
-    )    
+    )
     monkeypatch.setattr(PushService, '_check_fcm', mock_check_fcm)
     monkeypatch.setattr(
         PushService,
@@ -84,9 +84,7 @@ def push_service_disabled(reset_push_service, monkeypatch):
         mock_check_celery_availability
     )
 
-    service = PushService()
-    
-    return service
+    return PushService()
 
 
 @pytest.fixture
@@ -99,13 +97,13 @@ def push_service_fcm_only(reset_push_service, monkeypatch):
 
     def mock_check_fcm(self):
         return True
-    
+
     def mock_check_celery_availability(self):
         return False
-    
+
     mock_fcm_instance = Mock()
     mock_fcm_instance.notify.return_value = None
-    
+
     def mock_fcm_notification(*args, **kwargs):
         return mock_fcm_instance
     monkeypatch.setattr(
@@ -123,9 +121,7 @@ def push_service_fcm_only(reset_push_service, monkeypatch):
         'apps.notifications.push_service.FCMNotification',
         mock_fcm_notification
     )
-    service = PushService()
-
-    return service
+    return PushService()
 
 
 @pytest.fixture
@@ -140,7 +136,7 @@ def mock_fcm_service_ok():
 def mock_fcm_service_fail():
     """Mock FCM service that always fails."""
     mock_fcm = Mock()
-    mock_fcm.notify.side_effect =  Exception("FCM service error")
+    mock_fcm.notify.side_effect = Exception("FCM service error")
     return mock_fcm
 
 
@@ -148,7 +144,7 @@ def mock_fcm_service_fail():
 def mock_fcm_service_token_fail():
     """Mock FCM service that always fails."""
     mock_fcm = Mock()
-    mock_fcm.notify.side_effect =  FCMError("Invalid token")
+    mock_fcm.notify.side_effect = FCMError("Invalid token")
     return mock_fcm
 
 
@@ -199,5 +195,3 @@ def mock_tasks_import(monkeypatch):
 
     monkeypatch.setattr(builtins, '__import__', mock_import_func)
     return mock_retry_task
-
-    
