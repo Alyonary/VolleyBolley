@@ -144,11 +144,15 @@ def player_no_data_for_registration():
 @pytest.fixture
 def player_necessary_data_for_registration(countries_cities):
     return {
+        'first_name': 'Name',
+        'last_name': 'LastName',
         'country': countries_cities['Thailand'].id,
         'city': countries_cities['Thailand'].cities.filter(
             name='Bangkok'
         ).first().id,
-        'level': 'MEDIUM'
+        'level': 'MEDIUM',
+        'date_of_birth': '1990-06-06',
+        'gender': 'FEMALE',
     }
 
 
