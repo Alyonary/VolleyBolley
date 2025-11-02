@@ -53,6 +53,8 @@ class Player(models.Model):
     date_of_birth = models.DateField(
         default=PlayerStrEnums.DEFAULT_BIRTHDAY.value,
         validators=[validate_birthday],
+        blank=False,
+        null=False,
     )
     country = models.ForeignKey(
         Country,

@@ -170,7 +170,7 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
 class AvatarSerializer(PlayerBaseSerializer):
     """Serialize avatar data for avatar managing."""
 
-    avatar = Base64ImageField(required=False, allow_null=True)
+    avatar = Base64ImageField(required=True, allow_null=True)
 
     class Meta:
         model = Player
@@ -214,6 +214,16 @@ class PlayerAuthSerializer(PlayerBaseSerializer):
 class PlayerRegisterSerializer(PlayerBaseSerializer):
     """Serialize data for player registration."""
 
+    first_name = serializers.CharField(
+        source='user.first_name',
+        max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
+        required=True
+    )
+    last_name = serializers.CharField(
+        source='user.last_name',
+        max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
+        required=True
+    )
     country = serializers.PrimaryKeyRelatedField(
         required=True, queryset=Country.objects.all()
     )
@@ -227,7 +237,7 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
         write_only=True,
     )
     gender = serializers.ChoiceField(
-        choices=Genders.choices, required=False
+        choices=Genders.choices, required=True
         )
 
     class Meta(PlayerBaseSerializer.Meta):
@@ -262,7 +272,7 @@ class PlayerListSerializer(PlayerBaseSerializer):
     """Serialize player list data."""
 
     player_id = serializers.PrimaryKeyRelatedField(
-        source='id', read_only=True
+        source='id', read_only=True, help_text='`Integer`'
     )
     is_favorite = serializers.SerializerMethodField(
         read_only=True
@@ -287,7 +297,7 @@ class PlayerListSerializer(PlayerBaseSerializer):
             'is_favorite'
         )
 
-    def get_is_favorite(self, obj):
+    def get_is_favorite(self, obj) -> bool:
         """Retrieve if player is in favorite list."""
         return Favorite.objects.filter(
             player=self.context.get('player'),
