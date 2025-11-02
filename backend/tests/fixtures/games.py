@@ -21,7 +21,7 @@ def country_thailand():
 @pytest.fixture
 def city_in_thailand(country_thailand):
     return City.objects.get_or_create(
-        name='Pattaya', country=country_thailand
+        name='Bangkok', country=country_thailand
     )[0]
 
 

@@ -113,7 +113,7 @@ def court_api_response_data():
              'contact': '+79999999999'}
         ],
         'photo_url': None,
-        'tag_list': ['Test tag'],
+        'tags': ['Test tag'],
         'location': {
             'longitude': 12.345,
             'latitude': -54.321,
