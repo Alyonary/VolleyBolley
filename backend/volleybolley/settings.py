@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'apps.users.apps.UsersConfig',
     'apps.api.apps.ApiConfig',
+    'apps.authentication.apps.AuthenticationConfig',
     'apps.players.apps.PlayersConfig',
     'apps.courts.apps.CourtsConfig',
     'apps.event.apps.EventConfig',
@@ -72,7 +73,7 @@ SECURE_SSL_REDIRECT = False
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'apps.api.middlewares.OAuthResponseMiddleware',
+    'apps.authentication.middlewares.OAuthResponseMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -186,8 +187,8 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',
     'apps.players.pipeline.create_player',
-    'apps.api.pipeline.generate_json_response',
-    'apps.api.pipeline.raise_oauth_success',
+    'apps.authentication.pipeline.generate_json_response',
+    'apps.authentication.pipeline.raise_oauth_success',
 )
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', '')

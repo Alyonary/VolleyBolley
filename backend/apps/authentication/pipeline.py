@@ -1,5 +1,5 @@
-from apps.api.exceptions import OAuthSuccessException
-from apps.api.utils import get_serialized_data
+from apps.authentication.exceptions import OAuthSuccessException
+from apps.authentication.utils import get_serialized_data
 
 
 def generate_json_response(

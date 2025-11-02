@@ -19,7 +19,7 @@ class TestTokens:
 
     def test_jwt_token_verify(self, api_client, refresh_token):
 
-        url = reverse('api:token-verify')
+        url = reverse('api:auth:token-verify')
         access_token = self._refresh_token(
             api_client, refresh_token
         ).data.get('access_token')
@@ -28,5 +28,5 @@ class TestTokens:
         assert response.status_code == status.HTTP_200_OK
 
     def _refresh_token(self, client, refresh_token):
-        url = reverse('api:token-refresh')
+        url = reverse('api:auth:token-refresh')
         return client.post(url, {'refresh_token': refresh_token})

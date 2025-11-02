@@ -21,7 +21,7 @@ from social_django.utils import (
     load_strategy,
 )
 
-from apps.api.serializers import (
+from apps.authentication.serializers import (
     CustomTokenRefreshSerializer,
     CustomTokenVerifySerializer,
     FirebaseFacebookSerializer,
@@ -30,7 +30,7 @@ from apps.api.serializers import (
     GoogleUserDataSerializer,
     LoginSerializer,
 )
-from apps.api.utils import (
+from apps.authentication.utils import (
     firebase_auth,
     get_or_create_user,
     return_auth_response_or_raise_exception,

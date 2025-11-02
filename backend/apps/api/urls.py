@@ -4,15 +4,6 @@ from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.routers import DefaultRouter
 
-from apps.api.views import (
-    CustomTokenRefreshView,
-    CustomTokenVerifyView,
-    FacebookLogin,
-    GoogleLogin,
-    GoogleLoginV2,
-    LogoutView,
-    PhoneNumberLogin,
-)
 from apps.core.views import FAQView
 from apps.courts.views import CourtViewSet
 from apps.event.views import GameViewSet
@@ -47,31 +38,7 @@ urlpatterns = [
     path('', include(api_v1.urls)),
     path('social-auth/', include('social_django.urls', namespace='social')),
     path('countries/', CountryListView.as_view(), name='countries'),
-    path('auth/logout/', LogoutView.as_view(), name='logout'),
-    path('auth/google/login/', GoogleLogin.as_view(), name='google-login'),
-    path(
-        'auth/google/login/v2/',
-        GoogleLoginV2.as_view(),
-        name='google-login-v2'
-    ),
-    path(
-        'auth/phone-number/login/',
-        PhoneNumberLogin.as_view(),
-        name='phone-number-login',
-    ),
-    path(
-        'auth/facebook/login',
-        FacebookLogin.as_view(),
-        name='facebook-login'
-    ),
-    path(
-        'auth/token/refresh/',
-        CustomTokenRefreshView.as_view(),
-        name='token-refresh'
-    ),
-    path('auth/token/verify/',
-         CustomTokenVerifyView.as_view(),
-         name='token-verify'),
+    path('auth/', include('apps.authentication.urls', namespace='auth')),
     # Swagger UI (interactive API docs)
     re_path(
         r'^swagger(?P<format>\.json|\.yaml)$',

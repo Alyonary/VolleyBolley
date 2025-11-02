@@ -9,7 +9,7 @@ from rest_framework_simplejwt.tokens import (
     UntypedToken,
 )
 
-from apps.api.enums import APIEnums
+from apps.authentication.enums import APIEnums
 from apps.players.constants import PlayerStrEnums
 from apps.players.serializers import PlayerAuthSerializer
 from volleybolley.settings import INSTALLED_APPS, SIMPLE_JWT

@@ -21,7 +21,7 @@ def test_get_current_player_unauthorized(api_client):
 class TestGoogleAuth:
     """Test auth with moke google answer."""
 
-    url = reverse_lazy('api:google-login')
+    url = reverse_lazy('api:auth:google-login')
 
     @pytest.mark.skip(reason="skipped until fresh token will be provided")
     def test_auth_with_id_token_real_google_response(
@@ -179,13 +179,13 @@ class TestGoogleAuth:
 class TestPhoneNumberAuth:
     """Test auth with moke firebase answer."""
 
-    url = reverse_lazy('api:phone-number-login')
+    url = reverse_lazy('api:auth:phone-number-login')
 
     def test_auth_with_moke_firebase_response(
         self, api_client, firebase_response
     ):
         with patch(
-            'apps.api.utils.firebase_auth.verify_id_token',
+            'apps.authentication.utils.firebase_auth.verify_id_token',
             return_value=firebase_response
         ):
             response = api_client.post(
@@ -245,7 +245,7 @@ class TestPhoneNumberAuth:
     ):
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
-            'apps.api.utils.firebase_auth.verify_id_token',
+            'apps.authentication.utils.firebase_auth.verify_id_token',
             return_value=invalid_token
         ):
             response = api_client.post(
@@ -283,7 +283,7 @@ class TestPhoneNumberAuth:
 class TestFacebookAuth:
     """Test auth with moke firebase answer."""
 
-    url = reverse_lazy('api:facebook-login')
+    url = reverse_lazy('api:auth:facebook-login')
 
     def test_auth_with_invalid_firebase_token(
         self, api_client, invalid_firebase_token
@@ -351,7 +351,7 @@ class TestFacebookAuth:
     ):
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
-            'apps.api.utils.firebase_auth.verify_id_token',
+            'apps.authentication.utils.firebase_auth.verify_id_token',
             return_value=invalid_token
         ):
             response = api_client.post(
@@ -365,7 +365,7 @@ class TestFacebookAuth:
         self, api_client, firebase_fb_response
     ):
         with patch(
-            'apps.api.utils.firebase_auth.verify_id_token',
+            'apps.authentication.utils.firebase_auth.verify_id_token',
             return_value=firebase_fb_response
         ):
             response = api_client.post(
@@ -383,7 +383,7 @@ class TestFacebookAuth:
 class TestFirebaseGoogleAuth:
     """Test auth with moke firebase answer."""
 
-    url = reverse_lazy('api:google-login-v2')
+    url = reverse_lazy('api:auth:google-login-v2')
 
     def test_auth_with_invalid_firebase_token(
         self, api_client, invalid_firebase_token
@@ -451,7 +451,7 @@ class TestFirebaseGoogleAuth:
     ):
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
-            'apps.api.utils.firebase_auth.verify_id_token',
+            'apps.authentication.utils.firebase_auth.verify_id_token',
             return_value=invalid_token
         ):
             response = api_client.post(
@@ -465,7 +465,7 @@ class TestFirebaseGoogleAuth:
         self, api_client, firebase_fb_response
     ):
         with patch(
-            'apps.api.utils.firebase_auth.verify_id_token',
+            'apps.authentication.utils.firebase_auth.verify_id_token',
             return_value=firebase_fb_response
         ):
             response = api_client.post(

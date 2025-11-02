@@ -10,7 +10,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.api.serializers import LoginSerializer
+from apps.authentication.serializers import LoginSerializer
 from apps.players.models import Player
 from apps.users.models import User
 

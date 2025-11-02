@@ -1,8 +1,8 @@
 # apps/api/middleware.py
 from django.http import JsonResponse
 
-from .exceptions import OAuthSuccessException
-from .serializers import LoginSerializer
+from apps.authentication.exceptions import OAuthSuccessException
+from apps.authentication.serializers import LoginSerializer
 
 
 class OAuthResponseMiddleware:
