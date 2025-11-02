@@ -22,6 +22,8 @@ from social_django.utils import (
 )
 
 from apps.api.serializers import (
+    CustomTokenRefreshSerializer,
+    CustomTokenVerifySerializer,
     FirebaseFacebookSerializer,
     FirebaseGoogleSerializer,
     FirebasePhoneSerializer,
@@ -130,11 +132,11 @@ class LogoutView(APIView):
     @swagger_auto_schema(
         tags=['auth'],
         operation_summary='Logout by blacklisting refresh token',
-        operation_description="""Logout user.
+        operation_description="""
+        Logout by blacklisting refresh token
 
-        Blacklists users refresh_token.
-
-        Returns: no response body if logout is successful.
+        **Returns:**
+        - no response body if logout is successful.
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -217,10 +219,10 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
         Authenticate user in the app via 'id_token' or 'access_token'
         received from Google.
 
-        Returns:
-        - access_token: JWT token for API access
-        - refresh_token: Token for refreshing access_token
-        - player: Player data associated with the user
+        **Returns:**
+        - `access_token`: JWT token for API access
+        - `refresh_token`: Token for refreshing access_token
+        - `player`: Player data associated with the user
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -404,10 +406,10 @@ class PhoneNumberLogin(APIView, FirebaseAuthMixin):
         Authenticate user in the app via 'id_token' received from the Firebase
         application during the authentication process via phone number.
 
-        Returns:
-        - access_token: JWT token for API access
-        - refresh_token: Token for refreshing access_token
-        - player: Player data associated with the user
+        **Returns:**
+        - `access_token`: JWT token for API access
+        - `refresh_token`: Token for refreshing access_token
+        - `player`: Player data associated with the user
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -470,10 +472,10 @@ class FacebookLogin(APIView, FirebaseAuthMixin):
         Authenticate user in the app via 'id_token' received from the Firebase
         application during the authentication process via Facebook.
 
-        Returns:
-        - access_token: JWT token for API access
-        - refresh_token: Token for refreshing access_token
-        - player: Player data associated with the user
+        **Returns:**
+        - `access_token`: JWT token for API access
+        - `refresh_token`: Token for refreshing access_token
+        - `player`: Player data associated with the user
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -536,10 +538,10 @@ class GoogleLoginV2(APIView, FirebaseAuthMixin):
         Authenticate user in the app via 'id_token' received from the Firebase
         application during the authentication process via Google.
 
-        Returns:
-        - access_token: JWT token for API access
-        - refresh_token: Token for refreshing access_token
-        - player: Player data associated with the user
+        **Returns:**
+        - `access_token`: JWT token for API access
+        - `refresh_token`: Token for refreshing access_token
+        - `player`: Player data associated with the user
         """,
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
@@ -586,3 +588,207 @@ class GoogleLoginV2(APIView, FirebaseAuthMixin):
     def post(self, request: Request) -> Response:
         """Authenticate via Google (firebase id_token)."""
         return self._post(request, FirebaseGoogleSerializer)
+
+
+class CustomTokenRefreshView(APIView):
+    """Refresh access_token."""
+
+    permission_classes = []
+    authentication_classes = []
+
+    @swagger_auto_schema(
+        operation_summary="Refresh access_token",
+        operation_description="""
+        Refreshes access_token using refresh_token.
+
+        **Important:** refresh_token does NOT change during refresh.
+
+        **Returns:**
+        - `access_token`: New access token
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['refresh_token'],
+            properties={
+                'refresh_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Refresh token generated previously.',
+                    example='eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1Ni...'
+                ),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description='Access token successfully refreshed',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'access_token': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='New access token'
+                        ),
+                    }
+                ),
+                examples={
+                    'application/json': {
+                        'access_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1Ni...'
+                    }
+                }
+            ),
+            400: openapi.Response(
+                description='Failed to refresh access_token',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                        )
+                    }
+                )
+            ),
+            500: openapi.Response(
+                'Internal server error',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+        },
+        security=[],
+    )
+    def post(self, request):
+        serializer = CustomTokenRefreshSerializer(data=request.data)
+
+        try:
+            serializer.is_valid(raise_exception=True)
+
+            return Response(
+                serializer.validated_data, status=status.HTTP_200_OK
+            )
+
+        except ValidationError as e:
+            error_msg = f'validation error: {e}'
+            logger.error(error_msg)
+            return Response(
+                {'error': error_msg},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except TokenError as e:
+            error_msg = f'Invalid or expired refresh token: {e}'
+            logger.error(error_msg)
+            return Response(
+                {'error': error_msg},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+            error_msg = f'unexpected error: {e}'
+            logger.error(error_msg)
+            return Response(
+                {'error': error_msg},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+
+class CustomTokenVerifyView(APIView):
+    """Verify access_token."""
+
+    permission_classes = []
+    authentication_classes = []
+
+    @swagger_auto_schema(
+        operation_summary="Verify access_token",
+        operation_description="""
+        Verifies access_token validity.
+
+        **Returns:**
+        - Empty object with 200 status on successful verification
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['access_token'],
+            properties={
+                'access_token': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Access token to verify validity',
+                    example='eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
+                ),
+            },
+        ),
+        responses={
+            200: openapi.Response(
+                description='Token is valid',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={}
+                ),
+                examples={
+                    'application/json': {}
+                }
+            ),
+            400: openapi.Response(
+                description='Invalid or expired access_token',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                        )
+                    }
+                )
+            ),
+            500: openapi.Response(
+                'Internal server error',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'error': openapi.Schema(
+                            type=openapi.TYPE_STRING,
+                            description='Error description'
+                            )
+                    }
+                )
+            ),
+        },
+        security=[],
+    )
+    def post(self, request):
+        serializer = CustomTokenVerifySerializer(data=request.data)
+
+        try:
+            serializer.is_valid(raise_exception=True)
+            return Response(
+                serializer.validated_data, status=status.HTTP_200_OK
+            )
+
+        except ValidationError as e:
+            error_msg = f'validation error: {e}'
+            logger.error(error_msg)
+            return Response(
+                {'error': error_msg},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except TokenError as e:
+            error_msg = f'Invalid or expired access token: {e}'
+            logger.error(error_msg)
+            return Response(
+                {'error': error_msg},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        except Exception as e:
+            error_msg = f'unexpected error: {e}'
+            logger.error(error_msg)
+            return Response(
+                {'error': error_msg},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

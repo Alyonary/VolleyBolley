@@ -3,10 +3,16 @@ from typing import Any
 
 from phonenumber_field.serializerfields import PhoneNumberField
 from rest_framework import exceptions, serializers
+from rest_framework_simplejwt.settings import api_settings
+from rest_framework_simplejwt.tokens import (
+    RefreshToken,
+    UntypedToken,
+)
 
 from apps.api.enums import APIEnums
 from apps.players.constants import PlayerStrEnums
 from apps.players.serializers import PlayerAuthSerializer
+from volleybolley.settings import INSTALLED_APPS, SIMPLE_JWT
 
 logger = logging.getLogger(__name__)
 
@@ -20,14 +26,12 @@ class LoginSerializer(serializers.Serializer):
     access_token = serializers.CharField(
         max_length=APIEnums.TOKEN_MAX_LENGTH,
         read_only=True,
-        help_text="JWT access token",
-        example="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        help_text="JWT access token"
     )
     refresh_token = serializers.CharField(
         max_length=APIEnums.TOKEN_MAX_LENGTH,
         read_only=True,
-        help_text="JWT refresh token",
-        example="eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+        help_text="JWT refresh token"
     )
 
 
@@ -171,3 +175,55 @@ class GoogleUserDataSerializer(AuthBaseSerializer):
     def get_username(self, validated_data: dict[str, Any]) -> str:
         """Configure username from 'email'."""
         return validated_data.get('email')
+
+
+class CustomTokenRefreshSerializer(serializers.Serializer):
+    refresh_token = serializers.CharField()
+    token_class = RefreshToken
+    rotate = SIMPLE_JWT.get('ROTATE_REFRESH_TOKENS', False)
+    blacklist = SIMPLE_JWT.get('BLACKLIST_AFTER_ROTATION', False)
+    show_refresh = SIMPLE_JWT.get('SHOW_REFRESH_TOKEN', False)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, str]:
+        refresh = self.token_class(attrs['refresh_token'])
+        data = {'access_token': str(refresh.access_token)}
+
+        if self.rotate:
+            if self.blacklist:
+                try:
+                    # Attempt to blacklist the given refresh token
+                    refresh.blacklist()
+                except AttributeError:
+                    # If blacklist app not installed, `blacklist` method will
+                    # not be present
+                    pass
+
+            refresh.set_jti()
+            refresh.set_exp()
+            refresh.set_iat()
+
+        if self.show_refresh:
+            data['refresh_token'] = str(refresh)
+
+        return data
+
+
+class CustomTokenVerifySerializer(serializers.Serializer):
+    access_token = serializers.CharField(write_only=True)
+    blacklist = SIMPLE_JWT.get('BLACKLIST_AFTER_ROTATION', False)
+
+    def validate(self, attrs: dict[str, None]) -> dict[Any, Any]:
+        token = UntypedToken(attrs['access_token'])
+
+        if (
+            self.blacklist
+            and "rest_framework_simplejwt.token_blacklist" in INSTALLED_APPS
+        ):
+            from rest_framework_simplejwt.token_blacklist.models import (
+                BlacklistedToken,
+            )
+            jti = token.get(api_settings.JTI_CLAIM)
+            if BlacklistedToken.objects.filter(token__jti=jti).exists():
+                raise serializers.ValidationError('Token is blacklisted')
+
+        return {}

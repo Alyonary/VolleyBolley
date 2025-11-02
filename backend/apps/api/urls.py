@@ -3,12 +3,10 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import (
-    TokenRefreshView,
-    TokenVerifyView,
-)
 
 from apps.api.views import (
+    CustomTokenRefreshView,
+    CustomTokenVerifyView,
     FacebookLogin,
     GoogleLogin,
     GoogleLoginV2,
@@ -67,9 +65,13 @@ urlpatterns = [
         name='facebook-login'
     ),
     path(
-        'auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'
+        'auth/token/refresh/',
+        CustomTokenRefreshView.as_view(),
+        name='token-refresh'
     ),
-    path('auth/token/verify/', TokenVerifyView.as_view(), name='token-verify'),
+    path('auth/token/verify/',
+         CustomTokenVerifyView.as_view(),
+         name='token-verify'),
     # Swagger UI (interactive API docs)
     re_path(
         r'^swagger(?P<format>\.json|\.yaml)$',
