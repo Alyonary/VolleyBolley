@@ -21,4 +21,3 @@ def deactivate_other_faqs(sender, instance, **kwargs):
     """
     if instance.is_active:
         FAQ.objects.exclude(id=instance.id).update(is_active=False)
-

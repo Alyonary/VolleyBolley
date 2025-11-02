@@ -9,4 +9,5 @@ class GenderChoices(m.TextChoices):
     MEN = 'MEN', _('Men')
     WOMEN = 'WOMEN', _('Women')
 
+
 DEFAULT_FAQ: str = 'default_faq'

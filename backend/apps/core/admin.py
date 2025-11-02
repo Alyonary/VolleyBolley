@@ -98,6 +98,7 @@ class CurrencyTypeAdmin(admin.ModelAdmin):
     empty_value_display = _('Not defined')
     list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
 
+
 @admin.register(FAQ)
 class FAQAdmin(admin.ModelAdmin):
     list_display = ('id', 'name', 'is_active', 'created_at', 'updated_at')
