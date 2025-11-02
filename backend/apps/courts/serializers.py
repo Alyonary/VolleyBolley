@@ -22,7 +22,7 @@ class CourtSerializer(serializers.ModelSerializer):
 
     court_id = serializers.IntegerField(source='pk')
 
-    tag_list = serializers.StringRelatedField(many=True)
+    tags = serializers.StringRelatedField(source='tag_list', many=True)
 
     contacts_list = ContactSerializer(
         many=True,
@@ -40,7 +40,7 @@ class CourtSerializer(serializers.ModelSerializer):
             'description',
             'contacts_list',
             'photo_url',
-            'tag_list',
+            'tags',
             'location'
         )
         read_only_fields = (
@@ -49,6 +49,6 @@ class CourtSerializer(serializers.ModelSerializer):
             'description',
             'contacts_list',
             'photo_url',
-            'tag_list',
+            'tags',
             'location'
         )
