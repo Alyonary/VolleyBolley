@@ -1,4 +1,6 @@
+from django.contrib.auth.models import AnonymousUser
 from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action
@@ -26,7 +28,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     http_method_names = ['get', 'post', 'patch', 'put', 'delete']
     permission_classes = [IsRegisteredPlayer]
 
-    def get_serializer_class(self, *args, **kwargs):
+    def get_serializer_class(self, *args, **kwargs):  # TODO: добавить сериалайзер для retrieve # noqa
         if self.action == "me":
             return PlayerBaseSerializer
         if self.action == 'put_delete_avatar':
@@ -45,10 +47,12 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context.update({
-            'player': self.queryset.get(user=self.request.user),
-            'current_user': self.request.user
-        })
+        user = self.request.user
+        if not isinstance(user, AnonymousUser):
+            context.update({
+                'player': self.queryset.filter(user=self.request.user).first(),
+                'current_user': self.request.user
+            })
         return context
 
     def get_queryset(self):
@@ -81,30 +85,89 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     @swagger_auto_schema(
         tags=['players'],
-        operation_summary="List all players excluding current user",
-        responses={200: PlayerListSerializer(many=True)},
+        operation_summary="List of all players excluding current user",
+        operation_description="""
+        **Returns:** a sorted list of all players excluding the current user.
+        The favorite players are going first.
+        """,
+        responses={
+            200: PlayerListSerializer(many=True),
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
     )
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(
+        tags=['players'],
+        operation_summary="Get info about player",
+        operation_description="""
+        **Returns:** information about the chosen player.
+        """,
+        responses={
+            200: PlayerBaseSerializer(),  # TODO: Заменить сериалайзер.
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        tags=['me'],
         method='get',
-        responses={200: PlayerBaseSerializer()},
-        tags=['players'],
         operation_summary="Get current player info",
+        operation_description="""
+        Get current player info
+
+        **Returns:** player object
+        """,
+        responses={
+            200: PlayerBaseSerializer(),
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
     )
     @swagger_auto_schema(
+        tags=['me'],
         method='patch',
-        request_body=PlayerBaseSerializer,
-        responses={200: PlayerBaseSerializer()},
-        tags=['players'],
         operation_summary="Update current player info",
+        operation_description="""
+        Update current player info
+
+        **Notice:** All fields are optional.
+
+        **Returns:** empty body response.
+        """,
+        request_body=PlayerBaseSerializer(partial=True),
+        responses={
+            200: 'Success',
+            400: 'Bad request',
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
     )
     @swagger_auto_schema(
+        tags=['me'],
         method='delete',
-        responses={204: 'No Content'},
-        tags=['players'],
         operation_summary="Delete current player",
+        operation_description="""
+        Delete current player by deleting the user associated with
+        the player. The player is deleted due to cascade relation.
+
+        **Returns:** empty body response.
+        """,
+        responses={
+            204: 'No Content',
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
     )
     @action(['GET', 'PATCH', 'DELETE'], detail=False)
     def me(self, request):
@@ -141,11 +204,30 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         )
 
     @swagger_auto_schema(
+        tags=['avatar'],
         method='put',
-        request_body=AvatarSerializer,
-        responses={200: AvatarSerializer},
-        tags=['players'],
         operation_summary="Update or delete avatar",
+        operation_description="""
+        Update or delete avatar
+
+        To delete avatar set its value to 'null'.
+        """,
+        request_body=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'avatar': openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                        description='Base64 encoded image'
+                    ),
+                },
+                required=['avatar'],
+            ),
+        responses={
+            200: AvatarSerializer,
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
     )
     @action(
         detail=False, methods=['PUT'], url_path='me/avatar',
@@ -167,17 +249,48 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
+        tags=['payments'],
         method='get',
-        responses={200: PaymentsSerializer()},
-        tags=['players'],
-        operation_summary="Get payment data of player"
+        operation_summary="Get payment data of player",
+        operation_description="""
+        Get payment data of player
+
+        **Returns:** list of players payments.
+        """,
+        responses={
+            200: PaymentsSerializer(),
+            400: 'Bad request',
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
     )
     @swagger_auto_schema(
+        tags=['payments'],
         method='put',
-        request_body=PaymentSerializer,
-        responses={200: ''},
-        tags=['players'],
-        operation_summary="Update payment data of player"
+        operation_summary="Update payment data of player",
+        operation_description="""
+        Update players payment data.
+
+        **Notice:**
+        - list of payments data should be provided;
+        - only one of the players payments must have the attribute
+        'is_preferred=True', the other payment with the attribute
+        'is_preferred=True' should be rewritten with the attribute
+        'is_preferred=False' during the same request;
+        - it is better to rewrite the whole collection of players payments
+        at once;
+        - all fields of a payment are required.
+
+        **Returns:** empty body response.
+        """,
+        request_body=PaymentsSerializer,
+        responses={
+            200: 'Success',
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
     )
     @action(
         detail=False, methods=['PUT', 'GET'], url_path='me/payments',
@@ -200,17 +313,36 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         return Response(status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
+        tags=['favorite'],
         method='post',
-        request_body=FavoriteSerializer,
-        responses={201: FavoriteSerializer()},
-        tags=['players'],
         operation_summary="Add player to favorite list",
+        operation_description="""
+        Add a player to a favorite list
+
+        **Returns:** empty body response.
+        """,
+        responses={
+            201: 'Success',
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
     )
     @swagger_auto_schema(
+        tags=['favorite'],
         method='delete',
-        responses={204: 'No Content'},
-        tags=['players'],
         operation_summary="Delete player from favorite list",
+        operation_description="""
+        Add a player to a favorite list
+
+        **Returns:** empty body response.
+        """,
+        responses={
+            204: 'No Content',
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
     )
     @action(
         detail=True, methods=['POST', 'DELETE']
@@ -251,10 +383,25 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     @swagger_auto_schema(
+        tags=['register'],
+        operation_summary="Register new player",
+        operation_description="""
+        Register a new player.
+
+        **Notice:**
+        - update the basic player instance generated after login
+        via social account or via phone number;
+        - all fields are required.
+
+        **Returns:** empty body response.
+        """,
         request_body=PlayerRegisterSerializer,
-        responses={200: PlayerBaseSerializer()},
-        tags=['players'],
-        operation_summary="Register new player"
+        responses={
+            200: 'Success',
+            400: 'Bad request',
+            401: 'Unauthorized',
+            500: 'Internal server error',
+        },
     )
     @action(
         detail=False,
