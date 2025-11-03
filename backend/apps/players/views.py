@@ -23,7 +23,12 @@ from apps.users.models import User
 
 class PlayerViewSet(ReadOnlyModelViewSet):
 
-    queryset = Player.objects.all()
+    queryset = Player.objects.select_related(
+        'country', 'city', 'user'
+    ).prefetch_related(
+        'payments', 'player', 'favorite', 'games_players',
+        'tournaments_players',
+    ).all()
     serializer_class = PlayerBaseSerializer
     http_method_names = ['get', 'post', 'patch', 'put', 'delete']
     permission_classes = [IsRegisteredPlayer]
@@ -56,7 +61,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         return context
 
     def get_queryset(self):
-        queryset = self.queryset
+        queryset = super().get_queryset()
         if self.action != 'register':
             queryset = queryset.exclude(is_registered=False)
 
