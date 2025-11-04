@@ -8,7 +8,6 @@ from apps.core.views import FAQView
 from apps.courts.views import CourtViewSet
 from apps.event.views import GameViewSet
 from apps.locations.views import CountryListView
-from apps.notifications.views import NotificationsViewSet
 from apps.players.views import PlayerViewSet
 
 app_name = 'api'
@@ -17,11 +16,6 @@ api_v1 = DefaultRouter()
 api_v1.register(r'courts', CourtViewSet, basename='courts')
 api_v1.register(r'players', PlayerViewSet, basename='players')
 api_v1.register(r'games', GameViewSet, basename='games')
-api_v1.register(
-    r'notifications',
-    NotificationsViewSet,
-    basename='notifications'
-)
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -39,6 +33,10 @@ urlpatterns = [
     path('social-auth/', include('social_django.urls', namespace='social')),
     path('countries/', CountryListView.as_view(), name='countries'),
     path('auth/', include('apps.authentication.urls', namespace='auth')),
+    path(
+        'notifications/',
+        include('apps.notifications.urls', namespace='notifications')
+    ),
     # Swagger UI (interactive API docs)
     re_path(
         r'^swagger(?P<format>\.json|\.yaml)$',
