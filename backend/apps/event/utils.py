@@ -14,7 +14,7 @@ from apps.players.serializers import (
 )
 
 
-def procces_rate_players_request(self, request, *args, **kwargs) -> Response:
+def process_rate_players_request(self, request, *args, **kwargs) -> Response:
     """
     Handles player rating in an event (Game or Tourney).
 
@@ -37,7 +37,7 @@ def procces_rate_players_request(self, request, *args, **kwargs) -> Response:
     return Response(status=status.HTTP_200_OK)
 
 
-def procces_rate_notifications_for_recent_events():
+def process_rate_notifications_for_recent_events():
     """
     Find all games and tourneys ended an hour ago and send rate notifications.
     """

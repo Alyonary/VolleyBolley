@@ -451,13 +451,13 @@ class TestGameFiltering:
             game_thailand_with_players,
             player_thailand_female_pro
     ):
-        upcomming_games = Game.objects.upcomming_games(
+        upcoming_games = Game.objects.upcoming_games(
             player_thailand_female_pro
         )
-        assert not upcomming_games
+        assert not upcoming_games
         game_thailand.players.add(player_thailand_female_pro)
-        upcomming_games = Game.objects.upcomming_games(
+        upcoming_games = Game.objects.upcoming_games(
             player_thailand_female_pro
         )
-        assert len(upcomming_games) == 1
-        assert upcomming_games.first() == game_thailand
+        assert len(upcoming_games) == 1
+        assert upcoming_games.first() == game_thailand

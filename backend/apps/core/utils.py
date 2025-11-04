@@ -34,9 +34,10 @@ def load_faq_from_file(file_path) -> bool:
             return True
     return False
 
+
 def initialize_faq() -> None:
     filename = f'{DEFAULT_FAQ}.md'
-    faq_file_path =  BASE_DIR / 'data' / filename
+    faq_file_path = BASE_DIR / 'data' / filename
     try:
         load_faq_from_file(faq_file_path)
     except FileNotFoundError:

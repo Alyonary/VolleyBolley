@@ -19,7 +19,7 @@ from apps.event.serializers import (
     GameSerializer,
     GameShortSerializer,
 )
-from apps.event.utils import procces_rate_players_request
+from apps.event.utils import process_rate_players_request
 
 
 class GameViewSet(GenericViewSet,
@@ -144,8 +144,8 @@ class GameViewSet(GenericViewSet,
     def upcoming_games(self, request, *args, **kwargs):
         """Retrieving upcoming games that the player participates in."""
 
-        upcomming_games = Game.objects.upcomming_games(request.user.player)
-        serializer = self.get_serializer(upcomming_games, many=True)
+        upcoming_games = Game.objects.upcoming_games(request.user.player)
+        serializer = self.get_serializer(upcoming_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
@@ -203,4 +203,4 @@ class GameViewSet(GenericViewSet,
         POST: Submits ratings for the specified players.
         GET: Retrieves a list of players available for rating.
         """
-        return procces_rate_players_request(self, request, *args, **kwargs)
+        return process_rate_players_request(self, request, *args, **kwargs)

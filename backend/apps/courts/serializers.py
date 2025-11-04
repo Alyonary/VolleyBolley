@@ -5,7 +5,7 @@ from apps.courts.models import Court, CourtLocation
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    """Location serializer for all fileds exclude id."""
+    """Location serializer for all fields exclude id."""
 
     location_name = serializers.SerializerMethodField(read_only=True)
 

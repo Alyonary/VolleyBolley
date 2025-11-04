@@ -35,14 +35,14 @@ class GameQuerySet(m.query.QuerySet):
             player).future_games().filter(
                 game_invites__invited=player)
 
-    def upcomming_games(self, player):
+    def upcoming_games(self, player):
         return self.player_related_games(player).future_games()
 
     def my_upcoming_games(self, player):
-        return self.upcomming_games(player).filter(host=player)
+        return self.upcoming_games(player).filter(host=player)
 
     def nearest_game(self, player):
-        return self.upcomming_games(player).first()
+        return self.upcoming_games(player).first()
 
     def archive_games(self, player):
         current_time = now()
@@ -77,9 +77,9 @@ class GameManager(m.Manager):
         """Returns games in which the user was invited."""
         return self.get_queryset().invited_games(player)
 
-    def upcomming_games(self, player):
+    def upcoming_games(self, player):
         """Returns upcoming games in which the user is a host or player."""
-        return self.get_queryset().upcomming_games(player)
+        return self.get_queryset().upcoming_games(player)
 
     def my_upcoming_games(self, player):
         """Returns upcoming games in which the user is a host."""
