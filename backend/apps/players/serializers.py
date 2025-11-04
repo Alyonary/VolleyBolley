@@ -473,7 +473,8 @@ class PlayerRateSerializer(serializers.Serializer):
 
     players = serializers.ListField(
         child=serializers.DictField(),
-        allow_empty=False
+        allow_empty=False,
+        help_text="list of entities with fields 'player_id', 'level_changed'"
     )
 
     def validate_players(self, players_data):
@@ -554,3 +555,9 @@ class PlayerShortSerializer(serializers.ModelSerializer):
             'avatar',
             'level',
         )
+
+
+class PlayerListShortSerializer(serializers.Serializer):
+    players = serializers.ListField(
+        child=PlayerShortSerializer(), read_only=True
+    )

@@ -26,7 +26,9 @@ def process_rate_players_request(self, request, *args, **kwargs) -> Response:
     if self.request.method == 'GET':
         valid_players = rater_player.get_players_to_rate(event)
         serializer = PlayerShortSerializer(valid_players, many=True)
-        return Response({"players": serializer.data})
+        return Response(
+            {"players": serializer.data}, status=status.HTTP_200_OK
+        )
 
     serializer = PlayerRateSerializer(
         data=request.data,
@@ -34,7 +36,7 @@ def process_rate_players_request(self, request, *args, **kwargs) -> Response:
     )
     serializer.is_valid(raise_exception=True)
     serializer.save()
-    return Response(status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_201_CREATED)
 
 
 def process_rate_notifications_for_recent_events():

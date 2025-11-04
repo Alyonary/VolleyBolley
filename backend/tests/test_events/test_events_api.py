@@ -104,7 +104,7 @@ class TestRatePlayersAPI:
             ]
         }
         response = api_client_thailand.post(url, post_data, format='json')
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_201_CREATED
         vote = PlayerRatingVote.objects.filter(
             rater=rater,
             rated=rated_player
@@ -261,7 +261,7 @@ class TestRatePlayersAPI:
         url = reverse('api:games-rate-players', args=[game.id])
         response = api_client_thailand.post(url, post_data, format='json')
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_201_CREATED
         vote_count = PlayerRatingVote.objects.filter(rater=rater).count()
 
         if post_data['players'][0].get('player_id') == 999:
@@ -308,7 +308,7 @@ class TestRatePlayersAPI:
         }
 
         response = api_client_thailand.post(url, post_data, format='json')
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_201_CREATED
         vote_count = PlayerRatingVote.objects.filter(rater=rater).count()
 
         if rater_in_game and rated_in_game:
@@ -349,7 +349,7 @@ class TestRatePlayersAPI:
         }
         response = api_client_thailand.post(url, post_data, format='json')
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_201_CREATED
         vote_count = PlayerRatingVote.objects.filter(
             rater=rater,
             rated=rated_player
@@ -427,7 +427,7 @@ class TestRatePlayersAPI:
             url = reverse(url_template, args=[game.id])
             response = api_client_thailand.post(url, post_data, format='json')
 
-            assert response.status_code == status.HTTP_200_OK
+            assert response.status_code == status.HTTP_201_CREATED
 
             vote_count = PlayerRatingVote.objects.filter(
                 rater=rater,
@@ -563,7 +563,7 @@ class TestRatePlayersAPI:
         }
         response = api_client_thailand.post(url, post_data, format='json')
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_201_CREATED
 
         vote_count = PlayerRatingVote.objects.filter(
             rater=rater,
