@@ -4,6 +4,11 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.mixins import (
+    CreateModelMixin,
+    DestroyModelMixin,
+    RetrieveModelMixin,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
@@ -24,7 +29,9 @@ from apps.event.utils import process_rate_players_request
 from apps.players.serializers import PlayerListShortSerializer
 
 
-class GameViewSet(GenericViewSet):
+class GameViewSet(
+    CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, GenericViewSet
+):
     """Provides CRUD operations for the Game model."""
     permission_classes = (IsHostOrReadOnly,)
     http_method_names = ['get', 'post', 'delete']
@@ -159,7 +166,7 @@ class GameViewSet(GenericViewSet):
     @swagger_auto_schema(
         tags=['games'],
         operation_summary="Get lists of upcoming games and tournaments"
-                          " created by current player.",
+                          " created by current player",
         operation_description="""
         Get two lists of the upcoming games and the upcoming tournaments
         created by the current player.
@@ -220,7 +227,7 @@ class GameViewSet(GenericViewSet):
     @swagger_auto_schema(
         tags=['games'],
         operation_summary="Get lists of games and tournaments"
-                          " to which player has been invited.",
+                          " to which player has been invited",
         operation_description="""
         Get two lists of the games and the tournaments
         to which the current player has been invited.
@@ -251,7 +258,7 @@ class GameViewSet(GenericViewSet):
     @swagger_auto_schema(
         tags=['games'],
         operation_summary="Get lists of upcoming games and tournaments"
-                          " in which player will participate.",
+                          " in which player will participate",
         operation_description="""
         Get two lists of the upcoming games and the upcoming tournaments
         in which the current player will participate.
@@ -299,7 +306,7 @@ class GameViewSet(GenericViewSet):
             )
         ],
         responses={
-            200: openapi.Response('Success', GameJoinDetailSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response('Success', GameJoinDetailSerializer),
             401: 'Unauthorized',
             403: 'Forbidden',
         },
@@ -339,7 +346,7 @@ class GameViewSet(GenericViewSet):
         **Returns:** empty body response.
         """,
         responses={
-            204: 'No content',  # TODO: Change for EventListShortSerializer # noqa
+            204: 'No content',
             400: 'Bad request',
             401: 'Unauthorized',
             403: 'Forbidden',
@@ -367,14 +374,14 @@ class GameViewSet(GenericViewSet):
     @swagger_auto_schema(
         tags=['games'],
         method='get',
-        operation_summary="Get list of players available for rating.",
+        operation_summary="Get list of players available for rating",
         operation_description="""
         Get a list of players available for rating.
 
         **Returns:** player objects.
         """,
         responses={
-            200: openapi.Response('Success', PlayerListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response('Success', PlayerListShortSerializer),
             401: 'Unauthorized',
             403: 'Forbidden',
         },
@@ -383,9 +390,9 @@ class GameViewSet(GenericViewSet):
     @swagger_auto_schema(
         tags=['games'],
         method='post',
-        operation_summary="Rate players by current player.",
+        operation_summary="Rate players by current player",
         operation_description="""
-        The current player rates the other who played in the same events
+        The current player rates the other who played in the same event
         as he did.
 
         **Returns:** empty body response.
@@ -422,7 +429,7 @@ class GameViewSet(GenericViewSet):
             }
         ),
         responses={
-            201: 'Success',  # TODO: Change for EventListShortSerializer # noqa
+            201: 'Success',
             401: 'Unauthorized',
             403: 'Forbidden',
         },
@@ -441,3 +448,60 @@ class GameViewSet(GenericViewSet):
         GET: Retrieves a list of players available for rating.
         """
         return process_rate_players_request(self, request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Create game",
+        operation_description="""
+        Create a new game. The current player becomes the host of the game.
+
+        **Returns:** game object.
+        """,
+        request_body=GameSerializer,  # TODO: Добавить новый сериалайзер для создания игры # noqa
+        responses={
+            201: openapi.Response('Success', GameSerializer),  # TODO: Добавить новый сериалайзер для создания игры # noqa
+            400: 'Bad request',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get game info",
+        operation_description="""
+        Get information about a game.
+
+        **Returns:** game object.
+        """,
+        responses={
+            200: openapi.Response('Success', GameDetailSerializer),
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Delete game",
+        operation_description="""
+        Delete a game by the current player.
+        The game could be deleted only by its host.
+
+        **Returns:** empty body response.
+        """,
+        responses={
+            204: 'No content',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
