@@ -21,19 +21,7 @@ class CountryListView(APIView):
         operation_summary="Get countries list",
         operation_description="Retrieve all countries with their cities",
         responses={
-            200: CountryListSerializer,
-            500: openapi.Response(
-                'Internal server error',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
+            200: openapi.Response('Success', CountryListSerializer)
         },
         security=[]
     )
@@ -49,6 +37,5 @@ class CountryListView(APIView):
             logger.error(error_msg)
 
             return Response(
-                {'error': error_msg},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )

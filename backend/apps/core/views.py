@@ -44,7 +44,6 @@ class FAQView(APIView):
                     }
                 )
             ),
-            500: 'Internal server error',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )

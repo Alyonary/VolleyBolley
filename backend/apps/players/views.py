@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from apps.core.permissions import IsNotRegisteredPlayer, IsRegisteredPlayer
+from apps.core.serializers import EmptyBodySerializer
 from apps.players.models import Favorite, Payment, Player
 from apps.players.serializers import (
     AvatarSerializer,
@@ -96,9 +97,9 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         The favorite players are going first.
         """,
         responses={
-            200: PlayerListSerializer(many=True),
+            200: openapi.Response('Success', PlayerListSerializer(many=True)),
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -112,9 +113,9 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         **Returns:** information about the chosen player.
         """,
         responses={
-            200: PlayerBaseSerializer(),  # TODO: Заменить сериалайзер.
+            200: openapi.Response('Success', PlayerBaseSerializer()),  # TODO: Заменить сериалайзер. # noqa
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -126,14 +127,14 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         method='get',
         operation_summary="Get current player info",
         operation_description="""
-        Get current player info
+        Get information about the current player
 
         **Returns:** player object
         """,
         responses={
-            200: PlayerBaseSerializer(),
+            200: openapi.Response('Success', PlayerBaseSerializer()),
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -142,7 +143,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         method='patch',
         operation_summary="Update current player info",
         operation_description="""
-        Update current player info
+        Update the current player object
 
         **Notice:** All fields are optional.
 
@@ -153,7 +154,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             200: 'Success',
             400: 'Bad request',
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -169,8 +170,9 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         """,
         responses={
             204: 'No Content',
+            400: 'Bad request',
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -228,9 +230,10 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                 required=['avatar'],
             ),
         responses={
-            200: AvatarSerializer,
+            200: openapi.Response('Success', AvatarSerializer),
+            400: 'Bad request',
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -263,10 +266,9 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         **Returns:** list of players payments.
         """,
         responses={
-            200: PaymentsSerializer(),
-            400: 'Bad request',
+            200: openapi.Response('Success', PaymentsSerializer()),
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -292,8 +294,9 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         request_body=PaymentsSerializer,
         responses={
             200: 'Success',
+            400: 'Bad request',
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -326,10 +329,12 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         **Returns:** empty body response.
         """,
+        request_body=EmptyBodySerializer,
         responses={
             201: 'Success',
+            400: 'Bad request',
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -344,8 +349,9 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         """,
         responses={
             204: 'No Content',
+            400: 'Bad request',
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -405,7 +411,6 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             200: 'Success',
             400: 'Bad request',
             401: 'Unauthorized',
-            500: 'Internal server error',
         },
     )
     @action(

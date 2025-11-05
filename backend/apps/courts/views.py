@@ -1,4 +1,5 @@
 from django_filters import rest_framework as filters
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins
 from rest_framework.viewsets import GenericViewSet
@@ -42,9 +43,9 @@ class CourtViewSet(mixins.ListModelMixin, GenericViewSet):
         **Returns:** a list of courts filtered depending on players location.
         """,
         responses={
-            200: CourtSerializer(many=True),
+            200: openapi.Response('Success', CourtSerializer(many=True)),
             401: 'Unauthorized',
-            500: 'Internal server error',
+            403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )

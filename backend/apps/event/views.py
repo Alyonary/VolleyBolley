@@ -4,15 +4,11 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.mixins import (
-    CreateModelMixin,
-    DestroyModelMixin,
-    RetrieveModelMixin,
-)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
+from apps.core.serializers import EmptyBodySerializer
 from apps.event.models import Game, GameInvitation
 from apps.event.permissions import IsHostOrReadOnly
 from apps.event.serializers import (
@@ -172,7 +168,7 @@ class GameViewSet(GenericViewSet):
         **Returns:** game objects, tournament objects
         """,
         responses={
-            200: GameListShortSerializer,  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
             401: 'Unauthorized',
             403: 'Forbidden',
         },
@@ -202,7 +198,7 @@ class GameViewSet(GenericViewSet):
         **Returns:** game objects, tournament objects
         """,
         responses={
-            200: GameListShortSerializer,  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
             401: 'Unauthorized',
             403: 'Forbidden',
         },
@@ -233,7 +229,7 @@ class GameViewSet(GenericViewSet):
         **Returns:** game objects, tournament objects
         """,
         responses={
-            200: GameListShortSerializer,  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
             401: 'Unauthorized',
             403: 'Forbidden',
         },
@@ -264,7 +260,7 @@ class GameViewSet(GenericViewSet):
         **Returns:** game objects, tournament objects
         """,
         responses={
-            200: GameListShortSerializer,  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
             401: 'Unauthorized',
             403: 'Forbidden',
         },
@@ -292,8 +288,18 @@ class GameViewSet(GenericViewSet):
 
         **Returns:** game object.
         """,
+        request_body=EmptyBodySerializer,
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                openapi.IN_PATH,
+                description="Game ID",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            )
+        ],
         responses={
-            200: GameJoinDetailSerializer,  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response('Success', GameJoinDetailSerializer),  # TODO: Change for EventListShortSerializer # noqa
             401: 'Unauthorized',
             403: 'Forbidden',
         },
@@ -368,7 +374,7 @@ class GameViewSet(GenericViewSet):
         **Returns:** player objects.
         """,
         responses={
-            200: PlayerListShortSerializer,  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response('Success', PlayerListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
             401: 'Unauthorized',
             403: 'Forbidden',
         },

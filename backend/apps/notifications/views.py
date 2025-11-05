@@ -1,6 +1,7 @@
 import logging
 
 from django.contrib.auth.models import AnonymousUser
+from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -61,7 +62,7 @@ class NotificationsViewSet(
         **Returns:** a list of active notifications for the current player.
         """,
         responses={
-            200: NotificationListSerializer,
+            200: openapi.Response('Success', NotificationListSerializer),
             401: 'Unauthorized',
             403: 'Forbidden',
         },

@@ -99,8 +99,7 @@ class AuthIdTokenMixin():
             error_msg = f'unexpected error: {e}'
             logger.error(error_msg)
             return Response(
-                {'error': error_msg},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
     def auth_via_id_token(
@@ -149,30 +148,8 @@ class LogoutView(APIView):
         ),
         responses={
             205: 'Successful logout',
-            400: openapi.Response(
-                'Logout failed',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
-            500: openapi.Response(
-                'Internal server error',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
+            400: 'Bad request',
+            401: 'Unauthorized',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
@@ -201,7 +178,6 @@ class LogoutView(APIView):
             logger.error(error_msg)
 
             return Response(
-                {'error': error_msg},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -240,36 +216,14 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
                 {'required': ['access_token']},
                 {'required': ['id_token']}
             ],
+            description="Either 'id_token' or 'access_token' must be provided."
         ),
         responses={
             200: openapi.Response(
                 'Successful authentication',
                 LoginSerializer,
                 ),
-            400: openapi.Response(
-                'Authentication failed',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
-            500: openapi.Response(
-                'Internal server error',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
+            400: 'Bad request',
         },
         security=[],
     )
@@ -376,8 +330,7 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
             logger.error(error_msg)
 
             return Response(
-                {'error': error_msg},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
@@ -426,30 +379,7 @@ class PhoneNumberLogin(APIView, FirebaseAuthMixin):
                 'Successful authentication',
                 LoginSerializer,
                 ),
-            400: openapi.Response(
-                'Authentication failed',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
-            500: openapi.Response(
-                'Internal server error',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
+            400: 'Bad request',
         },
         security=[],
     )
@@ -492,30 +422,7 @@ class FacebookLogin(APIView, FirebaseAuthMixin):
                 'Successful authentication',
                 LoginSerializer,
                 ),
-            400: openapi.Response(
-                'Authentication failed',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
-            500: openapi.Response(
-                'Internal server error',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
+            400: 'Bad request',
         },
         security=[],
     )
@@ -558,30 +465,7 @@ class GoogleLoginV2(APIView, FirebaseAuthMixin):
                 'Successful authentication',
                 LoginSerializer,
                 ),
-            400: openapi.Response(
-                'Authentication failed',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
-            500: openapi.Response(
-                'Internal server error',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
+            400: 'Bad request',
         },
         security=[],
     )
@@ -635,30 +519,7 @@ class CustomTokenRefreshView(APIView):
                     }
                 }
             ),
-            400: openapi.Response(
-                description='Failed to refresh access_token',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                        )
-                    }
-                )
-            ),
-            500: openapi.Response(
-                'Internal server error',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
+            400: 'Bad request',
         },
         security=[],
     )
@@ -692,7 +553,6 @@ class CustomTokenRefreshView(APIView):
             error_msg = f'unexpected error: {e}'
             logger.error(error_msg)
             return Response(
-                {'error': error_msg},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -733,30 +593,7 @@ class CustomTokenVerifyView(APIView):
                     'application/json': {}
                 }
             ),
-            400: openapi.Response(
-                description='Invalid or expired access_token',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                        )
-                    }
-                )
-            ),
-            500: openapi.Response(
-                'Internal server error',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'error': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='Error description'
-                            )
-                    }
-                )
-            ),
+            400: 'Bad request',
         },
         security=[],
     )
@@ -789,6 +626,5 @@ class CustomTokenVerifyView(APIView):
             error_msg = f'unexpected error: {e}'
             logger.error(error_msg)
             return Response(
-                {'error': error_msg},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
