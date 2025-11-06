@@ -40,6 +40,11 @@ class BaseEventSerializer(s.ModelSerializer):
         source='max_players',
     )
 
+    court_location = LocationSerializer(
+        source='court.location',
+        read_only=True
+    )
+
     def get_currency_type(self):
         """Returns the type of currency by the player's country."""
         host = self.context['request'].user.player
@@ -109,6 +114,7 @@ class BaseGameSerializer(BaseEventSerializer):
             'currency_type',
             'payment_type',
             'payment_account',
+            'court_location'
         ]
 
 
@@ -179,7 +185,7 @@ class GameDetailSerializer(BaseGameSerializer):
 
     host = PlayerGameSerializer()
 
-    court_location = LocationSerializer(source='court.location')
+    # court_location = LocationSerializer(source='court.location')
 
     players = PlayerGameSerializer(many=True)
 
@@ -187,7 +193,7 @@ class GameDetailSerializer(BaseGameSerializer):
         model = BaseGameSerializer.Meta.model
         fields = BaseGameSerializer.Meta.fields + [
             'host',
-            'court_location',
+            # 'court_location',
             'players'
         ]
 
@@ -278,6 +284,11 @@ class TourneyTeamSerializer(s.Serializer):
         read_only_fields = fields
 
 
+class TourneyTeamDetailSerializer(TourneyTeamSerializer):
+
+    players = PlayerGameSerializer(many=True)
+
+
 class BaseTourneySerializer(BaseEventSerializer):
     tournament_id = s.IntegerField(source='pk', read_only=True)
     is_individual = s.BooleanField()
@@ -300,6 +311,7 @@ class BaseTourneySerializer(BaseEventSerializer):
             'currency_type',
             'payment_type',
             'payment_account',
+            'court_location'
         ]
 
     def validate_maximum_teams(self, value):
@@ -403,37 +415,37 @@ class TourneySerializer(BaseTourneySerializer):
     #     return value
 
 
-# class TourneyDetailSerializer(BaseTourneySerializer):
-#     """Serializer for viewing tournament details."""
+class TourneyDetailSerializer(BaseTourneySerializer):
+    """Serializer for viewing tournament details."""
 
-#     host = PlayerGameSerializer()
-#     court_location = LocationSerializer(source='court.location')
-#     players = PlayerGameSerializer(many=True)
+    host = PlayerGameSerializer()
+    # court_location = LocationSerializer(source='court.location')
+    teams = TourneyTeamDetailSerializer(many=True)
 
-#     class Meta(BaseTourneySerializer.Meta):
-#         model = BaseTourneySerializer.Meta.model
-#         fields = BaseTourneySerializer.Meta.fields + [
-#             'host',
-#             'court_location',
-#             'players'
-#         ]
+    class Meta(BaseTourneySerializer.Meta):
+        model = BaseTourneySerializer.Meta.model
+        fields = BaseTourneySerializer.Meta.fields + [
+            'host',
+            # 'court_location',
+            'teams'
+        ]
 
 
-# class TourneyShortSerializer(s.ModelSerializer):
-#     tournament_id = s.IntegerField(source='pk')
-#     host = PlayerGameSerializer()
-#     court_location = LocationSerializer(source='court.location')
-#     start_time = s.DateTimeField(format='iso-8601')
-#     end_time = s.DateTimeField(format='iso-8601')
+class TourneyShortSerializer(s.ModelSerializer):
+    tournament_id = s.IntegerField(source='pk')
+    host = PlayerGameSerializer()
+    court_location = LocationSerializer(source='court.location')
+    start_time = s.DateTimeField(format='iso-8601')
+    end_time = s.DateTimeField(format='iso-8601')
 
-#     class Meta:
-#         model = Tourney
-#         fields = [
-#             'tournament_id',
-#             'host',
-#             'court_location',
-#             'message',
-#             'start_time',
-#             'end_time'
-#         ]
-#         read_only_fields = fields
+    class Meta:
+        model = Tourney
+        fields = [
+            'tournament_id',
+            'host',
+            'court_location',
+            'message',
+            'start_time',
+            'end_time'
+        ]
+        read_only_fields = fields

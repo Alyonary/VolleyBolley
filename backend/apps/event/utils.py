@@ -47,8 +47,8 @@ def procces_rate_notifications_for_recent_events():
 
 
 def send_rate_notification_for_events(
-    event_type: type[Game | Tourney],
-    hour_ago: datetime
+        event_type: type[Game | Tourney],
+        hour_ago: datetime
     ) -> bool:
     """
     Sends notification to all players in the event to rate other players.

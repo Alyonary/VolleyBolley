@@ -30,7 +30,7 @@ class GameAdmin(BaseEventAdmin):
     pass
 
 
-class TeamInline(admin.TabularInline):
+class TeamInline(admin.StackedInline):
     model = TourneyTeam
     extra = 1
 
@@ -50,7 +50,16 @@ class TourneyAdmin(BaseEventAdmin):
 
 @admin.register(GameInvitation)
 class GameInvitationAdmin(admin.ModelAdmin):
-    list_display = ('id', 'content_object', 'host', 'invited')
+    list_display = ('id', 'content_type', 'object_id', 'host', 'invited')
     search_fields = ('content_object', 'host', 'invited')
     empty_value_display = _('Not defined')
+    list_per_page = EventIntEnums.ADMIN_LIST_PER_PAGE.value
+
+
+@admin.register(TourneyTeam)
+class TourneyTeamAdmin(admin.ModelAdmin):
+    list_display = ('id', 'tourney')
+    search_fields = list_display
+    empty_value_display = _('Not defined')
+    filter_horizontal = ('players',)
     list_per_page = EventIntEnums.ADMIN_LIST_PER_PAGE.value

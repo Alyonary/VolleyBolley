@@ -54,6 +54,13 @@ class GameQuerySet(m.query.QuerySet):
                 '-end_time')
 
 
+class TourneyQuerySet(GameQuerySet):
+
+    def player_related_games(self, player):
+        return self.player_located_games(player).filter(
+            (m.Q(host=player) | m.Q(teams__players=player))).distinct()
+
+
 class EventInvitesManager(m.Manager):
     def count_events(self, player):
         """
@@ -115,6 +122,12 @@ class GameManager(m.Manager):
         return self.get_queryset().nearest_game(player)
 
 
+class TourneyManager(GameManager):
+
+    def get_queryset(self):
+        return TourneyQuerySet(self.model, using=self._db)
+
+
 class GameInvitation(m.Model):
     """Invitation to game or tourney model."""
 
@@ -147,7 +160,7 @@ class GameInvitation(m.Model):
 
     def __str__(self):
         discription = str(_(
-            f'Invitation in {self.content_object} for {self.invited}'))
+            f'Invitation in {self.content_object.id} for {self.invited}'))
         return discription
 
 
@@ -203,17 +216,28 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         blank=True,
         null=True
     )
+    objects = TourneyManager()
 
     class Meta:
         verbose_name = _('Tourney')
         verbose_name_plural = _('Tourneys')
         default_related_name = 'tournaments'
 
+    def __str__(self):
+        name = (
+            f'{self.id}, '
+            f'{self.court.location.court_name}, '
+            f'{self.message[:15]}, '
+            f'time: {self.start_time}'
+            f'host: {self.host}, '
+        )
+        return name[:EventIntEnums.STR_MAX_LEN.value]
+
 
 class TourneyTeam(m.Model):
 
     tourney = m.ForeignKey(
-        Tourney,
+        'event.Tourney',
         verbose_name=_('Tourney is from'),
         on_delete=m.CASCADE
         )
@@ -228,3 +252,10 @@ class TourneyTeam(m.Model):
         verbose_name = _('Tourney team')
         verbose_name_plural = _('Tourney teams')
         default_related_name = 'teams'
+
+    def __str__(self):
+        name = (
+            f'Team #{self.id}, of '
+            f'{self.tourney} tourney'
+        )
+        return name[:EventIntEnums.STR_MAX_LEN.value]

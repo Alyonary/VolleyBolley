@@ -147,7 +147,7 @@ class TestGameAPI:
         response = api_client_thailand.get(
             reverse('api:games-upcoming-games')
         )
-        assert len(response.data) == 1
+        assert len(response.data['games']) == 1
         assert response.data['games'][0]['game_id'] == game_thailand.id
 
     def test_deleting_game_by_host(
