@@ -270,11 +270,11 @@ class TestRatePlayersAPI:
             assert vote_count >= 0
             PlayerRatingVote.objects.filter(rater=rater).delete()
 
-    @pytest.mark.parametrize("rater_in_game,rated_in_game", [
-        (False, True),
-        (True, False), 
-        (False, False),
-        (True, True),
+    @pytest.mark.parametrize("rater_in_game, rated_in_game, response_status", [
+        (False, True, status.HTTP_403_FORBIDDEN),
+        (True, False, status.HTTP_200_OK),
+        (False, False, status.HTTP_403_FORBIDDEN),
+        (True, True, status.HTTP_200_OK),
     ])
     def test_post_rate_player_participation_validation(
         self,
@@ -283,7 +283,8 @@ class TestRatePlayersAPI:
         player_thailand,
         bulk_create_registered_players,
         rater_in_game,
-        rated_in_game
+        rated_in_game,
+        response_status
     ):
         """Test validation that players must participate in game to rate."""
         game = game_thailand_with_players
@@ -308,7 +309,7 @@ class TestRatePlayersAPI:
         }
         
         response = api_client_thailand.post(url, post_data, format='json')
-        assert response.status_code == status.HTTP_200_OK    
+        assert response.status_code == response_status
         vote_count = PlayerRatingVote.objects.filter(rater=rater).count()
         
         if rater_in_game and rated_in_game:

@@ -218,6 +218,17 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
     )
     objects = TourneyManager()
 
+    @property
+    def players(self):
+        """
+        Returns a qs of players in the tourney via related TourneyTeam.
+        """
+        from players.models import Player
+
+        return Player.objects.filter(
+            tourney_players__tourney=self
+        ).distinct()
+
     class Meta:
         verbose_name = _('Tourney')
         verbose_name_plural = _('Tourneys')

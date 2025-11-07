@@ -1,3 +1,4 @@
+from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _
 from rest_framework import status
 from rest_framework.decorators import action
@@ -11,6 +12,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
+from apps.event.enums import EventIntEnums
 from apps.event.models import Game, GameInvitation, Tourney, TourneyTeam
 from apps.event.permissions import IsHostOrReadOnly, IsPlayerOrReadOnly
 from apps.event.serializers import (
@@ -18,14 +20,11 @@ from apps.event.serializers import (
     GameInviteSerializer,
     GameSerializer,
     GameShortSerializer,
+    TourneyDetailSerializer,
     TourneySerializer,
     TourneyShortSerializer,
-    TourneyDetailSerializer
 )
-
-from apps.event.enums import EventIntEnums
 from apps.event.utils import procces_rate_players_request
-from django.contrib.contenttypes.models import ContentType
 
 
 class InvitePlayersMixin:
@@ -273,14 +272,15 @@ class TourneyViewSet(
     http_method_names = ['get', 'post', 'delete']
     queryset = Tourney.objects.all()
 
-    # def get_queryset(self):
-    #     player = getattr(self.request.user, 'player', None)
-    #     if player is None or player.country is None:
-    #         return Tourney.objects.all().select_related(
-    #             'host', 'court').prefetch_related('players')
-    #     return Tourney.objects.filter(
-    #         court__location__country=player.country
-    #     ).select_related('host', 'court').prefetch_related('players')
+    def get_queryset(self):
+        player = getattr(self.request.user, 'player', None)
+        if player is None or player.country is None:
+            return Tourney.objects.all().select_related(
+                'host', 'court').prefetch_related('teams', 'teams__players')
+        return Tourney.objects.filter(
+            court__location__country=player.country
+        ).select_related('host', 'court'
+                         ).prefetch_related('teams', 'teams__players')
 
     def get_serializer_class(self):
         if self.action in ('retrieve', 'joining_tournament'):

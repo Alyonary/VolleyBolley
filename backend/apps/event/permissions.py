@@ -24,7 +24,5 @@ class IsPlayerOrReadOnly(IsRegisteredPlayer):
         elif isinstance(obj, Game):
             return request.user.player in obj.players.all()
         elif isinstance(obj, Tourney):
-            return request.user.player.id in obj.teams.all().values_list(
-                'players', flat=True)
-        else:
-            False
+            return request.user.player in obj.players
+        return False
