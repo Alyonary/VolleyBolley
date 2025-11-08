@@ -418,7 +418,7 @@ class TestGameFiltering:
             game_thailand,
             game_thailand_with_players,
     ):
-        game_thailand_with_players.start_time = (
+        game_thailand_with_players.end_time = (
             now() - timedelta(weeks=520)
         )
         game_thailand_with_players.save()

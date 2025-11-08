@@ -27,7 +27,6 @@ def procces_rate_players_request(self, request, *args, **kwargs) -> Response:
         valid_players = rater_player.get_players_to_rate(event)
         serializer = PlayerShortSerializer(valid_players, many=True)
         return Response({"players": serializer.data})
-
     serializer = PlayerRateSerializer(
         data=request.data,
         context={'request': request, 'event': event}

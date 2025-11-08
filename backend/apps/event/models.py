@@ -22,8 +22,9 @@ class GameQuerySet(m.query.QuerySet):
         return self
 
     def player_related_games(self, player):
-        return self.player_located_games(player).filter(
-            (m.Q(host=player) | m.Q(players=player))).distinct()
+        return self.filter(
+            m.Q(host=player) | m.Q(players=player)
+        ).distinct()
 
     def future_games(self):
         current_time = now()
@@ -48,7 +49,7 @@ class GameQuerySet(m.query.QuerySet):
         current_time = now()
         return self.player_related_games(
             player).filter(
-            start_time__lt=current_time).order_by(
+            end_time__lt=current_time).order_by(
                 '-end_time')
 
 
