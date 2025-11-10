@@ -10,8 +10,11 @@ class LocationSerializer(serializers.ModelSerializer):
     location_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        fields = ('latitude', 'longitude', 'court_name', 'location_name')
         model = CourtLocation
+        fields = ('latitude', 'longitude', 'court_name', 'location_name')
+        read_only_fields = (
+            'latitude', 'longitude', 'court_name', 'location_name'
+        )
 
     def get_location_name(self, obj):
         return obj.location_name

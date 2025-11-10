@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.courts.serializers import LocationSerializer
 from apps.event.models import Game, Tourney
 from apps.locations.models import City, Country
 from apps.players.constants import Genders, Grades, PlayerIntEnums
@@ -280,22 +281,22 @@ class PlayerListSerializer(PlayerBaseSerializer):
 
     class Meta:
         model = Player
-        fields = (
+        fields = [
             'player_id',
             'first_name',
             'last_name',
             'avatar',
             'level',
             'is_favorite'
-        )
-        read_only_fields = (
+        ]
+        read_only_fields = [
             'player_id',
             'first_name',
             'last_name',
             'avatar',
             'level',
             'is_favorite'
-        )
+        ]
 
     def get_is_favorite(self, obj) -> bool:
         """Retrieve if player is in favorite list."""
@@ -561,3 +562,36 @@ class PlayerListShortSerializer(serializers.Serializer):
     players = serializers.ListField(
         child=PlayerShortSerializer(), read_only=True
     )
+
+
+class LatestActivitySerializer(serializers.Serializer):
+    event_timestamp = serializers.DateTimeField()
+    court_location = LocationSerializer(read_only=True)
+
+
+class PlayerDetailSerializer(PlayerListSerializer):
+    latest_activity = serializers.SerializerMethodField(read_only=True)
+
+    class Meta(PlayerListSerializer.Meta):
+        fields = PlayerListSerializer.Meta.fields + ['latest_activity']
+        read_only_fields = (
+            PlayerListSerializer.Meta.read_only_fields + ['latest_activity']
+        )
+
+    def get_latest_activity(self, obj):
+        activities = []
+
+        for game in getattr(obj, 'recent_games', []):
+            activities.append({
+                'event_timestamp': game.start_time,
+                'court_location': game.court.location
+            })
+
+        activities.sort(key=lambda x: x['event_timestamp'], reverse=True)
+        return LatestActivitySerializer(
+            activities[:PlayerIntEnums.RECENT_ACTIVITIES_LENGTH], many=True
+        ).data
+
+
+class PlayerKeyDetailSerializer(serializers.Serializer):
+    player = PlayerDetailSerializer(read_only=True)

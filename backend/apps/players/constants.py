@@ -32,6 +32,7 @@ class PlayerIntEnums(IntEnum):
     PLAYER_INACTIVE_DAYS = 60
     PLAYER_VOTE_LIMIT = 2
     RATING_PERIOD_DAYS = 60
+    RECENT_ACTIVITIES_LENGTH = 5
 
 
 class Genders(models.TextChoices):

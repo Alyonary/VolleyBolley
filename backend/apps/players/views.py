@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
+from django.db.models import Prefetch
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -9,6 +10,8 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from apps.core.permissions import IsNotRegisteredPlayer, IsRegisteredPlayer
 from apps.core.serializers import EmptyBodySerializer
+from apps.event.models import Game
+from apps.players.constants import PlayerIntEnums
 from apps.players.models import Favorite, Payment, Player
 from apps.players.serializers import (
     AvatarSerializer,
@@ -16,6 +19,7 @@ from apps.players.serializers import (
     PaymentSerializer,
     PaymentsSerializer,
     PlayerBaseSerializer,
+    PlayerKeyDetailSerializer,
     PlayerListSerializer,
     PlayerRegisterSerializer,
 )
@@ -27,14 +31,13 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     queryset = Player.objects.select_related(
         'country', 'city', 'user'
     ).prefetch_related(
-        'payments', 'player', 'favorite', 'games_players',
-        'tournaments_players',
+        'payments', 'player', 'favorite', 'rating'
     ).all()
     serializer_class = PlayerBaseSerializer
     http_method_names = ['get', 'post', 'patch', 'put', 'delete']
     permission_classes = [IsRegisteredPlayer]
 
-    def get_serializer_class(self, *args, **kwargs):  # TODO: добавить сериалайзер для retrieve # noqa
+    def get_serializer_class(self, *args, **kwargs):
         if self.action == "me":
             return PlayerBaseSerializer
         if self.action == 'put_delete_avatar':
@@ -47,6 +50,8 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             return PaymentSerializer
         if self.action == 'list':
             return PlayerListSerializer
+        if self.action == 'retrieve':
+            return PlayerKeyDetailSerializer
         if self.action == 'favorite':
             return FavoriteSerializer
         return super().get_serializer_class(*args, **kwargs)
@@ -63,18 +68,39 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+
         if self.action != 'register':
-            queryset = queryset.exclude(is_registered=False)
+            queryset.exclude(is_registered=False)
+
+        if self.action == 'retrieve':
+            player_id = self.kwargs.get('pk')
+            player = queryset.get(pk=player_id)
+            if player and player.is_registered is True:
+                return Player.objects.filter(pk=player_id).select_related(
+                    'country', 'city', 'user'
+                ).prefetch_related(
+                    'player',
+                    'favorite',
+                    'rating',
+                    Prefetch(
+                        'games_players',
+                        Game.objects.archive_games(player=player)
+                        .select_related('court__location')
+                        .order_by('-start_time')
+                        [:PlayerIntEnums.RECENT_ACTIVITIES_LENGTH],
+                        to_attr='recent_games'
+                    ),
+                ).all()
+            return None
 
         if self.action == 'get_put_payments':
             player = self.request.user.player
             if player.is_registered:
                 return Payment.objects.filter(player=self.request.user.player)
-
             return None
 
         if self.action == 'list':
-            queryset = queryset.exclude(user=self.request.user)
+            return queryset.exclude(user=self.request.user)
 
         return queryset
 
@@ -113,14 +139,86 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         **Returns:** information about the chosen player.
         """,
         responses={
-            200: openapi.Response('Success', PlayerBaseSerializer()),  # TODO: Заменить сериалайзер. # noqa
+            200: openapi.Response(
+                description="Player details retrieved successfully",
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'player': openapi.Schema(
+                            type=openapi.TYPE_OBJECT,
+                            properties={
+                                'player_id': openapi.Schema(
+                                    type=openapi.TYPE_INTEGER, example=1
+                                ),
+                                'first_name': openapi.Schema(
+                                    type=openapi.TYPE_STRING, example="Ivan"
+                                ),
+                                'last_name': openapi.Schema(
+                                    type=openapi.TYPE_STRING, example="Petrov"
+                                ),
+                                'avatar': openapi.Schema(
+                                    type=openapi.TYPE_STRING,
+                                    format=openapi.FORMAT_URI,
+                                    example="https://storage.example.com/"
+                                            "avatars/1.jpg"
+                                ),
+                                'is_favorite': openapi.Schema(
+                                    type=openapi.TYPE_BOOLEAN, example=False
+                                ),
+                                'level': openapi.Schema(
+                                    type=openapi.TYPE_STRING, example="PRO"
+                                ),
+                                'latest_activity': openapi.Schema(
+                                    type=openapi.TYPE_ARRAY,
+                                    items=openapi.Schema(
+                                        type=openapi.TYPE_OBJECT,
+                                        properties={
+                                            'event_timestamp': openapi.Schema(
+                                                type=openapi.TYPE_STRING,
+                                                format=openapi.FORMAT_DATETIME,
+                                                example="2025-07-12T14:23:45Z"
+                                            ),
+                                            'court_location': openapi.Schema(
+                                                type=openapi.TYPE_OBJECT,
+                                                properties={
+                                                    'longitude': openapi.Schema(  # noqa
+                                                        type=openapi.TYPE_NUMBER,  # noqa
+                                                        format=openapi.FORMAT_FLOAT,  # noqa
+                                                        example=37.6173
+                                                    ),
+                                                    'latitude': openapi.Schema(
+                                                        type=openapi.TYPE_NUMBER,  # noqa
+                                                        format=openapi.FORMAT_FLOAT,  # noqa
+                                                        example=55.7558
+                                                    ),
+                                                    'court_name': openapi.Schema(  # noqa
+                                                        type=openapi.TYPE_STRING,  # noqa
+                                                        example="Karon Arena"
+                                                    ),
+                                                    'location_name': openapi.Schema(  # noqa
+                                                        type=openapi.TYPE_STRING,  # noqa
+                                                        example="Russia, Moscow"  # noqa
+                                                    )
+                                                }
+                                            )
+                                        }
+                                    )
+                                )
+                            }
+                        )
+                    }
+                ),
+            ),
             401: 'Unauthorized',
             403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
     def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
+        instance = self.get_object()
+
+        serializer = PlayerKeyDetailSerializer(instance={'player': instance})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         tags=['me'],

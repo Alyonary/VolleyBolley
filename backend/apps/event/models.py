@@ -93,6 +93,9 @@ class GameManager(m.Manager):
         """Returns nearest upcoming game where user is a host or player."""
         return self.get_queryset().nearest_game(player)
 
+    def recent_games(self, player, limit):
+        self.archive_games(player).order_by('-start_time')[:limit]
+
 
 class GameInvitation(m.Model):
     """Invitation to game model."""

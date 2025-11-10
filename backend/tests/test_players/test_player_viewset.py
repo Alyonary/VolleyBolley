@@ -76,18 +76,38 @@ class TestPlayerViewSet:
     )
     def test_get_player_detail(
         self, request, client_fixture_name, expected_status,
-        bulk_create_registered_players
+        bulk_create_registered_players, game_thailand_with_players_past
     ):
         client = request.getfixturevalue(client_fixture_name)
-        other_player = bulk_create_registered_players[0]
+        other_player = bulk_create_registered_players[3]
         url = reverse('api:players-detail', args=[other_player.id])
         response = client.get(url)
 
         assert response.status_code == expected_status
         if client_fixture_name == 'auth_api_client_registered_player':
-            assert response.data['first_name'] == other_player.user.first_name
-            assert response.data['last_name'] == other_player.user.last_name
-
+            player_data = response.data['player']
+            for key_player in [
+                'player_id', 'first_name', 'last_name', 'avatar', 'level',
+                'is_favorite', 'latest_activity'
+            ]:
+                assert key_player in player_data.keys(), player_data
+                if key_player == 'latest_activity':
+                    assert len(player_data[key_player]) > 0
+                    for key_event in [
+                        'event_timestamp', 'court_location'
+                    ]:
+                        assert key_event in player_data[key_player][0].keys()
+                        if key_event == 'court_location':
+                            assert len(
+                                player_data[key_player][0][key_event]
+                            ) > 0
+                            for key_location in [
+                                'latitude', 'court_name',
+                                'location_name', 'longitude',
+                            ]:
+                                assert key_location in player_data[
+                                    key_player
+                                ][0][key_event].keys()
 
     @pytest.mark.parametrize(
         'client_fixture_name,expected_status',
@@ -173,7 +193,6 @@ class TestPlayerViewSet:
         assert not user.player.avatar
         assert user.player.gender == registered_player_data.get('gender')
         assert user.player.rating.grade == registered_player_data.get('level')
-
 
     @pytest.mark.parametrize(
         'client_fixture_name,expected_status',
@@ -276,19 +295,19 @@ class TestPlayerViewSet:
         payment_data = {
             'payments': [
                 {
-                'payment_type': Payments.THAIBANK.value,
-                'payment_account': '1234567890',
-                'is_preferred': True
+                    'payment_type': Payments.THAIBANK.value,
+                    'payment_account': '1234567890',
+                    'is_preferred': True
                 },
                 {
-                'payment_type': Payments.REVOLUT.value,
-                'payment_account': '1234567890',
-                'is_preferred': False
+                    'payment_type': Payments.REVOLUT.value,
+                    'payment_account': '1234567890',
+                    'is_preferred': False
                 },
                 {
-                'payment_type': Payments.CASH.value,
-                'payment_account': '1234567890',
-                'is_preferred': False
+                    'payment_type': Payments.CASH.value,
+                    'payment_account': '1234567890',
+                    'is_preferred': False
                 },
             ]
         }
@@ -322,19 +341,19 @@ class TestPlayerViewSet:
         invalid_payment_data = {
             'payments': [
                 {
-                'payment_type': Payments.THAIBANK.value,
-                'payment_account': '1234567890',
-                'is_preferred': True
+                    'payment_type': Payments.THAIBANK.value,
+                    'payment_account': '1234567890',
+                    'is_preferred': True
                 },
                 {
-                'payment_type': Payments.REVOLUT.value,
-                'payment_account': '1234567890',
-                'is_preferred': True
+                    'payment_type': Payments.REVOLUT.value,
+                    'payment_account': '1234567890',
+                    'is_preferred': True
                 },
                 {
-                'payment_type': Payments.CASH.value,
-                'payment_account': '1234567890',
-                'is_preferred': False
+                    'payment_type': Payments.CASH.value,
+                    'payment_account': '1234567890',
+                    'is_preferred': False
                 },
             ]
         }
