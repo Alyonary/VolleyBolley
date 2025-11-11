@@ -1,5 +1,5 @@
 from django.contrib.auth.models import AnonymousUser
-from django.db.models import Prefetch
+from django.db.models import Exists, OuterRef, Prefetch
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -68,6 +68,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+        current_player = self.request.user.player
 
         if self.action != 'register':
             queryset.exclude(is_registered=False)
@@ -94,13 +95,20 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             return None
 
         if self.action == 'get_put_payments':
-            player = self.request.user.player
-            if player.is_registered:
-                return Payment.objects.filter(player=self.request.user.player)
+            if current_player.is_registered:
+                return Payment.objects.filter(player=current_player)
             return None
 
         if self.action == 'list':
-            return queryset.exclude(user=self.request.user)
+
+            queryset = queryset.exclude(user=self.request.user)
+            is_favorite_subquery = Favorite.objects.filter(
+                player=current_player,
+                favorite=OuterRef('pk')
+            )
+            queryset.annotate(
+                is_favorite=Exists(is_favorite_subquery)
+            ).order_by('-is_favorite', 'user__first_name')
 
         return queryset
 
