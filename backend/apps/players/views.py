@@ -85,10 +85,10 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                     'rating',
                     Prefetch(
                         'games_players',
-                        Game.objects.archive_games(player=player)
-                        .select_related('court__location')
-                        .order_by('-start_time')
-                        [:PlayerIntEnums.RECENT_ACTIVITIES_LENGTH],
+                        Game.objects.recent_games(
+                            player=player,
+                            limit=PlayerIntEnums.RECENT_ACTIVITIES_LENGTH
+                        ).select_related('court__location'),
                         to_attr='recent_games'
                     ),
                 ).all()

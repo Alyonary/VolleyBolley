@@ -51,6 +51,9 @@ class GameQuerySet(m.query.QuerySet):
             start_time__lt=current_time).order_by(
                 '-end_time')
 
+    def recent_games(self, player, limit):
+        return self.archive_games(player).order_by('-start_time')[:limit]
+
 
 class GameManager(m.Manager):
 
@@ -94,7 +97,7 @@ class GameManager(m.Manager):
         return self.get_queryset().nearest_game(player)
 
     def recent_games(self, player, limit):
-        self.archive_games(player).order_by('-start_time')[:limit]
+        return self.get_queryset().recent_games(player, limit)
 
 
 class GameInvitation(m.Model):
