@@ -185,15 +185,12 @@ class GameDetailSerializer(BaseGameSerializer):
 
     host = PlayerGameSerializer()
 
-    # court_location = LocationSerializer(source='court.location')
-
     players = PlayerGameSerializer(many=True)
 
     class Meta(BaseGameSerializer.Meta):
         model = BaseGameSerializer.Meta.model
         fields = BaseGameSerializer.Meta.fields + [
             'host',
-            # 'court_location',
             'players'
         ]
 
@@ -246,30 +243,6 @@ class GameInviteSerializer(s.ModelSerializer):
                  'not allowed in this game. '
                  f'Allowed levels: {", ".join(levels)}'})
         return attrs
-
-
-class GameShortSerializer(s.ModelSerializer):
-    game_id = s.IntegerField(source='pk')
-
-    host = PlayerGameSerializer()
-
-    court_location = LocationSerializer(source='court.location')
-
-    start_time = s.DateTimeField(format='iso-8601')
-
-    end_time = s.DateTimeField(format='iso-8601')
-
-    class Meta:
-        model = Game
-        fields = [
-            'game_id',
-            'host',
-            'court_location',
-            'message',
-            'start_time',
-            'end_time'
-        ]
-        read_only_fields = fields
 
 
 class TourneyTeamSerializer(s.Serializer):
@@ -404,48 +377,57 @@ class TourneySerializer(BaseTourneySerializer):
 
         return tourney
 
-    # def validate_players(self, value):
-    #     host = self.context['request'].user.player
-    #     if host in value:
-    #         raise s.ValidationError(
-    #             'You can not invite yourself.')
-    #     if len(value) != len(set(value)):
-    #         raise s.ValidationError(
-    #             'The players should not repeat themselves.')
-    #     return value
-
 
 class TourneyDetailSerializer(BaseTourneySerializer):
     """Serializer for viewing tournament details."""
 
     host = PlayerGameSerializer()
-    # court_location = LocationSerializer(source='court.location')
     teams = TourneyTeamDetailSerializer(many=True)
 
     class Meta(BaseTourneySerializer.Meta):
         model = BaseTourneySerializer.Meta.model
         fields = BaseTourneySerializer.Meta.fields + [
             'host',
-            # 'court_location',
             'teams'
         ]
 
 
-class TourneyShortSerializer(s.ModelSerializer):
-    tournament_id = s.IntegerField(source='pk')
+class BaseShortSerializer(s.ModelSerializer):
+
     host = PlayerGameSerializer()
     court_location = LocationSerializer(source='court.location')
     start_time = s.DateTimeField(format='iso-8601')
     end_time = s.DateTimeField(format='iso-8601')
 
     class Meta:
-        model = Tourney
         fields = [
-            'tournament_id',
             'host',
             'court_location',
             'message',
             'start_time',
             'end_time'
         ]
+
+
+class TourneyShortSerializer(BaseShortSerializer):
+    tournament_id = s.IntegerField(source='pk')
+
+    class Meta(BaseShortSerializer.Meta):
+        model = Tourney
+
+        fields = ['tournament_id'] + BaseShortSerializer.Meta.fields
         read_only_fields = fields
+
+
+class GameShortSerializer(BaseShortSerializer):
+    game_id = s.IntegerField(source='pk')
+
+    class Meta(BaseShortSerializer.Meta):
+        model = Game
+        fields = ['game_id'] + BaseShortSerializer.Meta.fields
+
+
+class GameTourneySerializer(s.Serializer):
+
+    games = GameShortSerializer(many=True)
+    tournaments = TourneyShortSerializer(many=True)

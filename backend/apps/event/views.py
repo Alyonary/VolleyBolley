@@ -5,7 +5,6 @@ from rest_framework.decorators import action
 from rest_framework.mixins import (
     CreateModelMixin,
     DestroyModelMixin,
-    ListModelMixin,
     RetrieveModelMixin,
 )
 from rest_framework.permissions import IsAuthenticated
@@ -19,10 +18,9 @@ from apps.event.serializers import (
     GameDetailSerializer,
     GameInviteSerializer,
     GameSerializer,
-    GameShortSerializer,
     TourneyDetailSerializer,
     TourneySerializer,
-    TourneyShortSerializer,
+    GameTourneySerializer
 )
 from apps.event.utils import procces_rate_players_request
 
@@ -129,7 +127,7 @@ class GameViewSet(GenericViewSet,
                 'archive_games',
                 'invited_games',
                 'upcoming_games'):
-            return GameShortSerializer
+            return GameTourneySerializer
         else:
             return GameSerializer
 
@@ -165,13 +163,13 @@ class GameViewSet(GenericViewSet,
         """Retrieves the list of games created by the user."""
 
         my_games = Game.objects.my_upcoming_games(request.user.player)
-        game_serializer = self.get_serializer(my_games, many=True)
-
         my_tourneys = Tourney.objects.my_upcoming_games(request.user.player)
-        tourney_serializer = TourneyShortSerializer(my_tourneys, many=True)
-        wrapped_data = {'games': game_serializer.data,
-                        'tournaments': tourney_serializer.data}
-        return Response(data=wrapped_data, status=status.HTTP_200_OK)
+        combined_data = {
+            'games': my_games,
+            'tournaments': my_tourneys
+        }
+        serializer = self.get_serializer(combined_data)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @action(
         methods=['get'],
@@ -182,15 +180,13 @@ class GameViewSet(GenericViewSet,
         """Retrieves the list of archived games related to user."""
 
         archived_games = Game.objects.archive_games(request.user.player)
-        game_serializer = self.get_serializer(archived_games, many=True)
-
         archived_tourneys = Tourney.objects.archive_games(request.user.player)
-        tourney_serializer = TourneyShortSerializer(
-            archived_tourneys, many=True)
-
-        wrapped_data = {'games': game_serializer.data,
-                        'tournaments': tourney_serializer.data}
-        return Response(data=wrapped_data, status=status.HTTP_200_OK)
+        combined_data = {
+            'games': archived_games,
+            'tournaments': archived_tourneys
+        }
+        serializer = self.get_serializer(combined_data)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @action(
         methods=['get'],
@@ -201,16 +197,13 @@ class GameViewSet(GenericViewSet,
         """Retrieving upcoming games to which the player has been invited."""
 
         invited_games = Game.objects.invited_games(request.user.player)
-        game_serializer = self.get_serializer(invited_games, many=True)
-
-        archived_tourneys = Tourney.objects.invited_games(request.user.player)
-        tourney_serializer = TourneyShortSerializer(
-            archived_tourneys, many=True
-        )
-
-        wrapped_data = {'games': game_serializer.data,
-                        'tournaments': tourney_serializer.data}
-        return Response(data=wrapped_data, status=status.HTTP_200_OK)
+        invited_tourneys = Tourney.objects.invited_games(request.user.player)
+        combined_data = {
+            'games': invited_games,
+            'tournaments': invited_tourneys
+        }
+        serializer = self.get_serializer(combined_data)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @action(
         methods=['get'],
@@ -220,19 +213,16 @@ class GameViewSet(GenericViewSet,
     def upcoming_games(self, request, *args, **kwargs):
         """Retrieving upcoming games that the player participates in."""
 
-        upcomming_games = Game.objects.upcomming_games(request.user.player)
-        game_serializer = self.get_serializer(upcomming_games, many=True)
-
-        archived_tourneys = Tourney.objects.upcomming_games(
+        upcoming_games = Game.objects.upcomming_games(request.user.player)
+        upcoming_tourneys = Tourney.objects.upcomming_games(
             request.user.player
         )
-        tourney_serializer = TourneyShortSerializer(
-            archived_tourneys, many=True
-        )
-
-        wrapped_data = {'games': game_serializer.data,
-                        'tournaments': tourney_serializer.data}
-        return Response(data=wrapped_data, status=status.HTTP_200_OK)
+        combined_data = {
+            'games': upcoming_games,
+            'tournaments': upcoming_tourneys
+        }
+        serializer = self.get_serializer(combined_data)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @action(
         methods=['post'],
@@ -263,7 +253,6 @@ class TourneyViewSet(
     CreateModelMixin,
     RetrieveModelMixin,
     DestroyModelMixin,
-    ListModelMixin,
     InvitePlayersMixin,
     RatePlayersMixin
 ):
@@ -332,51 +321,3 @@ class TourneyViewSet(
         data = serializer.data.copy()
         data.update(is_joined)
         return Response(data=data, status=status.HTTP_200_OK)
-
-    # @action(methods=['get'], detail=False, url_path='my-tournaments')
-    # def my_tournaments(self, request, *args, **kwargs):
-    #     """List of tournaments created by the current user."""
-    #     tournaments = Tourney.objects.filter(host=request.user.player)
-    #     serializer = self.get_serializer(tournaments, many=True)
-    #     return Response(
-    # {'tournaments': serializer.data}, status=status.HTTP_200_OK)
-
-    # @action(methods=['get'], detail=False, url_path='archive')
-    # def archive(self, request, *args, **kwargs):
-    #     """List of past tournaments (already finished)."""
-    #     tournaments = Tourney.objects.filter(end_time__lte=timezone.now())
-    #     serializer = self.get_serializer(tournaments, many=True)
-    #     return Response(
-    # {'tournaments': serializer.data}, status=status.HTTP_200_OK)
-
-    # @action(methods=['get'], detail=False, url_path='upcoming')
-    # def upcoming(self, request, *args, **kwargs):
-    #     """List of upcoming tournaments (not started yet)."""
-    #     tournaments = Tourney.objects.filter(
-    #         players=request.user.player,
-    #         start_time__gte=timezone.now()
-    #     )
-    #     serializer = self.get_serializer(tournaments, many=True)
-    #     return Response(
-    # {'tournaments': serializer.data}, status=status.HTTP_200_OK)
-
-    # @action(
-    #     methods=['post'],
-    #     detail=True,
-    #     url_path='join-tournament',
-    #     permission_classes=[IsAuthenticated],
-    # )
-    # def join_tournament(self, request, *args, **kwargs):
-    #     """Join the tournament as a player."""
-    #     tourney = self.get_object()
-    #     player = request.user.player
-    #     if tourney.max_players > tourney.players.count():
-    #         tourney.players.add(player)
-    #         is_joined = True
-    #     else:
-    #         is_joined = False
-    #     serializer = self.get_serializer(
-    # tourney, context={'request': request})
-    #     data = serializer.data.copy()
-    #     data.update({'is_joined': is_joined})
-    #     return Response(data, status=status.HTTP_200_OK)

@@ -208,8 +208,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         related_name='tournaments_host',
     )
     is_individual = m.BooleanField(
-        verbose_name=_('Individual format'),
-        default=False,
+        verbose_name=_('Individual format')
     )
     maximum_teams = m.PositiveIntegerField(
         verbose_name=_('Maximum of teams'),
@@ -223,7 +222,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         """
         Returns a qs of players in the tourney via related TourneyTeam.
         """
-        from players.models import Player
+        from apps.players.models import Player
 
         return Player.objects.filter(
             tourney_players__tourney=self
