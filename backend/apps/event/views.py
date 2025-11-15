@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from apps.event.models import Game, GameInvitation
-from apps.event.permissions import IsHostOrReadOnly
+from apps.event.permissions import IsHostOrReadOnly, IsPlayerInEvent
 from apps.event.serializers import (
     GameDetailSerializer,
     GameInviteSerializer,
@@ -32,21 +32,15 @@ class GameViewSet(
 
     def get_queryset(self):
         player = getattr(self.request.user, 'player', None)
-        if (
-            player is None
-            or player.country is None
-            or self.action in ('joining_game', 'delete_invitation')
-        ):
-            return (
-                Game.objects.all()
-                .select_related('host', 'court')
-                .prefetch_related('players')
-            )
-        return (
-            Game.objects.player_located_games(player)
-            .select_related('host', 'court')
-            .prefetch_related('players')
-        )
+        if (player is None or
+                player.country is None or
+                self.action in ('joining_game', 'delete_invitation')):
+            qs = Game.objects.all()
+        elif self.action == 'rate_players':
+            qs = Game.objects.archive_games(player)
+        else:
+            qs = Game.objects.player_located_games(player)
+        return qs.select_related('host', 'court').prefetch_related('players')
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action in ('retrieve', 'joining_game'):
@@ -182,7 +176,7 @@ class GameViewSet(
         methods=['get', 'post'],
         detail=True,
         url_path='rate-players',
-        permission_classes=[IsHostOrReadOnly],
+        permission_classes=[IsPlayerInEvent]
     )
     def rate_players(self, request, *args, **kwargs):
         """

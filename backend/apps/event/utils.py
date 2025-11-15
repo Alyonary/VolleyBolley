@@ -64,3 +64,4 @@ def send_rate_notification_for_events(
         event.is_active = False
         event.save()
     return True
+

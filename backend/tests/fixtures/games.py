@@ -92,6 +92,13 @@ def game_thailand_with_players(game_data):
     game.player_levels.set(levels)
     return game
 
+@pytest.fixture
+def archived_game_thailand(game_thailand_with_players):
+    game = game_thailand_with_players
+    game.end_time = timezone.now() - timedelta(days=1)
+    game.is_active = False
+    game.save()
+    return game
 
 @pytest.fixture
 def game_for_args(game_thailand):
