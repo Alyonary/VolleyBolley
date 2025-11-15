@@ -140,10 +140,10 @@ services:
       - "9080"
     privileged: true
     volumes:
-      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - monitoring_data:/monitoring_data:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: -config.file=/etc/promtail/config.yml
+    command: -config.file=/monitoring_data/promtail-config.yml
     restart: unless-stopped
     depends_on:
       backend:
@@ -159,8 +159,8 @@ services:
     expose:
       - "3100"
     volumes:
-      - ../monitoring/loki-config.yml:/etc/loki/local-config.yml:ro
-    command: -config.file=/etc/loki/local-config.yml
+      - monitoring_data:/monitoring_data:ro
+    command: -config.file=/monitoring_data/loki-config.yml
     restart: unless-stopped
     depends_on:
       backend:
@@ -176,9 +176,9 @@ services:
     expose:
       - "9090"
     volumes:
-      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - monitoring_data:/monitoring_data:ro
       - prometheus_data:/prometheus
-    command: --config.file=/etc/prometheus/prometheus.yml
+    command: --config.file=/monitoring_data/prometheus.yml
     restart: unless-stopped
     depends_on:
       backend:
@@ -203,7 +203,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
       - GF_PROVISIONING_ENABLE=true
     volumes:
-      - ../monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+      - monitoring_data:/monitoring_data:ro
       - grafana_data:/var/lib/grafana
     logging:
       driver: json-file
