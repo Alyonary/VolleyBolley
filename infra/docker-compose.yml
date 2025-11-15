@@ -18,6 +18,10 @@ services:
       interval: 15s
       timeout: 5s
       retries: 10
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   loki:
     image: grafana/loki:latest
@@ -29,6 +33,10 @@ services:
       - "3100"
     volumes:
       - ../monitoring/loki-config.yml:/etc/loki/local-config.yml:ro
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   prometheus:
     image: prom/prometheus:latest
@@ -41,6 +49,10 @@ services:
     volumes:
       - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheusdata:/prometheus
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   grafana:
     image: grafana/grafana:latest
@@ -58,6 +70,10 @@ services:
     volumes:
       - ../monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
       - grafanadata:/var/lib/grafana
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   db:
     image: postgres:17.5-alpine
@@ -72,6 +88,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   redis:
     image: redis:7-alpine
@@ -102,6 +122,10 @@ services:
           memory: 512M
         reservations:
           memory: 128M
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   backend:
     container_name: volleybolley_backend
@@ -122,6 +146,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
   
   celery_worker:
     container_name: volleybolley_celery_worker
@@ -145,10 +173,15 @@ services:
       resources:
         limits:
           memory: 512M
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   celery_beat:
     container_name: volleybolley_celery_beat
     build: ../backend
+    entrypoint: []
     command: celery -A volleybolley beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file: ./.env
     environment:
@@ -161,6 +194,10 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   nginx:
     container_name: volleybolley-proxy
@@ -175,6 +212,10 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
 volumes:
   pg_data_volleybolley:

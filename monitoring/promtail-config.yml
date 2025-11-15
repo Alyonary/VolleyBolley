@@ -18,13 +18,13 @@ scrape_configs:
       __path__: /var/lib/docker/containers/*/*log
 
   pipeline_stages:
-
   - json:
       expressions:
         stream: stream
         attrs: attrs
         tag: attrs.tag
         container: attrs.container
+        log: log
 
   - regex:
       expression: (?P<image_name>(?:[^|]*[^|])).(?P<container_name>(?:[^|]*[^|])).(?P<image_id>(?:[^|]*[^|])).(?P<container_id>(?:[^|]*[^|]))
@@ -34,3 +34,23 @@ scrape_configs:
       tag:
       image_name:
       container_name:
+      container_id:
+
+  - match:
+      selector: '{container_name="volleybolley-proxy"}'
+      stages:
+      - static_labels:
+          container_name: volleybolley_backend
+
+  - regex:
+      expression: "(?i)(?P<level>INFO|ERROR|DEBUG|WARNING)"
+      source: "log"
+
+  - labels:
+      level:
+
+  - match:
+      selector: '{level=""}'
+      stages:
+      - static_labels:
+          level: INFO
