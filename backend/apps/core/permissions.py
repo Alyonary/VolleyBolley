@@ -2,7 +2,6 @@ from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 
 
 class IsNotRegisteredPlayer(IsAuthenticated):
-
     def has_permission(self, request, view):
         return bool(
             request.user.is_authenticated
@@ -11,14 +10,10 @@ class IsNotRegisteredPlayer(IsAuthenticated):
         )
 
     def has_object_permission(self, request, view, obj):
-        return bool(
-            request.user == obj.user
-            or request.method in SAFE_METHODS
-        )
+        return bool(request.user == obj.user or request.method in SAFE_METHODS)
 
 
 class IsRegisteredPlayer(IsNotRegisteredPlayer):
-
     def has_permission(self, request, view):
         return bool(
             request.user.is_authenticated

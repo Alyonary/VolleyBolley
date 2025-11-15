@@ -16,12 +16,16 @@ class CourtLocation(models.Model):
             MinValueValidator(
                 LocationEnums.MIN_LONGTITUDE.value,
                 message=_(
-                    f'Min longtitude: {LocationEnums.MIN_LONGTITUDE.value}')),
+                    f'Min longtitude: {LocationEnums.MIN_LONGTITUDE.value}'
+                ),
+            ),
             MaxValueValidator(
                 LocationEnums.MAX_LONGTITUDE.value,
                 message=_(
-                    f'Max longtitude: {LocationEnums.MAX_LONGTITUDE.value}')),
-        )
+                    f'Max longtitude: {LocationEnums.MAX_LONGTITUDE.value}'
+                ),
+            ),
+        ),
     )
 
     latitude = models.FloatField(
@@ -29,29 +33,25 @@ class CourtLocation(models.Model):
         validators=(
             MinValueValidator(
                 LocationEnums.MIN_LATITUDE.value,
-                message=_(
-                    f'Min latitude: {LocationEnums.MIN_LATITUDE.value}')),
+                message=_(f'Min latitude: {LocationEnums.MIN_LATITUDE.value}'),
+            ),
             MaxValueValidator(
                 LocationEnums.MAX_LATITUDE.value,
-                message=_(
-                    f'Max latitude: {LocationEnums.MAX_LATITUDE.value}')),
-        )
+                message=_(f'Max latitude: {LocationEnums.MAX_LATITUDE.value}'),
+            ),
+        ),
     )
     court_name = models.CharField(
-        _('Court name'),
-        max_length=LocationEnums.LOCATION_NAME_LENGTH.value
+        _('Court name'), max_length=LocationEnums.LOCATION_NAME_LENGTH.value
     )
     country = models.ForeignKey(
         Country,
         verbose_name=_('Country'),
         on_delete=models.SET_NULL,
-        null=True
+        null=True,
     )
     city = models.ForeignKey(
-        City,
-        verbose_name=_('City'),
-        on_delete=models.SET_NULL,
-        null=True
+        City, verbose_name=_('City'), on_delete=models.SET_NULL, null=True
     )
 
     class Meta:
@@ -72,22 +72,15 @@ class CourtLocation(models.Model):
 
 class Court(models.Model):
     """Court model."""
-    location = models.ForeignKey(
-        CourtLocation, on_delete=models.CASCADE
-    )
+
+    location = models.ForeignKey(CourtLocation, on_delete=models.CASCADE)
     price_description = models.TextField(
         _('Price'),
         blank=True,
     )
-    description = models.TextField(
-        _('Description'),
-        blank=True
-    )
+    description = models.TextField(_('Description'), blank=True)
     photo_url = models.ImageField(
-        upload_to='courts/images/',
-        null=True,
-        blank=True,
-        default=None
+        upload_to='courts/images/', null=True, blank=True, default=None
     )
     tag_list = models.ManyToManyField(
         Tag,
@@ -96,7 +89,7 @@ class Court(models.Model):
     working_hours = models.CharField(
         _('Working hours'),
         max_length=CourtEnums.WORKING_HOURS_LENGTH.value,
-        blank=True
+        blank=True,
     )
     is_active = models.BooleanField(default=True)
 

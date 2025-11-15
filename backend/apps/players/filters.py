@@ -9,7 +9,7 @@ class PlayersFilter(django_filters.FilterSet):
     Allows filtering by first name, last name.
     """
 
-    search = django_filters.CharFilter(method="search_filter")
+    search = django_filters.CharFilter(method='search_filter')
 
     def search_filter(self, queryset, name, value):
         """Filter by first_name OR last_name containing the search value.
@@ -29,12 +29,12 @@ class PlayersFilter(django_filters.FilterSet):
             output_field=IntegerField(),
         )
 
-        request = getattr(self, "request", None)
+        request = getattr(self, 'request', None)
         current_user_player = Player.objects.get(user=request.user)
         current_country = current_user_player.country
         current_city = current_user_player.city
         queryset = queryset.exclude(user=request.user)
-        if current_country.name == "Thailand":
+        if current_country.name == 'Thailand':
             filtered_queryset = (
                 queryset.filter(
                     (
@@ -44,7 +44,7 @@ class PlayersFilter(django_filters.FilterSet):
                     & Q(city=current_city)
                 )
                 .annotate(relevance=relevance_sort)
-                .order_by("relevance", "user__first_name")
+                .order_by('relevance', 'user__first_name')
             )
         else:
             filtered_queryset = (
@@ -56,7 +56,7 @@ class PlayersFilter(django_filters.FilterSet):
                     & Q(country=current_country)
                 )
                 .annotate(relevance=relevance_sort)
-                .order_by("relevance", "user__first_name")
+                .order_by('relevance', 'user__first_name')
             )
 
         return filtered_queryset
@@ -64,5 +64,5 @@ class PlayersFilter(django_filters.FilterSet):
     class Meta:
         model = Player
         fields = [
-            "search",
+            'search',
         ]

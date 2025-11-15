@@ -67,14 +67,14 @@ class InfoSectionAdmin(admin.ModelAdmin):
     def short_content(self, obj):
         return (
             (
-                obj.content[:CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value]
+                obj.content[: CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value]
                 + '...'
             )
             if obj.content
             and (
-                    len(obj.content)
-                    > CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value
-                )
+                len(obj.content)
+                > CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value
+            )
             else obj.content
         )
 
@@ -97,6 +97,7 @@ class CurrencyTypeAdmin(admin.ModelAdmin):
     ordering = ('currency_type',)
     empty_value_display = _('Not defined')
     list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
+
 
 @admin.register(FAQ)
 class FAQAdmin(admin.ModelAdmin):

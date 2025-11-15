@@ -16,6 +16,7 @@ def game_levels_medium():
 @pytest.fixture
 def game_levels_pro():
     from apps.core.models import GameLevel
+
     return GameLevel.objects.create(name='PRO')
 
 
@@ -24,7 +25,7 @@ def currency_type_thailand(country_thailand):
     return CurrencyType.objects.create(
         currency_name=CurrencyType.CurrencyNameChoices.THB,
         currency_type=CurrencyType.CurrencyTypeChoices.THB,
-        country=country_thailand
+        country=country_thailand,
     )
 
 
@@ -33,5 +34,5 @@ def currency_type_cyprus(country_cyprus):
     return CurrencyType.objects.create(
         currency_name=CurrencyType.CurrencyNameChoices.EUR,
         currency_type=CurrencyType.CurrencyTypeChoices.EUR,
-        country=country_cyprus
+        country=country_cyprus,
     )

@@ -11,8 +11,8 @@ class CourtFilter(filters.FilterSet):
     """
 
     search = filters.CharFilter(
-        field_name='location__court_name',
-        lookup_expr='icontains')
+        field_name='location__court_name', lookup_expr='icontains'
+    )
 
     class Meta:
         model = Court

@@ -257,7 +257,7 @@ class PushService:
                 return {
                     'status': False,
                     'message': f'Error: Notification type {notification_type} '
-                    f'not found'
+                    f'not found',
                 }
             devices = self.get_devices_qs(
                 notification_type=notification_type,
@@ -280,7 +280,7 @@ class PushService:
             return {
                 'status': False,
                 'notification_type': notification_type,
-                'message': f'Error: Notification creation failed: {str(e)}'
+                'message': f'Error: Notification creation failed: {str(e)}',
             }
 
     def get_devices_qs(
@@ -306,12 +306,12 @@ class PushService:
             devices = Device.objects.in_game(event_id)
         elif notification_type in [
             NotificationTypes.GAME_INVITE,
-            NotificationTypes.TOURNEY_INVITE
+            NotificationTypes.TOURNEY_INVITE,
         ]:
             devices = Device.objects.by_player(player_id)
         elif notification_type in [
             NotificationTypes.TOURNEY_REMINDER,
-            NotificationTypes.TOURNEY_RATE
+            NotificationTypes.TOURNEY_RATE,
         ]:
             devices = Device.objects.in_tourney(event_id)
         else:
@@ -330,9 +330,7 @@ class PushService:
         Returns:
             Notification: NotificationsBase object with title, body, screen.
         """
-        return NotificationsBase.objects.get(
-            type=notification_type
-        )
+        return NotificationsBase.objects.get(type=notification_type)
 
     @service_required
     def send_push_notifications(
@@ -473,10 +471,7 @@ class PushService:
             notification_type (str): Type of notification sent.
             event_id (int, optional): Game ID for the notification data.
         """
-        data = {
-            'player': device.player,
-            'notification_type': notification
-        }
+        data = {'player': device.player, 'notification_type': notification}
         if event_id:
             if 'game' in notification.type:
                 game_obj = Game.objects.filter(id=event_id).first()

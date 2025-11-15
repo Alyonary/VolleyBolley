@@ -13,7 +13,6 @@ from apps.players.rating import GradeSystem
 
 @pytest.mark.django_db
 class TestGradeSystem:
-
     def setup_method(self):
         """Initialize before each test."""
         GradeSystem.setup()
@@ -25,10 +24,18 @@ class TestGradeSystem:
         assert len(GradeSystem._list) == 12
 
         expected_codes = [
-            'L:1', 'L:2', 'L:3',
-            'M:1', 'M:2', 'M:3',
-            'H:1', 'H:2', 'H:3',
-            'P:1', 'P:2', 'P:3'
+            'L:1',
+            'L:2',
+            'L:3',
+            'M:1',
+            'M:2',
+            'M:3',
+            'H:1',
+            'H:2',
+            'H:3',
+            'P:1',
+            'P:2',
+            'P:3',
         ]
         actual_codes = [obj.code for obj in GradeSystem._objs]
         assert actual_codes == expected_codes
@@ -49,10 +56,18 @@ class TestGradeSystem:
     def test_order_of_levels(self):
         """Test correct order of grades and levels."""
         expected_order = [
-            ('L', 1), ('L', 2), ('L', 3),
-            ('M', 1), ('M', 2), ('M', 3),
-            ('H', 1), ('H', 2), ('H', 3),
-            ('P', 1), ('P', 2), ('P', 3)
+            ('L', 1),
+            ('L', 2),
+            ('L', 3),
+            ('M', 1),
+            ('M', 2),
+            ('M', 3),
+            ('H', 1),
+            ('H', 2),
+            ('H', 3),
+            ('P', 1),
+            ('P', 2),
+            ('P', 3),
         ]
 
         for i, (grade_code, level) in enumerate(expected_order):
@@ -170,13 +185,12 @@ class TestGradeSystem:
 
 @pytest.mark.django_db
 class TestGradeSystemDatabaseOperations:
-
     def test_player_rating_object_creation(self):
         """Test PlayerRating object creation."""
         user = User.objects.create(
             username='r_test_user',
             email='r_test@mail,com',
-            password='testpass123'
+            password='testpass123',
         )
         player = Player.objects.create(user=user, is_registered=True)
         player.refresh_from_db()
@@ -195,40 +209,30 @@ class TestGradeSystemDatabaseOperations:
         assert player.rating.value == 6
         assert player.rating.level_mark == 2
 
-    def test_update_players_rating_with_votes(
-        self,
-        players
-    ):
+    def test_update_players_rating_with_votes(self, players):
         """Test rating update with votes."""
         player1, player2 = players['player1'], players['player2']
         initial_value = player1.rating.value
         assert player1.rating.value == 6
         PlayerRatingVote.objects.create(
-            rater=player2,
-            rated=player1,
-            value=2,
-            is_counted=False
+            rater=player2, rated=player1, value=2, is_counted=False
         )
         assert player1.rating.value == 8
         PlayerRatingVote.objects.create(
-            rater=player2,
-            rated=player1,
-            value=3,
-            is_counted=False
+            rater=player2, rated=player1, value=3, is_counted=False
         )
         assert player1.rating.value == 11
         player1.refresh_from_db()
         expected_value = initial_value + 2 + 3
         assert player1.rating.value == expected_value
-        assert PlayerRatingVote.objects.filter(
-            rated=player1,
-            is_counted=True
-        ).count() == 2
+        assert (
+            PlayerRatingVote.objects.filter(
+                rated=player1, is_counted=True
+            ).count()
+            == 2
+        )
 
-    def test_update_players_rating_upgrade(
-        self,
-        players
-    ):
+    def test_update_players_rating_upgrade(self, players):
         """Test player level upgrade."""
         player1 = players['player1']
         player1.rating.value = 10
@@ -242,20 +246,14 @@ class TestGradeSystemDatabaseOperations:
             rater.rating.grade = 'MEDIUM'
             rater.rating.save()
             PlayerRatingVote.objects.create(
-                rater=rater,
-                rated=player1,
-                value=1,
-                is_counted=False
+                rater=rater, rated=player1, value=1, is_counted=False
             )
         player1.refresh_from_db()
         assert player1.rating.grade == 'MEDIUM'
         assert player1.rating.level_mark == 1
         assert player1.rating.value == 3
 
-    def test_update_players_rating_downgrade(
-        self,
-        players
-    ):
+    def test_update_players_rating_downgrade(self, players):
         """Test player level downgrade."""
         player1 = players['player1']
         player1.rating.value = 6
@@ -271,11 +269,9 @@ class TestGradeSystemDatabaseOperations:
                 rater=rater,
                 rated=player1,
                 value=GradeSystem.get_value(
-                    rater=rater,
-                    rated=player1,
-                    level_change=GradeSystem.DOWN
+                    rater=rater, rated=player1, level_change=GradeSystem.DOWN
                 ),
-                is_counted=False
+                is_counted=False,
             )
 
         player1.refresh_from_db()
@@ -284,8 +280,7 @@ class TestGradeSystemDatabaseOperations:
         assert player1.rating.grade == 'LIGHT'
 
     def test_update_players_rating_no_downgrade_at_minimum(
-        self,
-        player_thailand
+        self, player_thailand
     ):
         """Test no downgrade below L:1 level."""
         player_thailand.rating.value = 1
@@ -297,17 +292,14 @@ class TestGradeSystemDatabaseOperations:
             rater=player_thailand,
             rated=player_thailand,
             value=-3,
-            is_counted=False
+            is_counted=False,
         )
         player_thailand.refresh_from_db()
         assert player_thailand.rating.grade == 'LIGHT'
         assert player_thailand.rating.level_mark == 1
         assert player_thailand.rating.value == 1
 
-    def test_downgrade_inactive_players(
-        self,
-        players
-    ):
+    def test_downgrade_inactive_players(self, players):
         """Test downgrading inactive players."""
         player = players['player5']
         old_date = timezone.now() - timedelta(days=70)
@@ -334,9 +326,7 @@ class TestGradeSystemDatabaseOperations:
 
     @patch('apps.players.models.Player.was_active_recently')
     def test_downgrade_inactive_players_minimum_level(
-        self,
-        mock_was_active,
-        players
+        self, mock_was_active, players
     ):
         """Test no downgrade below level 1 for inactive players."""
         player = players['player5']
@@ -353,9 +343,7 @@ class TestGradeSystemDatabaseOperations:
 
     @patch('apps.players.models.Player.was_active_recently')
     def test_downgrade_inactive_players_active_user(
-        self,
-        mock_was_active,
-        player_thailand
+        self, mock_was_active, player_thailand
     ):
         """Test active players are not downgraded."""
         mock_was_active.return_value = True
@@ -373,7 +361,6 @@ class TestGradeSystemDatabaseOperations:
 
 @pytest.mark.django_db
 class TestGradeSystemEdgeCases:
-
     def test_invalid_grade_code(self):
         """Test handling invalid grade code."""
         with pytest.raises(ValueError):
@@ -405,6 +392,6 @@ class TestGradeSystemEdgeCases:
         rated.rating.grade = 'LIGHT'
         with pytest.raises(InvalidRatingError) as exc_info:
             GradeSystem.get_value(rater, rated, 'INVALID_CHANGE')
-        assert "Invalid level_change value: INVALID_CHANGE" in str(
+        assert 'Invalid level_change value: INVALID_CHANGE' in str(
             exc_info.value
         )

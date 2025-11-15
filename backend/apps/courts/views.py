@@ -8,9 +8,14 @@ from apps.courts.serializers import CourtSerializer
 
 
 class CourtViewSet(ModelViewSet):
-    http_method_names = ['get',]
-    queryset = Court.objects.select_related(
-        'location').prefetch_related('contacts', 'tag_list').all()
+    http_method_names = [
+        'get',
+    ]
+    queryset = (
+        Court.objects.select_related('location')
+        .prefetch_related('contacts', 'tag_list')
+        .all()
+    )
 
     serializer_class = CourtSerializer
     filter_backends = [filters.DjangoFilterBackend]
@@ -25,10 +30,8 @@ class CourtViewSet(ModelViewSet):
             return super().get_queryset()
 
         if country.name == 'Cyprus':
-            return super().get_queryset().filter(
-                location__country=country)
+            return super().get_queryset().filter(location__country=country)
 
         if country.name == 'Thailand':
-            return super().get_queryset().filter(
-                location__city=city)
+            return super().get_queryset().filter(location__city=city)
         return super().get_queryset()

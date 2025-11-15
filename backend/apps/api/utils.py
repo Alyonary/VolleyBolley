@@ -29,7 +29,7 @@ def get_serialized_data(user: User) -> LoginSerializer:
             instance={
                 'access_token': str(refresh.access_token),
                 'refresh_token': str(refresh),
-                'player': Player.objects.get(user=user)
+                'player': Player.objects.get(user=user),
             }
         )
         logger.info('Response data are successfully generated.')
@@ -54,8 +54,7 @@ def get_or_create_user(
 
     if created:
         logger.info(
-            f'Default player id={player.id} is created '
-            f'for user id={user.id}.'
+            f'Default player id={player.id} is created for user id={user.id}.'
         )
     else:
         logger.info(f'Got player id={player.id} from database.')
@@ -66,9 +65,7 @@ def get_or_create_user(
 def return_auth_response_or_raise_exception(user: User) -> Response:
     """Return response with status code 200 or raise Exception."""
     serializer = get_serialized_data(user)
-    logger.info(
-        f'User id={user.id} has been successful authenticated.'
-    )
+    logger.info(f'User id={user.id} has been successful authenticated.')
 
     return Response(serializer.data, status=status.HTTP_200_OK)
 

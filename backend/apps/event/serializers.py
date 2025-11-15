@@ -13,7 +13,6 @@ from apps.players.serializers import PlayerGameSerializer
 
 
 class BaseGameSerializer(serializers.ModelSerializer):
-
     game_id = serializers.IntegerField(source='pk', read_only=True)
 
     start_time = serializers.DateTimeField(format='iso-8601')
@@ -24,22 +23,16 @@ class BaseGameSerializer(serializers.ModelSerializer):
         slug_field='name',
         queryset=GameLevel.objects.all(),
         source='player_levels',
-        many=True
+        many=True,
     )
 
     gender = serializers.ChoiceField(choices=GenderChoices.choices)
 
-    currency_type = serializers.CharField(
-        required=False
-    )
+    currency_type = serializers.CharField(required=False)
 
-    payment_account = serializers.CharField(
-        required=False
-    )
+    payment_account = serializers.CharField(required=False)
 
-    maximum_players = serializers.IntegerField(
-        source='max_players'
-    )
+    maximum_players = serializers.IntegerField(source='max_players')
 
     class Meta:
         model = Game
@@ -63,7 +56,8 @@ class BaseGameSerializer(serializers.ModelSerializer):
         maximal = EventIntEnums.MAX_PLAYERS.value
         if not (minimal <= value <= maximal):
             raise serializers.ValidationError(
-                f'Number of players must be between {minimal} and {maximal}!')
+                f'Number of players must be between {minimal} and {maximal}!'
+            )
         return value
 
     def validate(self, value):
@@ -71,13 +65,16 @@ class BaseGameSerializer(serializers.ModelSerializer):
         end_time = value.get('end_time')
         if start_time < timezone.now():
             raise serializers.ValidationError(
-                'Game start time can be in future.')
+                'Game start time can be in future.'
+            )
         if end_time < start_time:
             raise serializers.ValidationError(
-                'The end time of the game must be later than the start time.')
+                'The end time of the game must be later than the start time.'
+            )
         if not start_time.tzinfo or not end_time.tzinfo:
             raise serializers.ValidationError(
-                'Time must include timezone information')
+                'Time must include timezone information'
+            )
         return value
 
 
@@ -85,31 +82,25 @@ class GameSerializer(BaseGameSerializer):
     """Uses for create requests."""
 
     players = serializers.PrimaryKeyRelatedField(
-        queryset=Player.objects.all(),
-        many=True,
-        required=False
+        queryset=Player.objects.all(), many=True, required=False
     )
     court_id = serializers.PrimaryKeyRelatedField(
-        source='court',
-        queryset=Court.objects.all()
+        source='court', queryset=Court.objects.all()
     )
 
     class Meta(BaseGameSerializer.Meta):
         model = BaseGameSerializer.Meta.model
-        fields = BaseGameSerializer.Meta.fields + [
-            'court_id',
-            'players'
-        ]
+        fields = BaseGameSerializer.Meta.fields + ['court_id', 'players']
 
     def get_currency_type(self):
         """Returns the type of currency by the player's country."""
         host = self.context['request'].user.player
         try:
-            currency_type = CurrencyType.objects.get(
-                        country=host.country)
+            currency_type = CurrencyType.objects.get(country=host.country)
         except CurrencyType.DoesNotExist as e:
             raise serializers.ValidationError(
-                f"{e}: Валюта для страны {host.country} не найдена.") from e
+                f'{e}: Валюта для страны {host.country} не найдена.'
+            ) from e
         return currency_type
 
     def get_payment_account(self, payment_type):
@@ -118,12 +109,12 @@ class GameSerializer(BaseGameSerializer):
         if payment_type == 'CASH':
             return 'Cash money'
         payment = Payment.objects.filter(
-            player=player,
-            payment_type=payment_type
+            player=player, payment_type=payment_type
         ).last()
         if payment is None:
             raise serializers.ValidationError(
-                'No payment account found for this payment type')
+                'No payment account found for this payment type'
+            )
         if payment.payment_account is None:
             return 'Not defined'
         return payment.payment_account
@@ -136,22 +127,22 @@ class GameSerializer(BaseGameSerializer):
 
         game = Game.objects.create(
             currency_type=self.get_currency_type(),
-
             payment_account=self.get_payment_account(
                 validated_data['payment_type']
             ),
-            **validated_data)
+            **validated_data,
+        )
 
         game.players.add(host)
         game.player_levels.set(levels)
         for player in players:
             serializer = GameInviteSerializer(
-                    data={
-                        'host': game.host.id,
-                        'invited': player.id,
-                        'game': game.id
-                    },
-                    context=self.context
+                data={
+                    'host': game.host.id,
+                    'invited': player.id,
+                    'game': game.id,
+                },
+                context=self.context,
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -160,11 +151,11 @@ class GameSerializer(BaseGameSerializer):
     def validate_players(self, value):
         host = self.context['request'].user.player
         if host in value:
-            raise serializers.ValidationError(
-                'You can not invite yourself.')
+            raise serializers.ValidationError('You can not invite yourself.')
         if len(value) != len(set(value)):
             raise serializers.ValidationError(
-                'The players should not repeat themselves.')
+                'The players should not repeat themselves.'
+            )
         return value
 
 
@@ -182,14 +173,14 @@ class GameDetailSerializer(BaseGameSerializer):
         fields = BaseGameSerializer.Meta.fields + [
             'host',
             'court_location',
-            'players'
+            'players',
         ]
 
 
 class GameInviteSerializer(serializers.ModelSerializer):
-
     invited = serializers.PrimaryKeyRelatedField(
-        write_only=True, queryset=Player.objects.all())
+        write_only=True, queryset=Player.objects.all()
+    )
 
     class Meta:
         model = GameInvitation
@@ -209,15 +200,20 @@ class GameInviteSerializer(serializers.ModelSerializer):
         levels = [level.name for level in game.player_levels.all()]
         if host == invited:
             raise serializers.ValidationError(
-                {'invited': 'You can not invite yourself.'})
+                {'invited': 'You can not invite yourself.'}
+            )
         if invited in game.players.all():
             raise serializers.ValidationError(
-                {'invited': 'This player is already participate in the game.'})
+                {'invited': 'This player is already participate in the game.'}
+            )
         if invited.rating.grade not in levels:
             raise serializers.ValidationError(
-                {'invited': f'Level of the player {invited.rating.grade} '
-                 'not allowed in this game. '
-                 f'Allowed levels: {", ".join(levels)}'})
+                {
+                    'invited': f'Level of the player {invited.rating.grade} '
+                    'not allowed in this game. '
+                    f'Allowed levels: {", ".join(levels)}'
+                }
+            )
         return attrs
 
 
@@ -226,7 +222,6 @@ class TourneySerializer(serializers.ModelSerializer):
 
 
 class GameShortSerializer(serializers.ModelSerializer):
-
     game_id = serializers.IntegerField(source='pk')
 
     host = PlayerGameSerializer()
@@ -245,7 +240,7 @@ class GameShortSerializer(serializers.ModelSerializer):
             'court_location',
             'message',
             'start_time',
-            'end_time'
+            'end_time',
         ]
         read_only_fields = [
             'game_id',
@@ -253,5 +248,5 @@ class GameShortSerializer(serializers.ModelSerializer):
             'court_location',
             'message',
             'start_time',
-            'end_time'
+            'end_time',
         ]

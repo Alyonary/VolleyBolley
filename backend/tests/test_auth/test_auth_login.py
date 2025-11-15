@@ -23,25 +23,23 @@ class TestGoogleAuth:
 
     url = reverse_lazy('api:google-login')
 
-    @pytest.mark.skip(reason="skipped until fresh token will be provided")
+    @pytest.mark.skip(reason='skipped until fresh token will be provided')
     def test_auth_with_id_token_real_google_response(
-        self, auth_api_client_with_not_registered_player,
-        real_google_id_token
+        self, auth_api_client_with_not_registered_player, real_google_id_token
     ):
         response = auth_api_client_with_not_registered_player.post(
-            self.url,
-            {'id_token': real_google_id_token}
+            self.url, {'id_token': real_google_id_token}
         )
         self._check_response(response)
 
-    @pytest.mark.skip(reason="skipped until fresh token will be provided")
+    @pytest.mark.skip(reason='skipped until fresh token will be provided')
     def test_auth_with_access_token_real_google_response(
-        self, auth_api_client_with_not_registered_player,
-        real_google_access_token
+        self,
+        auth_api_client_with_not_registered_player,
+        real_google_access_token,
     ):
         response = auth_api_client_with_not_registered_player.post(
-            self.url,
-            {'access_token': real_google_access_token}
+            self.url, {'access_token': real_google_access_token}
         )
         self._check_response(response)
 
@@ -50,12 +48,12 @@ class TestGoogleAuth:
     ):
         with patch(
             'social_core.backends.google.GoogleOAuth2.user_data',
-            return_value=google_response
+            return_value=google_response,
         ):
             response = api_client.post(
                 self.url,
                 {'access_token': 'fake-google-access-token'},
-                format='json'
+                format='json',
             )
             self._check_response(response)
             self._check_moke_data_response(response, google_response)
@@ -65,18 +63,15 @@ class TestGoogleAuth:
     ):
         with patch(
             'google.oauth2.id_token.verify_oauth2_token',
-            return_value=google_response
+            return_value=google_response,
         ):
             response = api_client.post(
-                self.url,
-                {'id_token': 'fake-google-id-token'},
-                format='json'
+                self.url, {'id_token': 'fake-google-id-token'}, format='json'
             )
             self._check_response(response)
             self._check_moke_data_response(response, google_response)
 
     def _check_response(self, response):
-
         assert response.status_code == status.HTTP_200_OK
         access_token = response.data.get('access_token', None)
         refresh_token = response.data.get('refresh_token', None)
@@ -93,7 +88,7 @@ class TestGoogleAuth:
             'level',
             'country',
             'city',
-            'is_registered'
+            'is_registered',
         }
         for key in expected_keys:
             assert key in player_json
@@ -113,14 +108,20 @@ class TestGoogleAuth:
     @pytest.mark.parametrize(
         'token_type, token_value, expected_status',
         [
-            ('access_token', 'invalid-google-token',
-             status.HTTP_400_BAD_REQUEST),
-            ('id_token', 'invalid-google-id-token',
-             status.HTTP_400_BAD_REQUEST),
+            (
+                'access_token',
+                'invalid-google-token',
+                status.HTTP_400_BAD_REQUEST,
+            ),
+            (
+                'id_token',
+                'invalid-google-id-token',
+                status.HTTP_400_BAD_REQUEST,
+            ),
             ('access_token', '', status.HTTP_400_BAD_REQUEST),
             ('id_token', '', status.HTTP_400_BAD_REQUEST),
-            (None, None, status.HTTP_302_FOUND)
-        ]
+            (None, None, status.HTTP_302_FOUND),
+        ],
     )
     def test_auth_with_invalid_google_token(
         self, api_client, token_type, token_value, expected_status
@@ -129,33 +130,29 @@ class TestGoogleAuth:
         if token_type:
             data[token_type] = token_value
 
-        response = api_client.post(
-            self.url,
-            data,
-            format='json'
-        )
+        response = api_client.post(self.url, data, format='json')
         assert response.status_code == expected_status
 
     @pytest.mark.parametrize(
         'invalid_google_response, expected_status',
         [
             ({'email': None}, status.HTTP_400_BAD_REQUEST),
-            ({'given_name': None, 'family_name': None},
-             status.HTTP_400_BAD_REQUEST),
-            ({'email': 'invalid-email'}, status.HTTP_400_BAD_REQUEST)
-        ]
+            (
+                {'given_name': None, 'family_name': None},
+                status.HTTP_400_BAD_REQUEST,
+            ),
+            ({'email': 'invalid-email'}, status.HTTP_400_BAD_REQUEST),
+        ],
     )
     def test_auth_with_invalid_moke_google_response(
         self, api_client, invalid_google_response, expected_status
     ):
         with patch(
             'google.oauth2.id_token.verify_oauth2_token',
-            return_value=invalid_google_response
+            return_value=invalid_google_response,
         ):
             response = api_client.post(
-                self.url,
-                {'id_token': 'fake-google-id-token'},
-                format='json'
+                self.url, {'id_token': 'fake-google-id-token'}, format='json'
             )
             assert response.status_code == expected_status
 
@@ -164,12 +161,10 @@ class TestGoogleAuth:
     ):
         with patch(
             'google.oauth2.id_token.verify_oauth2_token',
-            return_value=google_response
+            return_value=google_response,
         ):
             response = api_client.post(
-                self.url,
-                {'id_token': 'fake-google-id-token'},
-                format='json'
+                self.url, {'id_token': 'fake-google-id-token'}, format='json'
             )
             self._check_response(response)
             self._check_moke_data_response(response, google_response)
@@ -186,18 +181,15 @@ class TestPhoneNumberAuth:
     ):
         with patch(
             'apps.api.utils.firebase_auth.verify_id_token',
-            return_value=firebase_response
+            return_value=firebase_response,
         ):
             response = api_client.post(
-                self.url,
-                {'id_token': 'fake-firebase-id-token'},
-                format='json'
+                self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
             )
 
             self._check_response(response)
 
     def _check_response(self, response):
-
         assert response.status_code == status.HTTP_200_OK
         access_token = response.data.get('access_token', None)
         refresh_token = response.data.get('refresh_token', None)
@@ -214,7 +206,7 @@ class TestPhoneNumberAuth:
             'level',
             'country',
             'city',
-            'is_registered'
+            'is_registered',
         }
         user = Player.objects.filter(pk=player_json['player_id']).first().user
         for key in expected_keys:
@@ -235,10 +227,12 @@ class TestPhoneNumberAuth:
         [
             ('firebase_response_no_user_id', status.HTTP_400_BAD_REQUEST),
             ('firebase_response_no_phone_number', status.HTTP_400_BAD_REQUEST),
-            ('firebase_response_bad_phone_number',
-             status.HTTP_400_BAD_REQUEST),
-            ('empty_token', status.HTTP_400_BAD_REQUEST)
-        ]
+            (
+                'firebase_response_bad_phone_number',
+                status.HTTP_400_BAD_REQUEST,
+            ),
+            ('empty_token', status.HTTP_400_BAD_REQUEST),
+        ],
     )
     def test_auth_with_invalid_firebase_token_and_moke_response(
         self, request, api_client, invalid_token_fixture, expected_status
@@ -246,25 +240,20 @@ class TestPhoneNumberAuth:
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
             'apps.api.utils.firebase_auth.verify_id_token',
-            return_value=invalid_token
+            return_value=invalid_token,
         ):
             response = api_client.post(
-                self.url,
-                {'id_token': 'fake-firebase-id-token'},
-                format='json'
+                self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
             )
             assert response.status_code == expected_status
 
-    @pytest.mark.skip(reason="skipped until fresh token will be provided")
+    @pytest.mark.skip(reason='skipped until fresh token will be provided')
     def test_auth_with_real_firebase_token(
         self, api_client, real_firebase_token
     ):
-
         response = api_client.post(
-                self.url,
-                {'id_token': real_firebase_token},
-                format='json'
-            )
+            self.url, {'id_token': real_firebase_token}, format='json'
+        )
 
         self._check_response(response)
 
@@ -272,9 +261,7 @@ class TestPhoneNumberAuth:
         self, api_client, invalid_firebase_token
     ):
         response = api_client.post(
-            self.url,
-            {'id_token': invalid_firebase_token},
-            format='json'
+            self.url, {'id_token': invalid_firebase_token}, format='json'
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -289,27 +276,21 @@ class TestFacebookAuth:
         self, api_client, invalid_firebase_token
     ):
         response = api_client.post(
-            self.url,
-            {'id_token': invalid_firebase_token},
-            format='json'
+            self.url, {'id_token': invalid_firebase_token}, format='json'
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @pytest.mark.skip(reason="skipped until fresh token will be provided")
+    @pytest.mark.skip(reason='skipped until fresh token will be provided')
     def test_auth_with_real_firebase_token(
         self, api_client, real_fb_firebase_token
     ):
-
         response = api_client.post(
-                self.url,
-                {'id_token': real_fb_firebase_token},
-                format='json'
-            )
+            self.url, {'id_token': real_fb_firebase_token}, format='json'
+        )
 
         self._check_response(response)
 
     def _check_response(self, response):
-
         assert response.status_code == status.HTTP_200_OK
         access_token = response.data.get('access_token', None)
         refresh_token = response.data.get('refresh_token', None)
@@ -326,7 +307,7 @@ class TestFacebookAuth:
             'level',
             'country',
             'city',
-            'is_registered'
+            'is_registered',
         }
         for key in expected_keys:
             assert key in player_json
@@ -343,8 +324,8 @@ class TestFacebookAuth:
         [
             ('firebase_fb_response_no_email', status.HTTP_400_BAD_REQUEST),
             ('firebase_fb_response_bad_email', status.HTTP_400_BAD_REQUEST),
-            ('empty_token', status.HTTP_400_BAD_REQUEST)
-        ]
+            ('empty_token', status.HTTP_400_BAD_REQUEST),
+        ],
     )
     def test_auth_with_invalid_firebase_token_and_moke_response(
         self, request, api_client, invalid_token_fixture, expected_status
@@ -352,12 +333,10 @@ class TestFacebookAuth:
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
             'apps.api.utils.firebase_auth.verify_id_token',
-            return_value=invalid_token
+            return_value=invalid_token,
         ):
             response = api_client.post(
-                self.url,
-                {'id_token': 'fake-firebase-id-token'},
-                format='json'
+                self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
             )
             assert response.status_code == expected_status
 
@@ -366,12 +345,10 @@ class TestFacebookAuth:
     ):
         with patch(
             'apps.api.utils.firebase_auth.verify_id_token',
-            return_value=firebase_fb_response
+            return_value=firebase_fb_response,
         ):
             response = api_client.post(
-                self.url,
-                {'id_token': 'fake-firebase-id-token'},
-                format='json'
+                self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
             )
 
             self._check_response(response)
@@ -389,27 +366,21 @@ class TestFirebaseGoogleAuth:
         self, api_client, invalid_firebase_token
     ):
         response = api_client.post(
-            self.url,
-            {'id_token': invalid_firebase_token},
-            format='json'
+            self.url, {'id_token': invalid_firebase_token}, format='json'
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @pytest.mark.skip(reason="skipped until fresh token will be provided")
+    @pytest.mark.skip(reason='skipped until fresh token will be provided')
     def test_auth_with_real_firebase_token(
         self, api_client, real_fb_firebase_token
     ):
-
         response = api_client.post(
-                self.url,
-                {'id_token': real_fb_firebase_token},
-                format='json'
-            )
+            self.url, {'id_token': real_fb_firebase_token}, format='json'
+        )
 
         self._check_response(response)
 
     def _check_response(self, response):
-
         assert response.status_code == status.HTTP_200_OK
         access_token = response.data.get('access_token', None)
         refresh_token = response.data.get('refresh_token', None)
@@ -426,7 +397,7 @@ class TestFirebaseGoogleAuth:
             'level',
             'country',
             'city',
-            'is_registered'
+            'is_registered',
         }
         for key in expected_keys:
             assert key in player_json
@@ -443,8 +414,8 @@ class TestFirebaseGoogleAuth:
         [
             ('firebase_fb_response_no_email', status.HTTP_400_BAD_REQUEST),
             ('firebase_fb_response_bad_email', status.HTTP_400_BAD_REQUEST),
-            ('empty_token', status.HTTP_400_BAD_REQUEST)
-        ]
+            ('empty_token', status.HTTP_400_BAD_REQUEST),
+        ],
     )
     def test_auth_with_invalid_firebase_token_and_moke_response(
         self, request, api_client, invalid_token_fixture, expected_status
@@ -452,12 +423,10 @@ class TestFirebaseGoogleAuth:
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
             'apps.api.utils.firebase_auth.verify_id_token',
-            return_value=invalid_token
+            return_value=invalid_token,
         ):
             response = api_client.post(
-                self.url,
-                {'id_token': 'fake-firebase-id-token'},
-                format='json'
+                self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
             )
             assert response.status_code == expected_status
 
@@ -466,12 +435,10 @@ class TestFirebaseGoogleAuth:
     ):
         with patch(
             'apps.api.utils.firebase_auth.verify_id_token',
-            return_value=firebase_fb_response
+            return_value=firebase_fb_response,
         ):
             response = api_client.post(
-                self.url,
-                {'id_token': 'fake-firebase-id-token'},
-                format='json'
+                self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
             )
 
             self._check_response(response)

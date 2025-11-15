@@ -20,14 +20,13 @@ from apps.users.models import User
 
 
 class PlayerViewSet(ReadOnlyModelViewSet):
-
     queryset = Player.objects.all()
     serializer_class = PlayerBaseSerializer
     http_method_names = ['get', 'post', 'patch', 'put', 'delete']
     permission_classes = [IsRegisteredPlayer]
 
     def get_serializer_class(self, *args, **kwargs):
-        if self.action == "me":
+        if self.action == 'me':
             return PlayerBaseSerializer
         if self.action == 'put_delete_avatar':
             return AvatarSerializer
@@ -45,10 +44,12 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context.update({
-            'player': self.queryset.get(user=self.request.user),
-            'current_user': self.request.user
-        })
+        context.update(
+            {
+                'player': self.queryset.get(user=self.request.user),
+                'current_user': self.request.user,
+            }
+        )
         return context
 
     def get_queryset(self):
@@ -81,7 +82,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     @swagger_auto_schema(
         tags=['players'],
-        operation_summary="List all players excluding current user",
+        operation_summary='List all players excluding current user',
         responses={200: PlayerListSerializer(many=True)},
     )
     def list(self, request, *args, **kwargs):
@@ -91,20 +92,20 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         method='get',
         responses={200: PlayerBaseSerializer()},
         tags=['players'],
-        operation_summary="Get current player info",
+        operation_summary='Get current player info',
     )
     @swagger_auto_schema(
         method='patch',
         request_body=PlayerBaseSerializer,
         responses={200: PlayerBaseSerializer()},
         tags=['players'],
-        operation_summary="Update current player info",
+        operation_summary='Update current player info',
     )
     @swagger_auto_schema(
         method='delete',
         responses={204: 'No Content'},
         tags=['players'],
-        operation_summary="Delete current player",
+        operation_summary='Delete current player',
     )
     @action(['GET', 'PATCH', 'DELETE'], detail=False)
     def me(self, request):
@@ -136,29 +137,27 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(instance)
 
-        return Response(
-            status=status.HTTP_200_OK, data=serializer.data
-        )
+        return Response(status=status.HTTP_200_OK, data=serializer.data)
 
     @swagger_auto_schema(
         method='put',
         request_body=AvatarSerializer,
         responses={200: AvatarSerializer},
         tags=['players'],
-        operation_summary="Update or delete avatar",
+        operation_summary='Update or delete avatar',
     )
     @action(
-        detail=False, methods=['PUT'], url_path='me/avatar',
-        url_name='me-avatar'
+        detail=False,
+        methods=['PUT'],
+        url_path='me/avatar',
+        url_name='me-avatar',
     )
     def put_delete_avatar(self, request):
         """Update avatar.
         To delete avatar set its value to null.
         """
         instance = self.get_object()
-        serializer = self.get_serializer(
-            instance, data=request.data
-        )
+        serializer = self.get_serializer(instance, data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
 
@@ -170,25 +169,25 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         method='get',
         responses={200: PaymentsSerializer()},
         tags=['players'],
-        operation_summary="Get payment data of player"
+        operation_summary='Get payment data of player',
     )
     @swagger_auto_schema(
         method='put',
         request_body=PaymentSerializer,
         responses={200: ''},
         tags=['players'],
-        operation_summary="Update payment data of player"
+        operation_summary='Update payment data of player',
     )
     @action(
-        detail=False, methods=['PUT', 'GET'], url_path='me/payments',
-        url_name='me-payments'
+        detail=False,
+        methods=['PUT', 'GET'],
+        url_path='me/payments',
+        url_name='me-payments',
     )
     def get_put_payments(self, request):
         """Get or put payment data of player."""
         if self.request.method == 'GET':
-            payments = {
-                'payments': self.get_queryset()
-            }
+            payments = {'payments': self.get_queryset()}
             serializer = self.get_serializer(payments)
 
             return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -204,17 +203,15 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         request_body=FavoriteSerializer,
         responses={201: FavoriteSerializer()},
         tags=['players'],
-        operation_summary="Add player to favorite list",
+        operation_summary='Add player to favorite list',
     )
     @swagger_auto_schema(
         method='delete',
         responses={204: 'No Content'},
         tags=['players'],
-        operation_summary="Delete player from favorite list",
+        operation_summary='Delete player from favorite list',
     )
-    @action(
-        detail=True, methods=['POST', 'DELETE']
-    )
+    @action(detail=True, methods=['POST', 'DELETE'])
     def favorite(self, request, pk=None):
         """Add or delete player from favorite list."""
         player = self.get_object()
@@ -224,8 +221,8 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             context={
                 'request': request,
                 'player': player,
-                'favorite': favorite
-            }
+                'favorite': favorite,
+            },
         )
         serializer.is_valid(raise_exception=True)
         if request.method == 'POST':
@@ -235,12 +232,11 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                 context={
                     'request': request,
                     'player': player,
-                    'favorite': favorite
-                }
+                    'favorite': favorite,
+                },
             )
             return Response(
-                response_serializer.data,
-                status=status.HTTP_201_CREATED
+                response_serializer.data, status=status.HTTP_201_CREATED
             )
 
         instance = get_object_or_404(
@@ -254,7 +250,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         request_body=PlayerRegisterSerializer,
         responses={200: PlayerBaseSerializer()},
         tags=['players'],
-        operation_summary="Register new player"
+        operation_summary='Register new player',
     )
     @action(
         detail=False,
@@ -264,9 +260,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     def register(self, request):
         """Register new player."""
         instance = self.get_object()
-        serializer = self.get_serializer(
-            instance=instance, data=request.data
-        )
+        serializer = self.get_serializer(instance=instance, data=request.data)
         if serializer.is_valid():
             serializer.save()
 

@@ -94,7 +94,7 @@ class Device(models.Model):
     platform = models.CharField(
         max_length=DEVICE_PLATFORM_LENGTH,
         choices=DeviceType.choices,
-        default=DeviceType.ANDROID
+        default=DeviceType.ANDROID,
     )
     player = models.ForeignKey(
         'players.Player', related_name='devices', on_delete=models.CASCADE
@@ -114,25 +114,19 @@ class Device(models.Model):
 
 class NotificationsBase(models.Model):
     """Model for defining different types of notifications."""
+
     type = models.CharField(
         max_length=NOTIFICATION_TYPE_MAX_LENGTH,
         choices=NotificationTypes.CHOICES,
         unique=True,
-        db_index=True
+        db_index=True,
     )
     title = models.CharField(
-        max_length=NOTIFICATION_TITLE_MAX_LENGTH,
-        null=False,
-        blank=False
+        max_length=NOTIFICATION_TITLE_MAX_LENGTH, null=False, blank=False
     )
-    body = models.TextField(
-        null=False,
-        blank=False
-    )
+    body = models.TextField(null=False, blank=False)
     screen = models.CharField(
-        max_length=NOTIFICATION_SCREEN_MAX_LENGTH,
-        null=False,
-        blank=False
+        max_length=NOTIFICATION_SCREEN_MAX_LENGTH, null=False, blank=False
     )
 
     class Meta:
@@ -160,7 +154,7 @@ class NotificationsBase(models.Model):
                     'title': data['title'],
                     'body': data['body'],
                     'screen': data['screen'],
-                }
+                },
             )
 
 
@@ -172,7 +166,6 @@ class Notifications(models.Model):
         related_name='notifications',
         on_delete=models.CASCADE,
         verbose_name=_('Player'),
-
     )
     notification_type = models.ForeignKey(
         'notifications.NotificationsBase',

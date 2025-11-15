@@ -17,9 +17,7 @@ from apps.notifications.serializers import (
 logger = logging.getLogger(__name__)
 
 
-class NotificationsViewSet(
-    mixins.ListModelMixin, viewsets.GenericViewSet
-):
+class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """
     ViewSet for notifications:
     - GET /notifications/ : list active notifications for current user
@@ -29,7 +27,11 @@ class NotificationsViewSet(
 
     permission_classes = [IsRegisteredPlayer]
     serializer_class = NotificationSerializer
-    http_method_names = ['get', 'put', 'patch',]
+    http_method_names = [
+        'get',
+        'put',
+        'patch',
+    ]
 
     def get_queryset(self):
         return Notifications.objects.filter(
@@ -37,19 +39,23 @@ class NotificationsViewSet(
         ).order_by('-created_at')
 
     def get_serializer_class(self):
-        if self.request.method == 'PUT' and getattr(
-            self, 'action', None
-        ) == 'fcm_auth':
+        if (
+            self.request.method == 'PUT'
+            and getattr(self, 'action', None) == 'fcm_auth'
+        ):
             return FCMTokenSerializer
         return NotificationSerializer
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
-        return Response({"notifications": serializer.data})
+        return Response({'notifications': serializer.data})
 
     @action(
-        methods=['put', 'patch',],
+        methods=[
+            'put',
+            'patch',
+        ],
         detail=False,
         url_path='fcm-auth',
         serializer_class=FCMTokenSerializer,
@@ -72,9 +78,7 @@ class NotificationsViewSet(
             if created:
                 return Response(status=status.HTTP_201_CREATED)
             return Response(status=status.HTTP_200_OK)
-        return Response(
-            serializer.errors, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def patch(self, request, *args, **kwargs):
         """
@@ -141,9 +145,7 @@ class NotificationsViewSet(
             )
             if notification_type == NotificationTypes.GAME_REMINDER:
                 push_service.send_push_notifications(
-                    tokens=all_tokens,
-                    notification=notification,
-                    game_id=1
+                    tokens=all_tokens, notification=notification, game_id=1
                 )
             else:
                 push_service.send_push_notifications(

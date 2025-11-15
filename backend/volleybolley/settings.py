@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'django_filters',
     'drf_yasg',
+    'django_prometheus',
 ]
 
 USE_X_FORWARDED_HOST = True
@@ -70,6 +71,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'apps.api.middlewares.OAuthResponseMiddleware',
@@ -78,6 +80,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 ROOT_URLCONF = 'volleybolley.urls'
