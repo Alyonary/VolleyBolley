@@ -202,9 +202,12 @@ services:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
       - GF_PROVISIONING_ENABLE=true
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true 
     volumes:
       - monitoring_data:/monitoring_data:ro
       - grafana_data:/var/lib/grafana
+    restart: unless-stopped
     logging:
       driver: json-file
       options:
