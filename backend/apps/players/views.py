@@ -68,30 +68,33 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        current_player = self.request.user.player
+        current_player = None
+        if not isinstance(self.request.user, AnonymousUser):
+            current_player = self.request.user.player
 
         if self.action != 'register':
             queryset.exclude(is_registered=False)
 
         if self.action == 'retrieve':
             player_id = self.kwargs.get('pk')
-            player = queryset.get(pk=player_id)
-            if player and player.is_registered is True:
-                return Player.objects.filter(pk=player_id).select_related(
-                    'country', 'city', 'user'
-                ).prefetch_related(
-                    'player',
-                    'favorite',
-                    'rating',
-                    Prefetch(
-                        'games_players',
-                        Game.objects.recent_games(
-                            player=player,
-                            limit=PlayerIntEnums.RECENT_ACTIVITIES_LENGTH
-                        ).select_related('court__location'),
-                        to_attr='recent_games'
-                    ),
-                ).all()
+            if player_id:
+                player = queryset.get(pk=player_id)
+                if player and player.is_registered is True:
+                    return Player.objects.filter(pk=player_id).select_related(
+                        'country', 'city', 'user'
+                    ).prefetch_related(
+                        'player',
+                        'favorite',
+                        'rating',
+                        Prefetch(
+                            'games_players',
+                            Game.objects.recent_games(
+                                player=player,
+                                limit=PlayerIntEnums.RECENT_ACTIVITIES_LENGTH
+                            ).select_related('court__location'),
+                            to_attr='recent_games'
+                        ),
+                    ).all()
             return None
 
         if self.action == 'get_put_payments':
