@@ -41,18 +41,18 @@ urlpatterns = [
     re_path(
         r'^swagger(?P<format>\.json|\.yaml)$',
         schema_view.without_ui(cache_timeout=0),
-        name='schema-json'
-        ),
+        name='schema-json',
+    ),
     path(
         'swagger/',
         schema_view.with_ui('swagger', cache_timeout=0),
-        name='schema-swagger-ui'
-        ),
+        name='schema-swagger-ui',
+    ),
     # ReDoc UI (alternative API docs UI)
     path(
         'redoc/',
         schema_view.with_ui('redoc', cache_timeout=0),
-        name='schema-redoc'
-        ),
+        name='schema-redoc',
+    ),
     path('faq/', FAQView.as_view(), name='faq'),
 ]

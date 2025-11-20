@@ -9,17 +9,12 @@ from apps.courts.models import Court, CourtLocation
 
 @pytest.mark.django_db
 class TestLocationTagModel:
-
     def test_create_location(
-            self,
-            location_for_court_data,
-            country_thailand,
-            city_in_thailand
+        self, location_for_court_data, country_thailand, city_in_thailand
     ):
-        location_for_court_data.update({
-            'country': country_thailand,
-            'city': city_in_thailand
-        })
+        location_for_court_data.update(
+            {'country': country_thailand, 'city': city_in_thailand}
+        )
         location = CourtLocation.objects.create(**location_for_court_data)
 
         assert location.longitude == location_for_court_data['longitude']
@@ -41,11 +36,8 @@ class TestLocationTagModel:
 
 @pytest.mark.django_db
 class TestCourtModel:
-
     def test_create_court_without_tags_contacts(
-            self,
-            court_data,
-            location_for_court_thailand
+        self, court_data, location_for_court_thailand
     ):
         court_data.update({'location': location_for_court_thailand})
         court = Court.objects.create(**court_data)
@@ -62,10 +54,7 @@ class TestCourtModel:
         assert Court.objects.all().count() == 0
 
     def test_create_court_with_tags(
-            self,
-            court_data,
-            tag_obj,
-            location_for_court_thailand
+        self, court_data, tag_obj, location_for_court_thailand
     ):
         court_data.update({'location': location_for_court_thailand})
         court = Court.objects.create(**court_data)

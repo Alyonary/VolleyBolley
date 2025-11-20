@@ -30,10 +30,18 @@ class GradeSystem:
     """
 
     PLAYER_LEVEL_GRADE_CODES: tuple[str, ...] = (
-        'L:1', 'L:2', 'L:3',
-        'M:1', 'M:2', 'M:3',
-        'H:1', 'H:2', 'H:3',
-        'P:1', 'P:2', 'P:3'
+        'L:1',
+        'L:2',
+        'L:3',
+        'M:1',
+        'M:2',
+        'M:3',
+        'H:1',
+        'H:2',
+        'H:3',
+        'P:1',
+        'P:2',
+        'P:3',
     )
 
     RATING_COEFFICIENTS: dict[str, dict[str, float]] = {
@@ -92,16 +100,14 @@ class GradeSystem:
 
     @classmethod
     def get_rating_coefficient(
-        cls,
-        evaluator_level: str,
-        rated_level: str
+        cls, evaluator_level: str, rated_level: str
     ) -> float:
         """
         Returns the coefficient based on rater and rated player levels.
         """
-        return cls.RATING_COEFFICIENTS.get(
-            evaluator_level, {}
-        ).get(rated_level, 0)
+        return cls.RATING_COEFFICIENTS.get(evaluator_level, {}).get(
+            rated_level, 0
+        )
 
     @classmethod
     def get_obj_by_level_grade(cls, grade: str, level: int):
@@ -112,10 +118,7 @@ class GradeSystem:
 
     @classmethod
     def get_value(
-        cls,
-        rater: Player,
-        rated: Player,
-        level_change: str
+        cls, rater: Player, rated: Player, level_change: str
     ) -> float:
         """
         Returns the rating value for player based on level change.
@@ -126,8 +129,7 @@ class GradeSystem:
         if level_change == cls.CONFIRM:
             return 0
         coefficient = cls.get_rating_coefficient(
-            evaluator_level=rater.rating.grade,
-            rated_level=rated.rating.grade
+            evaluator_level=rater.rating.grade, rated_level=rated.rating.grade
         )
         if level_change == cls.UP:
             return 1 * coefficient
@@ -139,9 +141,7 @@ class GradeSystem:
 
     @classmethod
     def update_player_rating(
-        cls,
-        player: Player,
-        vote: PlayerRatingVote
+        cls, player: Player, vote: PlayerRatingVote
     ) -> str:
         """
         Updates a single player's rating based on their votes.
@@ -160,8 +160,7 @@ class GradeSystem:
         result = 'updated'
         if rating_value_sum > PlayerIntEnums.MAX_RATING_VALUE:
             change: GradeSystem = cls.get_obj_by_level_grade(
-                player_rating.grade,
-                player_rating.level_mark
+                player_rating.grade, player_rating.level_mark
             ).next
             if change:
                 new_grade = change.grade
@@ -173,8 +172,7 @@ class GradeSystem:
                 result = 'updated'
         elif rating_value_sum < PlayerIntEnums.MIN_RATING_VALUE:
             change = cls.get_obj_by_level_grade(
-                player_rating.grade,
-                player_rating.level_mark
+                player_rating.grade, player_rating.level_mark
             ).prev
             if change:
                 new_grade = change.grade
@@ -194,8 +192,7 @@ class GradeSystem:
 
     @classmethod
     def downgrade_inactive_players(
-        cls,
-        days: int = PlayerIntEnums.PLAYER_INACTIVE_DAYS
+        cls, days: int = PlayerIntEnums.PLAYER_INACTIVE_DAYS
     ) -> int:
         """
         Downgrade player level by one step inside current grade if no activity

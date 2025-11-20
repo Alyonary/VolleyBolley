@@ -83,7 +83,7 @@ def user_generated_after_login(active_user):
                 player=player,
                 payment_type=data['payment_type'],
                 payment_account=data['payment_account'],
-                is_preferred=data['is_preferred']
+                is_preferred=data['is_preferred'],
             )
             payments.append(payment)
         Payment.objects.bulk_create(payments)
@@ -93,8 +93,7 @@ def user_generated_after_login(active_user):
 
 @pytest.fixture
 def user_with_registered_player(
-    user_generated_after_login,
-    player_data_for_registration
+    user_generated_after_login, player_data_for_registration
 ):
     player, _ = Player.objects.get_or_create(user=user_generated_after_login)
     player.country = Country.objects.filter(

@@ -19,7 +19,11 @@ class TestNotificationTasks:
         monkeypatch.setattr(
             push_service_enabled,
             'process_notifications_by_type',
-            Mock(return_value={'status': True,}),
+            Mock(
+                return_value={
+                    'status': True,
+                }
+            ),
         )
         result = send_event_notification_task.run(
             event_id=1, notification_type=sample_notification.type

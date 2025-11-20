@@ -14,7 +14,7 @@ def tourney_data(
     payment_account_revolut,
     game_levels_light,
     game_levels_medium,
-    player_thailand
+    player_thailand,
 ):
     """
     Return data for creating a tourney.
@@ -29,10 +29,7 @@ def tourney_data(
         'start_time': start_time,
         'end_time': end_time,
         'gender': 'MEN',
-        'player_levels': [
-            game_levels_light,
-            game_levels_medium
-        ],
+        'player_levels': [game_levels_light, game_levels_medium],
         'is_private': False,
         'max_players': 16,
         'price_per_person': '10.00',
@@ -40,7 +37,7 @@ def tourney_data(
         'players': bulk_create_registered_players,
         'host': player_thailand,
         'currency_type': currency_type_thailand,
-        'payment_account': payment_account_revolut.payment_account
+        'payment_account': payment_account_revolut.payment_account,
     }
 
 
@@ -74,7 +71,7 @@ def ended_tourney(player_thailand, bulk_create_registered_players):
         end_time=timezone.now() - timedelta(hours=1),
         is_active=True,
         max_players=8,
-        message='Ended tourney for testing'
+        message='Ended tourney for testing',
     )
     tourney.players.set(bulk_create_registered_players[:3])
     return tourney

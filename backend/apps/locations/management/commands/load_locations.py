@@ -12,12 +12,12 @@ from apps.locations.serializers import (
 
 
 class Command(BaseCommand):
-    '''Load countries and cities from JSON file.'''
+    """Load countries and cities from JSON file."""
 
     help = 'Load locations from JSON file'
 
     def add_arguments(self, parser):
-        '''Add command arguments.'''
+        """Add command arguments."""
         parser.add_argument(
             '--file',
             type=str,
@@ -31,7 +31,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        '''Main command logic.'''
+        """Main command logic."""
         file_path = options['file']
 
         if options['clear']:
@@ -57,7 +57,7 @@ class Command(BaseCommand):
         )
 
     def clear_data(self):
-        '''Clear existing location data.'''
+        """Clear existing location data."""
         self.stdout.write('Clearing existing data...')
         City.objects.all().delete()
         Country.objects.all().delete()
@@ -65,7 +65,7 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def load_data(self, data):
-        '''Load countries and cities from JSON data.'''
+        """Load countries and cities from JSON data."""
         countries_created = 0
         for country_data in data.get('countries', []):
             serializer = CountryCreateSerializer(data=country_data)

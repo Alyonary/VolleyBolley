@@ -37,9 +37,7 @@ def init_push_service():
 
 
 @shared_task(
-    bind=True,
-    max_retries=MAX_RETRIES,
-    default_retry_delay=RETRY_PUSH_TIME
+    bind=True, max_retries=MAX_RETRIES, default_retry_delay=RETRY_PUSH_TIME
 )
 def send_event_notification_task(self, event_id: int, notification_type: str):
     """
@@ -50,10 +48,10 @@ def send_event_notification_task(self, event_id: int, notification_type: str):
     if not push_service:
         push_service.reconnect()
         if not push_service:
-            logger.error("Push service is not available")
+            logger.error('Push service is not available')
             return {
                 'status': False,
-                'message': 'Push service is not available'
+                'message': 'Push service is not available',
             }
 
     return push_service.process_notifications_by_type(
@@ -73,9 +71,7 @@ def retry_notification_task(self, token, notification_type, event_id=None):
     """
     try:
         logger.info(f'Retrying notification to token {token[:8]}...')
-        notification = NotificationsBase.objects.get(
-            type=notification_type
-        )
+        notification = NotificationsBase.objects.get(type=notification_type)
         push_service = PushService()
         device = Device.objects.filter(token=token).first()
         result = push_service.send_notification_by_device(
@@ -95,17 +91,14 @@ def retry_notification_task(self, token, notification_type, event_id=None):
 
 @shared_task(bind=True)
 def inform_removed_players_task(
-    self,
-    event_id: int,
-    player_id: int,
-    event_type: str
+    self, event_id: int, player_id: int, event_type: str
 ):
     """
     Inform players that they have been removed from an event.
     """
     notification_type = {
         'game': NotificationTypes.GAME_REMOVED,
-        'tourney': NotificationTypes.TOURNEY_REMOVED
+        'tourney': NotificationTypes.TOURNEY_REMOVED,
     }.get(event_type)
     if not notification_type:
         logger.error(f'Invalid event type: {event_type}')
@@ -117,7 +110,7 @@ def inform_removed_players_task(
     return push_service.process_notifications_by_type(
         notification_type=notification_type,
         player_id=player_id,
-        event_id=event_id
+        event_id=event_id,
     )
 
 
@@ -133,8 +126,7 @@ def process_rate_notifications_for_recent_events():
 
 
 def send_rate_notification_for_events(
-    event_type: type,
-    hour_ago: datetime
+    event_type: type, hour_ago: datetime
 ) -> bool:
     """
     Sends notification to all players in the event to rate other players.
@@ -142,8 +134,7 @@ def send_rate_notification_for_events(
     from apps.event.models import Game
 
     events = event_type.objects.filter(
-        end_time__gte=hour_ago,
-        end_time__lt=timezone.now()
+        end_time__gte=hour_ago, end_time__lt=timezone.now()
     )
     if issubclass(event_type, Game):
         notification_type = NotificationTypes.GAME_RATE
@@ -151,10 +142,7 @@ def send_rate_notification_for_events(
         notification_type = NotificationTypes.TOURNEY_RATE
 
     for event in events:
-        send_event_notification_task.delay(
-            event.id,
-            notification_type
-        )
+        send_event_notification_task.delay(event.id, notification_type)
         event.is_active = False
         event.save()
     logger.info(

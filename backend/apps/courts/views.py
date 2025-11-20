@@ -28,12 +28,10 @@ class CourtViewSet(mixins.ListModelMixin, GenericViewSet):
             return super().get_queryset()
 
         if country.name == 'Cyprus':
-            return super().get_queryset().filter(
-                location__country=country)
+            return super().get_queryset().filter(location__country=country)
 
         if country.name == 'Thailand':
-            return super().get_queryset().filter(
-                location__city=city)
+            return super().get_queryset().filter(location__city=city)
         return super().get_queryset()
 
     @swagger_auto_schema(

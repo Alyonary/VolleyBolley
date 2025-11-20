@@ -8,9 +8,7 @@ User = get_user_model()
 
 @pytest.mark.django_db
 class TestTokens:
-
     def test_jwt_token_refresh(self, api_client, refresh_token):
-
         response = self._refresh_token(api_client, refresh_token)
 
         assert response.status_code == status.HTTP_200_OK

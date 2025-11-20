@@ -4,13 +4,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 @pytest.fixture
 def google_response():
-    '''Moke google-response after token verification.'''
+    """Moke google-response after token verification."""
     return {
         'email': 'test@example.com',
         'sub': '1234567890',
         'given_name': 'Test',
         'family_name': 'User',
-        'name': 'Test User'
+        'name': 'Test User',
     }
 
 
@@ -50,7 +50,7 @@ def real_google_access_token():
 
 @pytest.fixture
 def firebase_response():
-    '''Moke firebase response after token verification.'''
+    """Moke firebase response after token verification."""
     return {
         'iss': 'https://securetoken.google.com/your-project-id',
         'aud': 'your-project-id',
@@ -63,16 +63,16 @@ def firebase_response():
                 'phone': ['+79123456789'],
             },
             'sign_in_provider': 'phone',
-        }
+        },
     }
 
 
 @pytest.fixture
 def firebase_response_no_user_id():
-    '''Moke firebase response after token verification.
+    """Moke firebase response after token verification.
 
     Invalid token: no field "user_id" in JSON response.
-    '''
+    """
     return {
         'iss': 'https://securetoken.google.com/your-project-id',
         'aud': 'your-project-id',
@@ -84,10 +84,10 @@ def firebase_response_no_user_id():
 
 @pytest.fixture
 def firebase_response_no_phone_number():
-    '''Moke firebase response after token verification.
+    """Moke firebase response after token verification.
 
     Invalid token: no field "phone_number" in JSON response.
-    '''
+    """
     return {
         'iss': 'https://securetoken.google.com/your-project-id',
         'aud': 'your-project-id',
@@ -99,10 +99,10 @@ def firebase_response_no_phone_number():
 
 @pytest.fixture
 def firebase_response_bad_phone_number():
-    '''Moke firebase response after token verification.
+    """Moke firebase response after token verification.
 
     Invalid token: bad value in the field "phone_number" in JSON response.
-    '''
+    """
     return {
         'iss': 'https://securetoken.google.com/your-project-id',
         'aud': 'your-project-id',
@@ -129,12 +129,12 @@ def firebase_fb_response():
         'name': 'Test User',
         'firebase': {
             'identities': {
-                'facebook.com': ["123456789012345678901"],
+                'facebook.com': ['123456789012345678901'],
                 'phone': ['+79123456789'],
                 'email': ['test.user@gmail.com'],
             },
             'sign_in_provider': 'facebook.com',
-        }
+        },
     }
 
 
@@ -154,12 +154,12 @@ def firebase_fb_response_no_email():
         'name': 'Test User',
         'firebase': {
             'identities': {
-                'facebook.com': ["123456789012345678901"],
+                'facebook.com': ['123456789012345678901'],
                 'phone': ['+79123456789'],
                 'email': [''],
             },
             'sign_in_provider': 'facebook.com',
-        }
+        },
     }
 
 
@@ -179,12 +179,12 @@ def firebase_fb_response_bad_email():
         'name': 'Test User',
         'firebase': {
             'identities': {
-                'facebook.com': ["123456789012345678901"],
+                'facebook.com': ['123456789012345678901'],
                 'phone': ['+79123456789'],
                 'email': ['bad_email'],
             },
             'sign_in_provider': 'facebook.com',
-        }
+        },
     }
 
 
@@ -201,12 +201,12 @@ def firebase_fb_response_no_names():
         'email_verified': True,
         'firebase': {
             'identities': {
-                'facebook.com': ["123456789012345678901"],
+                'facebook.com': ['123456789012345678901'],
                 'phone': ['+79123456789'],
                 'email': ['test.user@gmail.com'],
             },
             'sign_in_provider': 'facebook.com',
-        }
+        },
     }
 
 

@@ -27,10 +27,7 @@ class CourtSerializer(serializers.ModelSerializer):
 
     tags = serializers.StringRelatedField(source='tag_list', many=True)
 
-    contacts_list = ContactSerializer(
-        many=True,
-        source='contacts'
-    )
+    contacts_list = ContactSerializer(many=True, source='contacts')
     photo_url = serializers.ImageField(use_url=True, required=False)
 
     location = LocationSerializer()

@@ -58,12 +58,15 @@ def is_django_fully_ready() -> bool:
     try:
         with connection.cursor() as cursor:
             if connection.vendor == 'postgresql':
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT EXISTS (
                         SELECT FROM information_schema.tables
                         WHERE table_name = %s
                     );
-                """, [User._meta.db_table])
+                """,
+                    [User._meta.db_table],
+                )
                 exists = cursor.fetchone()[0]
 
                 if not exists:
@@ -122,7 +125,7 @@ def wait_for_django_ready(max_retries: int = 10, delay: int = 1) -> bool:
     for i in range(max_retries):
         try:
             is_django_fully_ready()
-            logger.info("✅ Django is fully ready")
+            logger.info('✅ Django is fully ready')
 
             return True
 
@@ -130,12 +133,14 @@ def wait_for_django_ready(max_retries: int = 10, delay: int = 1) -> bool:
             logger.error(f'Django is not ready: {e}')
 
             if i < max_retries - 1:
-                logger.debug(f"⏳ Waiting for Django... ({i+1}/{max_retries})")
+                logger.debug(
+                    f'⏳ Waiting for Django... ({i + 1}/{max_retries})'
+                )
                 time.sleep(delay)
 
             continue
 
-    logger.error("⚠️ Django is not fully ready.")
+    logger.error('⚠️ Django is not fully ready.')
 
     return False
 
@@ -144,7 +149,7 @@ def create_superuser_with_settings_check(
     username: str | None = username,
     first_name: str | None = first_name,
     last_name: str | None = last_name,
-    password: str | None = password
+    password: str | None = password,
 ) -> None:
     """Create a superuser automatically.
 
@@ -195,9 +200,8 @@ def create_superuser_with_settings_check(
 
         return
 
-    if (
-        User.objects.filter(is_superuser=True).exists() and
-        not getattr(settings, 'MANY_SUPERUSERS', False)
+    if User.objects.filter(is_superuser=True).exists() and not getattr(
+        settings, 'MANY_SUPERUSERS', False
     ):
         logger.info(
             'Pass the superuser auto creation process: '
@@ -221,7 +225,7 @@ def create_superuser_with_settings_check(
             username,
             password=password,
             first_name=first_name,
-            last_name=last_name
+            last_name=last_name,
         )
         logger.info(
             f'Superuser {username} has been successfully auto created.'

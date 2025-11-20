@@ -26,14 +26,14 @@ class Contact(m.Model):
         max_length=CoreFieldLength.CONTACT_NAME.value,
         null=False,
         blank=False,
-        default='PHONE'
+        default='PHONE',
     )
     contact = m.CharField(
         _('Contact value'),
         max_length=CoreFieldLength.CONTACT_NAME.value,
         null=True,
         blank=True,
-        default=None
+        default=None,
     )
     court = m.ForeignKey('courts.Court', on_delete=m.CASCADE)
 
@@ -51,6 +51,7 @@ class GameLevel(m.Model):
 
     class GameLevelChoices(m.TextChoices):
         """Game levels enum for game."""
+
         LIGHT = 'LIGHT', _('Beginner')
         MEDIUM = 'MEDIUM', _('Intermediate')
         HARD = 'HARD', _('Advanced')
@@ -75,6 +76,7 @@ class GameLevel(m.Model):
 
 class InfoPage(TitleMixin):
     """Information page (FAQ, rules, contacts, etc.)."""
+
     tag = m.ForeignKey(
         Tag,
         verbose_name=_('Tag'),
@@ -90,6 +92,7 @@ class InfoPage(TitleMixin):
 
 class InfoSection(TitleMixin):
     """Section of the information page."""
+
     page = m.ForeignKey(
         InfoPage,
         verbose_name=_('Page'),
@@ -99,10 +102,7 @@ class InfoSection(TitleMixin):
     content = m.TextField(
         verbose_name=_('Content'),
     )
-    order = m.PositiveIntegerField(
-        verbose_name=_('Ordering'),
-        default=0
-    )
+    order = m.PositiveIntegerField(verbose_name=_('Ordering'), default=0)
 
     class Meta(TitleMixin.Meta):
         verbose_name = _('Section of the information page')
@@ -136,10 +136,8 @@ class CurrencyType(m.Model):
         unique=True,
     )
     country = m.ForeignKey(
-        Country,
-        on_delete=m.SET_NULL,
-        null=True,
-        blank=True)
+        Country, on_delete=m.SET_NULL, null=True, blank=True
+    )
 
     def __str__(self):
         return self.currency_type
@@ -152,6 +150,7 @@ class CurrencyType(m.Model):
 
 class FAQ(m.Model):
     """FAQ model to store project description."""
+
     name = m.CharField(
         max_length=CoreFieldLength.NAME.value,
         unique=True,

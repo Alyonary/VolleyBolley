@@ -15,7 +15,7 @@ from rest_framework.viewsets import GenericViewSet
 
 from apps.core.serializers import EmptyBodySerializer
 from apps.event.models import Game, GameInvitation
-from apps.event.permissions import IsHostOrReadOnly
+from apps.event.permissions import IsHostOrReadOnly, IsPlayerInEvent
 from apps.event.serializers import (
     # EventListShortSerializer,
     GameDetailSerializer,
@@ -33,6 +33,7 @@ class GameViewSet(
     CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, GenericViewSet
 ):
     """Provides CRUD operations for the Game model."""
+
     permission_classes = (IsHostOrReadOnly,)
     http_method_names = ['get', 'post', 'delete']
 
@@ -41,25 +42,21 @@ class GameViewSet(
         if (player is None or
                 player.country is None or
                 self.action in ('joining_game', 'delete_invitation')):
-            return Game.objects.all().select_related(
-                    'host', 'court').prefetch_related('players')
-        return Game.objects.player_located_games(player).select_related(
-                    'host', 'court').prefetch_related('players')
+            qs = Game.objects.all()
+        elif self.action == 'rate_players':
+            qs = Game.objects.archive_games(player)
+        else:
+            qs = Game.objects.player_located_games(player)
+        return qs.select_related('host', 'court').prefetch_related('players')
 
     def get_serializer_class(self, *args, **kwargs):
-        if self.action in (
-                            'retrieve',
-                            'joining_game'):
+        if self.action in ('retrieve', 'joining_game'):
             return GameDetailSerializer
 
         if self.action == 'invite_players':
             return GameInviteSerializer
 
-        if self.action in (
-                            'my_games',
-                            'archive',
-                            'invites',
-                            'upcoming'):
+        if self.action in ('my_games', 'archive', 'invites', 'upcoming'):
             return GameShortSerializer
         return GameSerializer
 
@@ -102,11 +99,7 @@ class GameViewSet(
         host_id = request.user.player.id
         for player_id in request.data['players']:
             serializer = self.get_serializer(
-                    data={
-                        'host': host_id,
-                        'invited': player_id,
-                        'game': game_id
-                    }
+                data={'host': host_id, 'invited': player_id, 'game': game_id}
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
@@ -157,11 +150,19 @@ class GameViewSet(
             upcoming_game_time = upcoming_game.start_time
         else:
             upcoming_game_time = None
-        invites = GameInvitation.objects.filter(
-            invited=request.user.player).values('game').distinct().count()
+        invites = (
+            GameInvitation.objects.filter(invited=request.user.player)
+            .values('game')
+            .distinct()
+            .count()
+        )
         return Response(
-                data={'upcoming_game_time': upcoming_game_time,
-                      'invites': invites}, status=status.HTTP_200_OK)
+            data={
+                'upcoming_game_time': upcoming_game_time,
+                'invites': invites,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     @swagger_auto_schema(
         tags=['games'],
@@ -316,7 +317,7 @@ class GameViewSet(
         methods=['post'],
         detail=True,
         url_path='join-game',
-        permission_classes=[IsAuthenticated]
+        permission_classes=[IsAuthenticated],
     )
     def joining_game(self, request, *args, **kwargs):
         """Adding a user to the game and removing the invitation."""
@@ -327,11 +328,11 @@ class GameViewSet(
             is_joined = {'is_joined': True}
             game.players.add(player)
             GameInvitation.objects.filter(
-                Q(game=game) & Q(invited=player)).delete()
+                Q(game=game) & Q(invited=player)
+            ).delete()
         else:
             is_joined = {'is_joined': False}
-        serializer = self.get_serializer(
-            game, context={'request': request})
+        serializer = self.get_serializer(game, context={'request': request})
         data = serializer.data.copy()
         data.update(is_joined)
         return Response(data=data, status=status.HTTP_200_OK)
@@ -357,13 +358,14 @@ class GameViewSet(
         methods=['delete'],
         detail=True,
         url_path='invites',
-        permission_classes=[IsAuthenticated]
+        permission_classes=[IsAuthenticated],
     )
     def delete_invitation(self, request, *args, **kwargs):
         game = self.get_object()
         player = request.user.player
         delete_count, dt = GameInvitation.objects.filter(
-            Q(game=game) & Q(invited=player)).delete()
+            Q(game=game) & Q(invited=player)
+        ).delete()
         if not delete_count:
             return Response(
                 data={'error': _('The invitation does not exist!')},
@@ -439,7 +441,7 @@ class GameViewSet(
         methods=['get', 'post'],
         detail=True,
         url_path='rate-players',
-        permission_classes=[IsHostOrReadOnly]
+        permission_classes=[IsPlayerInEvent]
     )
     def rate_players(self, request, *args, **kwargs):
         """

@@ -22,9 +22,7 @@ from apps.players.models import Player
 logger = logging.getLogger(__name__)
 
 
-class NotificationsViewSet(
-    mixins.ListModelMixin, viewsets.GenericViewSet
-):
+class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """
     ViewSet for notifications:
     - GET /notifications/ : list active notifications for current user
@@ -202,9 +200,7 @@ class NotificationsViewSet(
             )
             if notification_type == NotificationTypes.GAME_REMINDER:
                 push_service.send_push_notifications(
-                    tokens=all_tokens,
-                    notification=notification,
-                    game_id=1
+                    tokens=all_tokens, notification=notification, game_id=1
                 )
             else:
                 push_service.send_push_notifications(

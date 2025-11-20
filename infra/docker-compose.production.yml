@@ -12,6 +12,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   redis:
     image: redis:7-alpine
@@ -36,6 +40,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   backend:
     container_name: volleybolley-backend
@@ -56,11 +64,16 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   celery_worker:
     container_name: volleybolley_celery_worker
     image: dorofrik/volleybolley-backend
     command: celery -A volleybolley worker -l info --concurrency=${CELERY_WORKER_CONCURRENCY:-2}
+    entrypoint: []
     env_file: .env
     environment:
       - REDIS_HOST=redis
@@ -80,12 +93,17 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   celery_beat:
     container_name: volleybolley_celery_beat
     image: dorofrik/volleybolley-backend
     command: celery -A volleybolley beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file: .env
+    entrypoint: []
     environment:
       - REDIS_HOST=redis
     depends_on:
@@ -102,6 +120,98 @@ services:
       timeout: 5s
       retries: 5
       start_period: 15s
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+  monitoring_init:
+    image: dorofrik/volley-monitoring:latest
+    container_name: monitoring_init
+    volumes:
+      - monitoring_data:/target
+    command: ["--copy-only"]
+    restart: "no"
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: volleybolley-promtail
+    expose:
+      - "9080"
+    privileged: true
+    volumes:
+      - monitoring_data:/monitoring_data:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/monitoring_data/promtail-config.yml
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+  loki:
+    image: grafana/loki:latest
+    container_name: volleybolley-loki
+    expose:
+      - "3100"
+    volumes:
+      - monitoring_data:/monitoring_data:ro
+    command: -config.file=/monitoring_data/loki-config.yml
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: volleybolley-prometheus
+    expose:
+      - "9090"
+    volumes:
+      - monitoring_data:/monitoring_data:ro
+      - prometheus_data:/prometheus
+    command: --config.file=/monitoring_data/prometheus.yml
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
+      - GF_PROVISIONING_ENABLE=true
+      - GF_SERVER_ROOT_URL=${GRAFANA_ROOT_URL}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true 
+    volumes:
+      - monitoring_data:/monitoring_data:ro
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   nginx:
     container_name: volleybolley-proxy
@@ -115,9 +225,16 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
 volumes:
   pg_data_volleybolley:
   redis_data:
   static:
   media:
+  grafana_data:
+  monitoring_data:
+  prometheus_data:

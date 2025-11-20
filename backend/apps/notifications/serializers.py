@@ -19,16 +19,13 @@ class NotificationSerializer(serializers.ModelSerializer):
     """
 
     title = serializers.CharField(
-        source='notification_type.title',
-        read_only=True
+        source='notification_type.title', read_only=True
     )
     body = serializers.CharField(
-        source='notification_type.body',
-        read_only=True
+        source='notification_type.body', read_only=True
     )
     screen = serializers.CharField(
-        source='notification_type.screen',
-        read_only=True
+        source='notification_type.screen', read_only=True
     )
     notification_id = serializers.PrimaryKeyRelatedField(
         source='id', queryset=Notifications.objects.all()

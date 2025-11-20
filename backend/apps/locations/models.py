@@ -5,7 +5,7 @@ from apps.locations.constants import LocationsEnums
 
 
 class Country(models.Model):
-    '''Country model.'''
+    """Country model."""
 
     name = models.CharField(
         max_length=LocationsEnums.MAX_LENGTH.value,
@@ -13,7 +13,7 @@ class Country(models.Model):
         verbose_name=_('Country name'),
         null=False,
         blank=False,
-        help_text=_('Name of the country')
+        help_text=_('Name of the country'),
     )
 
     class Meta:
@@ -26,7 +26,7 @@ class Country(models.Model):
 
 
 class City(models.Model):
-    '''City model.'''
+    """City model."""
 
     name = models.CharField(
         max_length=100,
@@ -39,7 +39,7 @@ class City(models.Model):
         on_delete=models.CASCADE,
         related_name='cities',
         verbose_name=_('Country'),
-        null=False
+        null=False,
     )
 
     class Meta:

@@ -67,14 +67,14 @@ class InfoSectionAdmin(admin.ModelAdmin):
     def short_content(self, obj):
         return (
             (
-                obj.content[:CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value]
+                obj.content[: CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value]
                 + '...'
             )
             if obj.content
             and (
-                    len(obj.content)
-                    > CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value
-                )
+                len(obj.content)
+                > CoreFieldLength.ADMIN_INFO_SHORT_CONTENT.value
+            )
             else obj.content
         )
 

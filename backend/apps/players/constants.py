@@ -20,7 +20,6 @@ class LevelMarkChoices(models.IntegerChoices):
 
 
 class PlayerIntEnums(IntEnum):
-
     LOCATION_MAX_LENGTH = 150
     GENDER_MAX_LENGTH = 6
     LEVEL_MAX_LENGTH = 6
@@ -43,7 +42,6 @@ class Genders(models.TextChoices):
 
 
 class PlayerStrEnums(Enum):
-
     DEFAULT_BIRTHDAY = '2000-01-01'
     DEFAULT_GENDER = Genders.MALE
     DEFAULT_GRADE = Grades.LIGHT
@@ -63,16 +61,16 @@ BASE_PAYMENT_DATA = [
     {
         'payment_type': Payments.CASH,
         'payment_account': None,
-        'is_preferred': True
+        'is_preferred': True,
     },
     {
         'payment_type': Payments.REVOLUT,
         'payment_account': None,
-        'is_preferred': False
+        'is_preferred': False,
     },
     {
         'payment_type': Payments.THAIBANK,
         'payment_account': None,
-        'is_preferred': False
+        'is_preferred': False,
     },
 ]

@@ -38,7 +38,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     permission_classes = [IsRegisteredPlayer]
 
     def get_serializer_class(self, *args, **kwargs):
-        if self.action == "me":
+        if self.action == 'me':
             return PlayerBaseSerializer
         if self.action == 'put_delete_avatar':
             return AvatarSerializer
@@ -315,9 +315,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         serializer = self.get_serializer(instance)
 
-        return Response(
-            status=status.HTTP_200_OK, data=serializer.data
-        )
+        return Response(status=status.HTTP_200_OK, data=serializer.data)
 
     @swagger_auto_schema(
         tags=['avatar'],
@@ -347,17 +345,17 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         security=[{'Bearer': []}, {'JWT': []}],
     )
     @action(
-        detail=False, methods=['PUT'], url_path='me/avatar',
-        url_name='me-avatar'
+        detail=False,
+        methods=['PUT'],
+        url_path='me/avatar',
+        url_name='me-avatar',
     )
     def put_delete_avatar(self, request):
         """Update avatar.
         To delete avatar set its value to null.
         """
         instance = self.get_object()
-        serializer = self.get_serializer(
-            instance, data=request.data
-        )
+        serializer = self.get_serializer(instance, data=request.data)
         if serializer.is_valid(raise_exception=True):
             serializer.save()
 
@@ -410,15 +408,15 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         security=[{'Bearer': []}, {'JWT': []}],
     )
     @action(
-        detail=False, methods=['PUT', 'GET'], url_path='me/payments',
-        url_name='me-payments'
+        detail=False,
+        methods=['PUT', 'GET'],
+        url_path='me/payments',
+        url_name='me-payments',
     )
     def get_put_payments(self, request):
         """Get or put payment data of player."""
         if self.request.method == 'GET':
-            payments = {
-                'payments': self.get_queryset()
-            }
+            payments = {'payments': self.get_queryset()}
             serializer = self.get_serializer(payments)
 
             return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -464,9 +462,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
-    @action(
-        detail=True, methods=['POST', 'DELETE']
-    )
+    @action(detail=True, methods=['POST', 'DELETE'])
     def favorite(self, request, pk=None):
         """Add or delete player from favorite list."""
         player = self.get_object()
@@ -476,8 +472,8 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             context={
                 'request': request,
                 'player': player,
-                'favorite': favorite
-            }
+                'favorite': favorite,
+            },
         )
         serializer.is_valid(raise_exception=True)
         if request.method == 'POST':
@@ -487,12 +483,11 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                 context={
                     'request': request,
                     'player': player,
-                    'favorite': favorite
-                }
+                    'favorite': favorite,
+                },
             )
             return Response(
-                response_serializer.data,
-                status=status.HTTP_201_CREATED
+                response_serializer.data, status=status.HTTP_201_CREATED
             )
 
         instance = get_object_or_404(
@@ -530,9 +525,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     def register(self, request):
         """Register new player."""
         instance = self.get_object()
-        serializer = self.get_serializer(
-            instance=instance, data=request.data
-        )
+        serializer = self.get_serializer(instance=instance, data=request.data)
         if serializer.is_valid():
             serializer.save()
 

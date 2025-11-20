@@ -14,7 +14,7 @@ class TestLogout:
     def test_logout_success(
         self,
         auth_api_client_registered_player,
-        refresh_token_for_user_with_registered_player
+        refresh_token_for_user_with_registered_player,
     ):
         response = auth_api_client_registered_player.post(
             self.url,
@@ -23,7 +23,7 @@ class TestLogout:
                     refresh_token_for_user_with_registered_player
                 )
             },
-            format='json'
+            format='json',
         )
 
         assert response.status_code == status.HTTP_205_RESET_CONTENT
@@ -37,18 +37,13 @@ class TestLogout:
             ('refresh_token', 'invalid-token'),
             ('refresh_token', None),
             ('access_token', None),
-            (None, None)
-        ]
+            (None, None),
+        ],
     )
     def test_logout_invalid_token(
-        self,
-        auth_api_client_registered_player,
-        token_type,
-        token_value
+        self, auth_api_client_registered_player, token_type, token_value
     ):
         response = auth_api_client_registered_player.post(
-            self.url,
-            {token_type: token_value},
-            format='json'
+            self.url, {token_type: token_value}, format='json'
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST

@@ -13,7 +13,6 @@ def load_faq(sender, **kwargs):
 
 @receiver(post_save, sender=FAQ)
 def deactivate_other_faqs(sender, instance, **kwargs):
-
     """
     Ensure only one FAQ is active at a time.
     When an FAQ instance is saved and is marked as active,
