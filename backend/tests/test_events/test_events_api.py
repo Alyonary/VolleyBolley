@@ -302,15 +302,14 @@ class TestRatePlayersAPI:
         }
 
         response = api_client_thailand.post(url, post_data, format='json')
-        assert response.status_code == status.HTTP_201_CREATED
         vote_count = PlayerRatingVote.objects.filter(rater=rater).count()
 
         if rater_in_game and rated_in_game:
-            assert response.status_code == status.HTTP_200_OK
+            assert response.status_code == status.HTTP_201_CREATED
             assert vote_count >= 1
             PlayerRatingVote.objects.filter(rater=rater).delete()
         elif rater_in_game and not rated_in_game:
-            assert response.status_code == status.HTTP_200_OK
+            assert response.status_code == status.HTTP_201_CREATED
             assert vote_count == 0
         else:
             assert response.status_code == status.HTTP_403_FORBIDDEN
@@ -616,7 +615,7 @@ class TestRatePlayersAPI:
                     ]
                 }
                 response = api_client.post(url, post_data, format='json')
-                assert response.status_code == status.HTTP_200_OK, (
+                assert response.status_code == status.HTTP_201_CREATED, (
                     f"Failed for rater={rater.id}, rated={rated.id}, "
                     f"response={response.data}"
                 )
