@@ -114,7 +114,7 @@ def inform_removed_players_task(
     )
 
 
-def procces_rate_notifications_for_recent_events():
+def process_rate_notifications_for_recent_events():
     """
     Find all games and tourneys ended an hour ago and send rate notifications.
     """
@@ -155,7 +155,7 @@ def send_rate_notification_for_events(
 @shared_task
 def send_rate_notification_task():
     """Wrapper task for scheduled rate notifications."""
-    return procces_rate_notifications_for_recent_events()
+    return process_rate_notifications_for_recent_events()
 
 
 @shared_task

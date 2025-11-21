@@ -9,7 +9,7 @@ User = get_user_model()
 
 @pytest.mark.django_db
 class TestLogout:
-    url = reverse('api:logout')
+    url = reverse('api:auth:logout')
 
     def test_logout_success(
         self,

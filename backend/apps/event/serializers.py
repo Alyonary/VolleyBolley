@@ -221,6 +221,10 @@ class TourneySerializer(serializers.ModelSerializer):
     pass
 
 
+class TourneyShortSerializer(serializers.ModelSerializer):
+    pass
+
+
 class GameShortSerializer(serializers.ModelSerializer):
     game_id = serializers.IntegerField(source='pk')
 
@@ -250,3 +254,25 @@ class GameShortSerializer(serializers.ModelSerializer):
             'start_time',
             'end_time',
         ]
+
+
+class GameListShortSerializer(serializers.Serializer):
+    games = serializers.ListSerializer(
+        child=GameShortSerializer(), read_only=True
+    )
+
+
+class GameJoinDetailSerializer(GameDetailSerializer):
+    is_joined = serializers.BooleanField(read_only=True)
+
+    class Meta(GameDetailSerializer.Meta):
+        fields = GameDetailSerializer.Meta.fields + ['is_joined']
+
+
+class EventListShortSerializer(serializers.Serializer):
+    games = serializers.ListSerializer(
+        child=GameShortSerializer(), read_only=True
+    )
+    tournaments = serializers.ListSerializer(
+        child=TourneyShortSerializer(), read_only=True
+    )

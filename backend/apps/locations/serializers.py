@@ -26,6 +26,11 @@ class CountrySerializer(serializers.ModelSerializer):
         fields = ['country_id', 'country_name', 'cities']
 
 
+class CountryListSerializer(serializers.Serializer):
+    '''Serializer for countries with nested cities.'''
+    countries = CountrySerializer(many=True, read_only=True)
+
+
 class CountryCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Country

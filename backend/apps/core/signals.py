@@ -2,7 +2,7 @@ from django.db.models.signals import post_migrate, post_save
 from django.dispatch import receiver
 
 from apps.core.models import FAQ
-from apps.core.utlis import initialize_faq
+from apps.core.utils import initialize_faq
 
 
 @receiver(post_migrate)

@@ -14,7 +14,7 @@ from apps.players.serializers import (
 )
 
 
-def procces_rate_players_request(self, request, *args, **kwargs) -> Response:
+def process_rate_players_request(self, request, *args, **kwargs) -> Response:
     """
     Handles player rating in an event (Game or Tourney).
 
@@ -26,17 +26,19 @@ def procces_rate_players_request(self, request, *args, **kwargs) -> Response:
     if self.request.method == 'GET':
         valid_players = rater_player.get_players_to_rate(event)
         serializer = PlayerShortSerializer(valid_players, many=True)
-        return Response({'players': serializer.data})
+        return Response(
+            {"players": serializer.data}, status=status.HTTP_200_OK
+        )
 
     serializer = PlayerRateSerializer(
         data=request.data, context={'request': request, 'event': event}
     )
     serializer.is_valid(raise_exception=True)
     serializer.save()
-    return Response(status=status.HTTP_200_OK)
+    return Response(status=status.HTTP_201_CREATED)
 
 
-def procces_rate_notifications_for_recent_events():
+def process_rate_notifications_for_recent_events():
     """
     Find all games and tourneys ended an hour ago and send rate notifications.
     """

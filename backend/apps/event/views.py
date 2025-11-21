@@ -1,5 +1,7 @@
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.mixins import (
@@ -11,19 +13,24 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
+from apps.core.serializers import EmptyBodySerializer
 from apps.event.models import Game, GameInvitation
 from apps.event.permissions import IsHostOrReadOnly, IsPlayerInEvent
 from apps.event.serializers import (
+    # EventListShortSerializer,
     GameDetailSerializer,
     GameInviteSerializer,
+    GameJoinDetailSerializer,
+    GameListShortSerializer,
     GameSerializer,
     GameShortSerializer,
 )
-from apps.event.utils import procces_rate_players_request
+from apps.event.utils import process_rate_players_request
+from apps.players.serializers import PlayerListShortSerializer
 
 
 class GameViewSet(
-    GenericViewSet, CreateModelMixin, RetrieveModelMixin, DestroyModelMixin
+    CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, GenericViewSet
 ):
     """Provides CRUD operations for the Game model."""
 
@@ -53,6 +60,34 @@ class GameViewSet(
             return GameShortSerializer
         return GameSerializer
 
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Invite list of players to game",
+        operation_description="""
+        Invite a list of players to the game.
+
+        **Returns:** empty body response.
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['players'],
+            properties={
+                'players': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(type=openapi.TYPE_INTEGER),
+                    description="List of player IDs",
+                    example=[1, 2, 3]
+                )
+            },
+        ),
+        responses={
+            200: 'Success',
+            400: 'Bad request',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
     @action(
         methods=['post'],
         detail=True,
@@ -70,7 +105,43 @@ class GameViewSet(
             serializer.save()
         return Response(status=status.HTTP_201_CREATED)
 
-    @action(methods=['get'], detail=False, url_path='preview')
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get number of active invitations and"
+                          " time of next game",
+        operation_description="""
+        Get number of active invitations and time of next game
+
+        **Returns:** upcoming_game_time, invites.
+        """,
+        responses={
+            200: openapi.Schema(
+                title='Success',
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'upcoming_game_time': openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                        format='date-time',
+                        description='Time in ISO format',
+                        example='2025-08-21T15:30:00Z'
+                    ),
+                    'invites': openapi.Schema(
+                        type=openapi.TYPE_INTEGER,
+                        description='Number of invitations',
+                        example=3,
+                    )
+                }
+            ),
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='preview'
+    )
     def preview(self, request, *args, **kwargs):
         """Returns the time of the next game and the number of invitations."""
 
@@ -93,7 +164,29 @@ class GameViewSet(
             status=status.HTTP_200_OK,
         )
 
-    @action(methods=['get'], detail=False, url_path='my-games')
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get lists of upcoming games and tournaments"
+                          " created by current player",
+        operation_description="""
+        Get two lists of the upcoming games and the upcoming tournaments
+        created by the current player.
+        The player is the host of the events.
+
+        **Returns:** game objects, tournament objects
+        """,
+        responses={
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='my-games'
+    )
     def my_games(self, request, *args, **kwargs):
         """Retrieves the list of games created by the user."""
 
@@ -102,7 +195,28 @@ class GameViewSet(
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
-    @action(methods=['get'], detail=False, url_path='archive')
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get lists of players archived games"
+                          " and tournaments",
+        operation_description="""
+        Get two lists of the archived games and tournaments
+        related to the current player.
+
+        **Returns:** game objects, tournament objects
+        """,
+        responses={
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='archive'
+    )
     def archive_games(self, request, *args, **kwargs):
         """Retrieves the list of archived games related to user."""
 
@@ -111,7 +225,29 @@ class GameViewSet(
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
-    @action(methods=['get'], detail=False, url_path='invites')
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get lists of games and tournaments"
+                          " to which player has been invited",
+        operation_description="""
+        Get two lists of the games and the tournaments
+        to which the current player has been invited.
+        The player hasn't yet managed the invitations.
+
+        **Returns:** game objects, tournament objects
+        """,
+        responses={
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='invites'
+    )
     def invited_games(self, request, *args, **kwargs):
         """Retrieving upcoming games to which the player has been invited."""
 
@@ -120,15 +256,63 @@ class GameViewSet(
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
-    @action(methods=['get'], detail=False, url_path='upcoming')
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get lists of upcoming games and tournaments"
+                          " in which player will participate",
+        operation_description="""
+        Get two lists of the upcoming games and the upcoming tournaments
+        in which the current player will participate.
+        The player has accepted the invitations or is host of the events.
+
+        **Returns:** game objects, tournament objects
+        """,
+        responses={
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='upcoming'
+    )
     def upcoming_games(self, request, *args, **kwargs):
         """Retrieving upcoming games that the player participates in."""
 
-        upcomming_games = Game.objects.upcomming_games(request.user.player)
-        serializer = self.get_serializer(upcomming_games, many=True)
+        upcoming_games = Game.objects.upcoming_games(request.user.player)
+        serializer = self.get_serializer(upcoming_games, many=True)
         wrapped_data = {'games': serializer.data}
         return Response(data=wrapped_data, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Accept invitation to game by player",
+        operation_description="""
+        The current player accepts an invitation to a game.
+        The game id is given as a path-parameter of the request.
+
+        **Returns:** game object.
+        """,
+        request_body=EmptyBodySerializer,
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                openapi.IN_PATH,
+                description="Game ID",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            )
+        ],
+        responses={
+            200: openapi.Response('Success', GameJoinDetailSerializer),
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
     @action(
         methods=['post'],
         detail=True,
@@ -153,6 +337,23 @@ class GameViewSet(
         data.update(is_joined)
         return Response(data=data, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Reject invitation to game by player",
+        operation_description="""
+        The current player rejects an invitation to a game.
+        The game_id is given as a path-parameter of the request.
+
+        **Returns:** empty body response.
+        """,
+        responses={
+            204: 'No content',
+            400: 'Bad request',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
     @action(
         methods=['delete'],
         detail=True,
@@ -172,6 +373,70 @@ class GameViewSet(
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    @swagger_auto_schema(
+        tags=['games'],
+        method='get',
+        operation_summary="Get list of players available for rating",
+        operation_description="""
+        Get a list of players available for rating.
+
+        **Returns:** player objects.
+        """,
+        responses={
+            200: openapi.Response('Success', PlayerListShortSerializer),
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @swagger_auto_schema(
+        tags=['games'],
+        method='post',
+        operation_summary="Rate players by current player",
+        operation_description="""
+        The current player rates the other who played in the same event
+        as he did.
+
+        **Returns:** empty body response.
+        """,
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['players'],
+            properties={
+                'players': openapi.Schema(
+                    type=openapi.TYPE_ARRAY,
+                    items=openapi.Schema(
+                        type=openapi.TYPE_OBJECT,
+                        required=['player_id', 'level_changed'],
+                        properties={
+                            'player_id': openapi.Schema(
+                                type=openapi.TYPE_INTEGER,
+                                description='Unique player identifier',
+                                example=123
+                            ),
+                            'level_changed': openapi.Schema(
+                                type=openapi.TYPE_STRING,
+                                enum=['UP', 'DOWN', 'CONFIRM'],
+                                description='Direction of level change',
+                                example='UP'
+                            )
+                        }
+                    ),
+                    description='List of players with level changes',
+                    example=[
+                        {'player_id': 1, 'level_changed': 'UP'},
+                        {'player_id': 2, 'level_changed': 'DOWN'}
+                    ]
+                )
+            }
+        ),
+        responses={
+            201: 'Success',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
     @action(
         methods=['get', 'post'],
         detail=True,
@@ -184,4 +449,61 @@ class GameViewSet(
         POST: Submits ratings for the specified players.
         GET: Retrieves a list of players available for rating.
         """
-        return procces_rate_players_request(self, request, *args, **kwargs)
+        return process_rate_players_request(self, request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Create game",
+        operation_description="""
+        Create a new game. The current player becomes the host of the game.
+
+        **Returns:** game object.
+        """,
+        request_body=GameSerializer,  # TODO: Добавить новый сериалайзер для создания игры # noqa
+        responses={
+            201: openapi.Response('Success', GameSerializer),  # TODO: Добавить новый сериалайзер для создания игры # noqa
+            400: 'Bad request',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get game info",
+        operation_description="""
+        Get information about a game.
+
+        **Returns:** game object.
+        """,
+        responses={
+            200: openapi.Response('Success', GameDetailSerializer),
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    def retrieve(self, request, *args, **kwargs):
+        return super().retrieve(request, *args, **kwargs)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Delete game",
+        operation_description="""
+        Delete a game by the current player.
+        The game could be deleted only by its host.
+
+        **Returns:** empty body response.
+        """,
+        responses={
+            204: 'No content',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)

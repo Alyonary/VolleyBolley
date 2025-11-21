@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import timedelta
 
 import pytest
@@ -21,7 +22,7 @@ def country_thailand():
 @pytest.fixture
 def city_in_thailand(country_thailand):
     return City.objects.get_or_create(
-        name='Pattaya', country=country_thailand
+        name='Bangkok', country=country_thailand
     )[0]
 
 
@@ -73,6 +74,18 @@ def game_data(
 
 
 @pytest.fixture
+def game_data_past(game_data):
+    start_time = timezone.now() - timedelta(days=2)
+    end_time = start_time + timedelta(hours=3)
+    new_game_data = deepcopy(game_data)
+    new_game_data.update(
+        {'start_time': start_time,
+         'end_time': end_time}
+    )
+    return new_game_data
+
+
+@pytest.fixture
 def game_thailand(game_data):
     working_data = game_data.copy()
     working_data.pop('players')
@@ -92,6 +105,7 @@ def game_thailand_with_players(game_data):
     game.player_levels.set(levels)
     return game
 
+
 @pytest.fixture
 def archived_game_thailand(game_thailand_with_players):
     game = game_thailand_with_players
@@ -99,6 +113,18 @@ def archived_game_thailand(game_thailand_with_players):
     game.is_active = False
     game.save()
     return game
+
+
+@pytest.fixture
+def game_thailand_with_players_past(game_data_past):
+    working_data = game_data_past.copy()
+    players = working_data.pop('players')
+    levels = working_data.pop('player_levels')
+    game = Game.objects.create(**working_data)
+    game.players.set(players)
+    game.player_levels.set(levels)
+    return game
+
 
 @pytest.fixture
 def game_for_args(game_thailand):

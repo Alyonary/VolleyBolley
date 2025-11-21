@@ -7,6 +7,7 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import serializers
 
+from apps.courts.serializers import LocationSerializer
 from apps.event.models import Game, Tourney
 from apps.locations.models import City, Country
 from apps.players.constants import Genders, Grades, PlayerIntEnums
@@ -165,7 +166,7 @@ class PlayerBaseSerializer(serializers.ModelSerializer):
 class AvatarSerializer(PlayerBaseSerializer):
     """Serialize avatar data for avatar managing."""
 
-    avatar = Base64ImageField(required=False, allow_null=True)
+    avatar = Base64ImageField(required=True, allow_null=True)
 
     class Meta:
         model = Player
@@ -174,8 +175,9 @@ class AvatarSerializer(PlayerBaseSerializer):
 
 class PlayerAuthSerializer(PlayerBaseSerializer):
     """Serialize data of player after authentication."""
-
-    player_id = serializers.PrimaryKeyRelatedField(source='id', read_only=True)
+    player_id = serializers.PrimaryKeyRelatedField(
+        source='id', read_only=True, help_text='Integer type'
+    )
 
     class Meta:
         model = Player
@@ -208,6 +210,16 @@ class PlayerAuthSerializer(PlayerBaseSerializer):
 class PlayerRegisterSerializer(PlayerBaseSerializer):
     """Serialize data for player registration."""
 
+    first_name = serializers.CharField(
+        source='user.first_name',
+        max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
+        required=True
+    )
+    last_name = serializers.CharField(
+        source='user.last_name',
+        max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
+        required=True
+    )
     country = serializers.PrimaryKeyRelatedField(
         required=True, queryset=Country.objects.all()
     )
@@ -220,7 +232,9 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
         required=True,
         write_only=True,
     )
-    gender = serializers.ChoiceField(choices=Genders.choices, required=False)
+    gender = serializers.ChoiceField(
+        choices=Genders.choices, required=True
+        )
 
     class Meta(PlayerBaseSerializer.Meta):
         fields = (
@@ -253,29 +267,33 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
 class PlayerListSerializer(PlayerBaseSerializer):
     """Serialize player list data."""
 
-    player_id = serializers.PrimaryKeyRelatedField(source='id', read_only=True)
-    is_favorite = serializers.SerializerMethodField(read_only=True)
+    player_id = serializers.PrimaryKeyRelatedField(
+        source='id', read_only=True, help_text='`Integer`'
+    )
+    is_favorite = serializers.SerializerMethodField(
+        read_only=True
+    )
 
     class Meta:
         model = Player
-        fields = (
+        fields = [
             'player_id',
             'first_name',
             'last_name',
             'avatar',
             'level',
-            'is_favorite',
-        )
-        read_only_fields = (
+            'is_favorite'
+        ]
+        read_only_fields = [
             'player_id',
             'first_name',
             'last_name',
             'avatar',
             'level',
-            'is_favorite',
-        )
+            'is_favorite'
+        ]
 
-    def get_is_favorite(self, obj):
+    def get_is_favorite(self, obj) -> bool:
         """Retrieve if player is in favorite list."""
         return Favorite.objects.filter(
             player=self.context.get('player'),
@@ -438,7 +456,9 @@ class PlayerRateSerializer(serializers.Serializer):
     """
 
     players = serializers.ListField(
-        child=serializers.DictField(), allow_empty=False
+        child=serializers.DictField(),
+        allow_empty=False,
+        help_text="list of entities with fields 'player_id', 'level_changed'"
     )
 
     def validate_players(self, players_data):
@@ -523,3 +543,42 @@ class PlayerShortSerializer(serializers.ModelSerializer):
             'avatar',
             'level',
         )
+
+
+class PlayerListShortSerializer(serializers.Serializer):
+    players = serializers.ListField(
+        child=PlayerShortSerializer(), read_only=True
+    )
+
+
+class LatestActivitySerializer(serializers.Serializer):
+    event_timestamp = serializers.DateTimeField()
+    court_location = LocationSerializer(read_only=True)
+
+
+class PlayerDetailSerializer(PlayerListSerializer):
+    latest_activity = serializers.SerializerMethodField(read_only=True)
+
+    class Meta(PlayerListSerializer.Meta):
+        fields = PlayerListSerializer.Meta.fields + ['latest_activity']
+        read_only_fields = (
+            PlayerListSerializer.Meta.read_only_fields + ['latest_activity']
+        )
+
+    def get_latest_activity(self, obj):
+        activities = []
+
+        for game in getattr(obj, 'recent_games', []):
+            activities.append({
+                'event_timestamp': game.start_time,
+                'court_location': game.court.location
+            })
+
+        activities.sort(key=lambda x: x['event_timestamp'], reverse=True)
+        return LatestActivitySerializer(
+            activities[:PlayerIntEnums.RECENT_ACTIVITIES_LENGTH], many=True
+        ).data
+
+
+class PlayerKeyDetailSerializer(serializers.Serializer):
+    player = PlayerDetailSerializer(read_only=True)

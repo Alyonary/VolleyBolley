@@ -5,13 +5,16 @@ from apps.courts.models import Court, CourtLocation
 
 
 class LocationSerializer(serializers.ModelSerializer):
-    """Location serializer for all fileds exclude id."""
+    """Location serializer for all fields exclude id."""
 
     location_name = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        fields = ('latitude', 'longitude', 'court_name', 'location_name')
         model = CourtLocation
+        fields = ('latitude', 'longitude', 'court_name', 'location_name')
+        read_only_fields = (
+            'latitude', 'longitude', 'court_name', 'location_name'
+        )
 
     def get_location_name(self, obj):
         return obj.location_name
@@ -22,7 +25,7 @@ class CourtSerializer(serializers.ModelSerializer):
 
     court_id = serializers.IntegerField(source='pk')
 
-    tag_list = serializers.StringRelatedField(many=True)
+    tags = serializers.StringRelatedField(source='tag_list', many=True)
 
     contacts_list = ContactSerializer(many=True, source='contacts')
     photo_url = serializers.ImageField(use_url=True, required=False)
@@ -37,8 +40,8 @@ class CourtSerializer(serializers.ModelSerializer):
             'description',
             'contacts_list',
             'photo_url',
-            'tag_list',
-            'location',
+            'tags',
+            'location'
         )
         read_only_fields = (
             'court_id',
@@ -46,6 +49,6 @@ class CourtSerializer(serializers.ModelSerializer):
             'description',
             'contacts_list',
             'photo_url',
-            'tag_list',
-            'location',
+            'tags',
+            'location'
         )

@@ -35,14 +35,14 @@ class GameQuerySet(m.query.QuerySet):
             .filter(game_invites__invited=player)
         )
 
-    def upcomming_games(self, player):
+    def upcoming_games(self, player):
         return self.player_related_games(player).future_games()
 
     def my_upcoming_games(self, player):
-        return self.upcomming_games(player).filter(host=player)
+        return self.upcoming_games(player).filter(host=player)
 
     def nearest_game(self, player):
-        return self.upcomming_games(player).first()
+        return self.upcoming_games(player).first()
 
     def archive_games(self, player):
         current_time = now()
@@ -50,6 +50,9 @@ class GameQuerySet(m.query.QuerySet):
             player).filter(
             end_time__lt=current_time).order_by(
                 '-end_time')
+
+    def recent_games(self, player, limit):
+        return self.archive_games(player).order_by('-start_time')[:limit]
 
 
 class GameManager(m.Manager):
@@ -76,9 +79,9 @@ class GameManager(m.Manager):
         """Returns games in which the user was invited."""
         return self.get_queryset().invited_games(player)
 
-    def upcomming_games(self, player):
+    def upcoming_games(self, player):
         """Returns upcoming games in which the user is a host or player."""
-        return self.get_queryset().upcomming_games(player)
+        return self.get_queryset().upcoming_games(player)
 
     def my_upcoming_games(self, player):
         """Returns upcoming games in which the user is a host."""
@@ -91,6 +94,9 @@ class GameManager(m.Manager):
     def nearest_game(self, player):
         """Returns nearest upcoming game where user is a host or player."""
         return self.get_queryset().nearest_game(player)
+
+    def recent_games(self, player, limit):
+        return self.get_queryset().recent_games(player, limit)
 
 
 class GameInvitation(m.Model):
