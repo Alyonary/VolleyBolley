@@ -5,9 +5,9 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.serializers import CurrencySerializer
 from apps.core.models import FAQ, CurrencyType
 from apps.core.permissions import IsRegisteredPlayer
+from apps.core.serializers import CurrencySerializer
 
 
 class FAQView(APIView):

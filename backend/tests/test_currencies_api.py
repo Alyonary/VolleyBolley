@@ -1,7 +1,6 @@
 import pytest
-from rest_framework.test import APIClient
 from rest_framework.reverse import reverse
-from apps.core.models import CurrencyType
+from rest_framework.test import APIClient
 
 
 @pytest.mark.django_db
@@ -42,22 +41,22 @@ class TestCurrenciesView:
 
         for currency in response.data['currencies']:
             assert isinstance(currency, dict)
-            for key, value_type in self.data_structure['currencies'][0].items():
+            for key, v in self.data_structure['currencies'][0].items():
                 assert key in currency
-                if isinstance(value_type, dict):
+                if isinstance(v, dict):
                     assert isinstance(currency[key], dict)
-                    for sub_key, sub_value_type in value_type.items():
+                    for sub_key, sub_value_type in v.items():
                         assert sub_key in currency[key]
                         assert isinstance(
                             currency[key][sub_key], sub_value_type
                         )
                 else:
-                    assert isinstance(currency[key], value_type)
+                    assert isinstance(currency[key], v)
 
     def test_post_not_allowed(self):
         """Test that POST method is not allowed."""
         response = self.client.post(self.url, data={})
-        assert response.status_code == 405 
+        assert response.status_code == 405
 
     def test_put_not_allowed(self):
         """Test that PUT method is not allowed."""

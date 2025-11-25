@@ -32,7 +32,12 @@ class CurrencySerializer(serializers.ModelSerializer):
     class Meta:
         model = CurrencyType
         fields = ('currency_id', 'currency_type', 'currency_name', 'country')
-        read_only_fields = ['currency_id', 'currency_type', 'currency_name', 'country']
+        read_only_fields = [
+            'currency_id',
+            'currency_type',
+            'currency_name',
+            'country'
+        ]
 
     def get_country(self, obj):
         return {
