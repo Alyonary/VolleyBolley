@@ -19,7 +19,6 @@ pytest_plugins = [
     'tests.fixtures.users',
 ]
 
-
 @pytest.fixture
 def api_client():
     return APIClient()

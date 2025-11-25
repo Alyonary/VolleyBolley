@@ -77,18 +77,7 @@ class CurrenciesView(APIView):
         responses={
             200: openapi.Response(
                 'Success',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'currencies': openapi.Schema(
-                            type=openapi.TYPE_ARRAY,
-                            items=openapi.Items(
-                                type=openapi.TYPE_OBJECT
-                            ),
-                            description='List of currency types'
-                        )
-                    }
-                )
+                CurrencySerializer(many=True)
             ),
         },
     )
