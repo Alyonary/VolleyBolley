@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+import sys
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
@@ -452,4 +453,15 @@ SWAGGER_SETTINGS = {
 
     Use refresh_token through the appropriate endpoint to refresh your token.
     '''
+}
+
+TESTING = "test" in sys.argv or "PYTEST_VERSION" in os.environ
+
+if DEBUG and not TESTING:
+    INSTALLED_APPS += ['debug_toolbar',]
+    MIDDLEWARE = ['debug_toolbar.middleware.DebugToolbarMiddleware',] + MIDDLEWARE
+    INTERNAL_IPS = ['0.0.0.0', '127.0.0.1',]
+
+    DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': lambda request: DEBUG,
 }
