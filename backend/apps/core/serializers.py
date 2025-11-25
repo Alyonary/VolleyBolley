@@ -36,11 +36,8 @@ class CurrencySerializer(serializers.ModelSerializer):
             'currency_id',
             'currency_type',
             'currency_name',
-            'country'
+            'country',
         ]
 
     def get_country(self, obj):
-        return {
-            "country_id": obj.country.id if obj.country else None
-        }
-
+        return {'country_id': obj.country.id if obj.country else None}

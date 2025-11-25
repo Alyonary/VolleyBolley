@@ -12,7 +12,7 @@ User = get_user_model()
 @pytest.fixture
 def setup_test_data():
     """Creates test data for filters."""
-    thailand, _= Country.objects.get_or_create(name='Thailand')
+    thailand, _ = Country.objects.get_or_create(name='Thailand')
     cyprus, _ = Country.objects.get_or_create(name='Cyprus')
 
     bangkok = City.objects.create(country=thailand, name='Bangkok')

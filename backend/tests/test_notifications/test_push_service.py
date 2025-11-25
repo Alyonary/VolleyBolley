@@ -91,6 +91,7 @@ class TestPushServiceInitialization:
         assert service.enable is False
         assert service._initialized is True
 
+
 @pytest.mark.django_db
 class TestPushServiceStatusMethods:
     """Test PushService status and checking methods."""

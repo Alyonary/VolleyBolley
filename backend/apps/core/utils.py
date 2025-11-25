@@ -17,17 +17,15 @@ def load_faq_from_file(file_path) -> bool:
     """
 
     if not os.path.exists(file_path):
-        raise FileNotFoundError(f"FAQ file not found at {file_path}")
+        raise FileNotFoundError(f'FAQ file not found at {file_path}')
 
-    with open(file_path, "r", encoding="utf-8") as faq_file:
+    with open(file_path, 'r', encoding='utf-8') as faq_file:
         content = faq_file.read()
 
     with transaction.atomic():
         if not FAQ.objects.filter(name=DEFAULT_FAQ).exists():
             faq = FAQ.objects.create(
-                content=content,
-                is_active=True,
-                name=DEFAULT_FAQ
+                content=content, is_active=True, name=DEFAULT_FAQ
             )
             print(faq.content)
             logger.info('Created default FAQ.')
