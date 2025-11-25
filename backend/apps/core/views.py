@@ -1,9 +1,12 @@
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
+from rest_framework import status
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.models import FAQ
+from apps.core.serializers import CurrencySerializer
+from apps.core.models import FAQ, CurrencyType
 from apps.core.permissions import IsRegisteredPlayer
 
 
@@ -52,4 +55,46 @@ class FAQView(APIView):
         faq = FAQ.get_active()
         if faq:
             return Response({'faq': faq.content})
-        return Response({'faq': 'No active FAQ available.'}, status=404)
+        return Response(
+            {'faq': 'No active FAQ available.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+class CurrenciesView(APIView):
+    """
+    View to retrieve all available currency types.
+    """
+
+    permission_classes = [AllowAny]
+
+    @swagger_auto_schema(
+        tags=['currencies'],
+        operation_summary="Get all currency types",
+        operation_description="""
+        **Returns:** List of all available currency types.
+        """,
+        responses={
+            200: openapi.Response(
+                'Success',
+                schema=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        'currencies': openapi.Schema(
+                            type=openapi.TYPE_ARRAY,
+                            items=openapi.Items(
+                                type=openapi.TYPE_OBJECT
+                            ),
+                            description='List of currency types'
+                        )
+                    }
+                )
+            ),
+        },
+    )
+    def get(self, request, *args, **kwargs):
+        """Retrieve all currency types."""
+
+        currencies = CurrencyType.objects.all()
+        serializer = CurrencySerializer(instance=currencies, many=True)
+        return Response({'currencies': serializer.data})
