@@ -1,4 +1,3 @@
-from debug_toolbar.toolbar import debug_toolbar_urls
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -29,4 +28,8 @@ if settings.DEBUG:
     urlpatterns += static(
         settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
     )
-    urlpatterns.extend(debug_toolbar_urls())
+    if not settings.TESTING:
+        # импортируем debug toolbar только если не в режиме тестирования
+        # иначе будет ошибка при тестированиии
+        from debug_toolbar.toolbar import debug_toolbar_urls
+        urlpatterns.extend(debug_toolbar_urls())

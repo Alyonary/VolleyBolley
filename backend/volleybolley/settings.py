@@ -19,7 +19,7 @@ else:
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-
+TESTING = "pytest" in sys.modules or "test" in sys.argv
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 if not ALLOWED_HOSTS:
@@ -455,13 +455,13 @@ SWAGGER_SETTINGS = {
     '''
 }
 
-TESTING = "test" in sys.argv or "PYTEST_VERSION" in os.environ
+TESTING = "pytest" in sys.modules or "test" in sys.argv
+DEBUG_TOOLBAR_ENABLED = DEBUG and not TESTING
 
-if DEBUG and not TESTING:
-    INSTALLED_APPS += ['debug_toolbar',]
-    MIDDLEWARE = ['debug_toolbar.middleware.DebugToolbarMiddleware',] + MIDDLEWARE
-    INTERNAL_IPS = ['0.0.0.0', '127.0.0.1',]
-
+if DEBUG_TOOLBAR_ENABLED:
+    INSTALLED_APPS += ['debug_toolbar']
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+    INTERNAL_IPS = ['127.0.0.1']
     DEBUG_TOOLBAR_CONFIG = {
-    'SHOW_TOOLBAR_CALLBACK': lambda request: DEBUG,
+    'SHOW_TOOLBAR_CALLBACK': lambda request: True,
 }
