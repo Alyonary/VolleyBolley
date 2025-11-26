@@ -13,7 +13,10 @@ class LocationSerializer(serializers.ModelSerializer):
         model = CourtLocation
         fields = ('latitude', 'longitude', 'court_name', 'location_name')
         read_only_fields = (
-            'latitude', 'longitude', 'court_name', 'location_name'
+            'latitude',
+            'longitude',
+            'court_name',
+            'location_name',
         )
 
     def get_location_name(self, obj):
@@ -41,7 +44,7 @@ class CourtSerializer(serializers.ModelSerializer):
             'contacts_list',
             'photo_url',
             'tags',
-            'location'
+            'location',
         )
         read_only_fields = (
             'court_id',
@@ -50,5 +53,5 @@ class CourtSerializer(serializers.ModelSerializer):
             'contacts_list',
             'photo_url',
             'tags',
-            'location'
+            'location',
         )

@@ -16,11 +16,10 @@ class TestTokens:
         assert isinstance(response.data.get('access_token'), str)
 
     def test_jwt_token_verify(self, api_client, refresh_token):
-
         url = reverse('api:auth:token-verify')
-        access_token = self._refresh_token(
-            api_client, refresh_token
-        ).data.get('access_token')
+        access_token = self._refresh_token(api_client, refresh_token).data.get(
+            'access_token'
+        )
         response = api_client.post(url, {'access_token': access_token})
 
         assert response.status_code == status.HTTP_200_OK
