@@ -321,7 +321,7 @@ class TestGameSerializers:
             data={'players': [player_thailand_female_pro.id,]}
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data.get('invited')
+        assert response.data[0].get('invited')
 
     def test_game_short_serializer(
             self,

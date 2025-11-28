@@ -223,6 +223,12 @@ def player_thailand_female_pro(country_thailand):
 
 
 @pytest.fixture
+def api_client_thailand_pro(player_thailand_female_pro, client):
+    client.force_authenticate(player_thailand_female_pro.user)
+    return client
+
+
+@pytest.fixture
 def three_games_thailand(game_data):
     """Create three games in Thailand with same configuration."""
     games = []

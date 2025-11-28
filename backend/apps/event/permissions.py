@@ -19,10 +19,11 @@ class IsPlayerOrReadOnly(IsRegisteredPlayer):
 
     def has_object_permission(self, request, view, obj):
 
-        if request.method in SAFE_METHODS:
+        if (request.method in SAFE_METHODS
+                or request.user.player == obj.host):
             return True
-        elif isinstance(obj, Game):
+        if isinstance(obj, Game):
             return request.user.player in obj.players.all()
-        elif isinstance(obj, Tourney):
+        if isinstance(obj, Tourney):
             return request.user.player in obj.players
         return False

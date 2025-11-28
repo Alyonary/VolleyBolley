@@ -3,11 +3,6 @@ from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.routers import DefaultRouter
-from rest_framework_simplejwt.views import (
-    TokenObtainPairView,
-    TokenRefreshView,
-    TokenVerifyView,
-)
 
 from apps.api.views import (
     FacebookLogin,
@@ -47,8 +42,6 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path('', include(api_v1.urls)),
-    path('auth/token/', TokenObtainPairView.as_view(
-                            ), name='token_obtain_pair'),
     path('social-auth/', include('social_django.urls', namespace='social')),
     path('countries/', CountryListView.as_view(), name='countries'),
     path('auth/logout/', LogoutView.as_view(), name='logout'),
@@ -63,10 +56,6 @@ urlpatterns = [
         FacebookLogin.as_view(),
         name='facebook-login'
     ),
-    path(
-        'auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'
-    ),
-    path('auth/token/verify/', TokenVerifyView.as_view(), name='token-verify'),
     # Swagger UI (interactive API docs)
     re_path(
         r'^swagger(?P<format>\.json|\.yaml)$',

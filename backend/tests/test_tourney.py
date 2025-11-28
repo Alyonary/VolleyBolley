@@ -8,7 +8,7 @@ from django.utils.timezone import now
 from pytest_lazy_fixtures import lf
 from rest_framework import status
 
-from apps.event.models import Tourney, GameInvitation
+from apps.event.models import Tourney, GameInvitation, TourneyTeam
 
 
 @pytest.mark.django_db
@@ -33,12 +33,18 @@ class TestGameModel:
         assert list(tourney.player_levels.all()) == data['player_levels']
         assert tourney.is_individual == data['is_individual']
         assert tourney.max_players == data['max_players']
-        assert tourney.maximum_teams == data['maximum_teams']
+        if tourney.is_individual:
+            assert tourney.maximum_teams == 1
+        else:
+            assert tourney.maximum_teams == data['maximum_teams']
         assert tourney.price_per_person == data['price_per_person']
         assert tourney.payment_type == data['payment_type']
         assert tourney.host == player_thailand
         assert tourney.currency_type == data['currency_type']
         assert tourney.payment_account == data['payment_account']
+        assert TourneyTeam.objects.filter(tourney=tourney).exists()
+        assert tourney.teams.count() == tourney.maximum_teams
+
 
 
 @pytest.mark.django_db
@@ -108,6 +114,7 @@ class TestTourneyAPI:
         assert len(response.data['teams']) == result_max_teams
         assert created_tourney.host == player_thailand
         assert player_thailand in created_tourney.players
+        assert created_tourney.teams.count() == result_max_teams
 
     @pytest.mark.parametrize(
             ('tourney'),
@@ -136,25 +143,45 @@ class TestTourneyAPI:
             ).first()
             assert invite is not None
 
-#     def test_for_game_joining(
-#             self, game_thailand,
-#             player_cyprus,
-#             api_client_cyprus
-#     ):
-#         GameInvitation.objects.create(
-#             host=game_thailand.host,
-#             invited=player_cyprus,
-#             content_object=game_thailand
-#         )
-#         url = reverse(
-#             'api:games-joining-game', args=(game_thailand.id,))
-#         assert game_thailand.players.count() == 0
-#         response = api_client_cyprus.post(url)
-#         assert player_cyprus in game_thailand.players.all()
-#         assert response.status_code == status.HTTP_200_OK
-#         data = response.json()
-#         assert data['is_joined'] is True
-#         assert GameInvitation.objects.first() is None
+
+@pytest.mark.django_db
+class TestTourney:
+
+    def test_first(self, create_custom_tourney):
+        new_tourney = create_custom_tourney(message='new tourney')
+        assert isinstance(new_tourney, Tourney)
+        assert Tourney.objects.count() == 1
+        anotehr_tourney = create_custom_tourney(message='another')
+        assert isinstance(anotehr_tourney, Tourney)
+        assert anotehr_tourney.message == 'another'
+        assert Tourney.objects.count() == 2
+
+    @pytest.mark.parametrize(
+            ('tourney'),
+            [lf('tourney_thai_ind'),
+             lf('tourney_thai_team')])
+    def test_for_tourney_joining(
+            self,
+            tourney,
+            api_client_thailand_pro,
+            player_thailand_female_pro
+    ):
+        inv = GameInvitation.objects.create(
+            host=tourney.host,
+            invited=player_thailand_female_pro,
+            content_object=tourney
+        )
+        url = reverse(
+            'api:tournaments-joining-tournament', args=(tourney.id,))
+        assert len(tourney.players) == 0
+        response = api_client_thailand_pro.post(url)
+
+        assert player_thailand_female_pro in tourney.players
+        assert response.status_code == status.HTTP_200_OK
+        data = response.json()
+        assert data['is_joined'] is True
+        assert GameInvitation.objects.first() is None
+        assert inv is None
 
 #     def test_for_game_invitation_declining(
 #             self,

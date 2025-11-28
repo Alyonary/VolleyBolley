@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 from django.utils import timezone
-
+from django.db.models.signals import post_save
 from apps.event.models import Tourney
 
 
@@ -80,3 +80,19 @@ def tourney_thai_team(tourney_data_team):
 @pytest.fixture
 def tourney_for_args(tourney_thai_ind):
     return (tourney_thai_ind.id,)
+
+
+@pytest.fixture
+def create_custom_tourney(tourney_data_individual):
+    # working_data = tourney_data_individual.copy()
+
+    def _create(**kwargs):
+        for key, value in kwargs.items():
+            if tourney_data_individual.get(key, None):
+                tourney_data_individual[key] = value
+            levels = tourney_data_individual.pop('player_levels')
+            tourney = Tourney.objects.create(**tourney_data_individual)
+            tourney.player_levels.set(levels)
+            tourney_data_individual['player_levels'] = levels
+            return tourney
+    return _create

@@ -354,11 +354,8 @@ class TourneySerializer(BaseTourneySerializer):
             ),
             **validated_data)
 
-        max_teams = int(validated_data['maximum_teams'])
-        for _x in range(max_teams):
-            team = TourneyTeam.objects.create(tourney=tourney)
-            if _x == 0:
-                team.players.add(host)
+        team = tourney.teams.first()
+        team.players.add(host)
 
         tourney.player_levels.set(levels)
         tourney_ct = ContentType.objects.get_for_model(Tourney)

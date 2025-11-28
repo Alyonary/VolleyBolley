@@ -10,11 +10,11 @@ class IsNotRegisteredPlayer(IsAuthenticated):
             and not request.user.player.is_registered
         )
 
-    def has_object_permission(self, request, view, obj):
-        return bool(
-            request.user == obj.user
-            or request.method in SAFE_METHODS
-        )
+    # def has_object_permission(self, request, view, obj):
+    #     return bool(
+    #         request.user == obj.user
+    #         or request.method in SAFE_METHODS
+    #     )
 
 
 class IsRegisteredPlayer(IsNotRegisteredPlayer):
