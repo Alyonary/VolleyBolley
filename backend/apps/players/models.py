@@ -3,6 +3,8 @@ from datetime import date, timedelta
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
@@ -23,6 +25,27 @@ User = get_user_model()
 def validate_birthday(value):
     if value > timezone.now().date():
         raise ValidationError(_('Date of birth cannot be in the future.'))
+
+
+class PlayerQuerySet(models.QuerySet):
+    """Custom QuerySet for Player model."""
+
+    def registrations_by_month(self):
+        """Returns the number of player registrations grouped by month."""
+        return (
+            self.annotate(month=TruncMonth('user__date_joined'))
+            .values('month')
+            .annotate(count=Count('id'))
+            .order_by('month')
+        )
+
+
+class PlayerManager(models.Manager):
+    def get_queryset(self):
+        return PlayerQuerySet(self.model, using=self._db)
+
+    def registrations_by_month(self):
+        return self.get_queryset().registrations_by_month()
 
 
 class Player(models.Model):
@@ -77,6 +100,7 @@ class Player(models.Model):
         default=False,
         null=False,
     )
+    objects = PlayerManager()
 
     class Meta:
         verbose_name = _('Player')

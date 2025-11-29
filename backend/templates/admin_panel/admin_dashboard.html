@@ -1,0 +1,48 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'admin_panel/css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<h1 style="margin-bottom: 24px;">Dashboard</h1>
+<div class="dashboard-cards">
+    <div class="dashboard-card">
+        <div class="dash-title">Total Players</div>
+        <div class="dash-value">{{ total_players }}</div>
+    </div>
+    <div class="dashboard-card">
+        <div class="dash-title">Total Games</div>
+        <div class="dash-value">{{ total_games }}</div>
+    </div>
+    <div class="dashboard-card">
+        <div class="dash-title">Total Tourneys</div>
+        <div class="dash-value">{{ total_tourneys }}</div>
+    </div>
+    <div class="dashboard-card">
+        <div class="dash-title">Active Games</div>
+        <div class="dash-value">{{ active_games }}</div>
+    </div>
+    <div class="dashboard-card">
+        <div class="dash-title">Active Tourneys</div>
+        <div class="dash-value">{{ active_tourneys }}</div>
+    </div>
+</div>
+
+<h2>Games per Month</h2>
+<canvas id="gamesChart" width="600" height="200"></canvas>
+
+<h2>Players Registered per Month</h2>
+<canvas id="playersChart" width="600" height="200"></canvas>
+
+<script>
+window.gamesChartLabels = {{ games_chart_labels|safe }};
+window.gamesChartData = {{ games_chart_data|safe }};
+window.playersChartLabels = {{ players_chart_labels|safe }};
+window.playersChartData = {{ players_chart_data|safe }};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'admin_panel/js/dashboard_charts.js' %}"></script>
+{% endblock %}

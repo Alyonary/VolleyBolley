@@ -17,7 +17,7 @@ jazzmin_settings = {
         },
         {
             'name': _('📊 Dashboard'),
-            'url': 'admin:index',
+            'url': '/admin/dashboard/',
             'icon': 'fas fa-tachometer-alt',
             'permissions': ['auth.view_user'],
         },

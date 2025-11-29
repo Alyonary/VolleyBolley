@@ -1,6 +1,6 @@
 from django.urls import path
 
-from apps.admin_panel.views import upload_file
+from apps.admin_panel.views import dashboard_view, upload_file
 
 app_name = 'admin_panel'
 
@@ -10,4 +10,5 @@ urlpatterns = [
         upload_file,
         name='upload_file',
     ),
+    path('dashboard/', dashboard_view, name='admin_dashboard'),
 ]
