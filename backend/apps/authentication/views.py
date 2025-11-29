@@ -207,7 +207,7 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
                 ),
             },
             anyOf=[{'required': ['access_token']}, {'required': ['id_token']}],
-            description="Either 'id_token' or 'access_token' must be provided.",
+            description="'id_token' or 'access_token' must be provided.",
         ),
         responses={
             200: openapi.Response(

@@ -1,4 +1,5 @@
 import logging
+
 from django.contrib import admin
 from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
@@ -141,7 +142,7 @@ def unregister_social_django_models(models_for_unregister):
         try:
             admin.site.unregister(m)
             logger.info(
-                f'Successfully unregistered model {m.__name__} from admin site.'
+                f'Successfully unregister model {m.__name__} from admin site.'
             )
         except admin.sites.NotRegistered:
             logger.warning(f'Model {m.__name__} not registered in admin site.')

@@ -15,7 +15,7 @@ class FileUploadForm(forms.Form):
         widget=forms.FileInput(
             attrs={
                 'class': 'form-control form-control-lg',
-                'accept': '.json,.csv,.xlsx',
+                'accept': '.json,',
                 'id': 'id_file',
                 'style': 'height: 60px; font-size: 18px;',
             }

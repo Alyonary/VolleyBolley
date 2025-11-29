@@ -42,7 +42,9 @@ class CourtLocation(models.Model):
         ),
     )
     court_name = models.CharField(
-        _('Court name'), max_length=LocationEnums.LOCATION_NAME_LENGTH.value
+        _('Court name'),
+        max_length=LocationEnums.LOCATION_NAME_LENGTH.value,
+        unique=True,
     )
     country = models.ForeignKey(
         Country,
