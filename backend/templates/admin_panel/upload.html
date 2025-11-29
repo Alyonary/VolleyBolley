@@ -1,0 +1,143 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{{ title }} - {{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; {% trans 'Admin Tools' %}
+    &rsaquo; {{ title|default:'File Upload' }}
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'admin_panel/css/upload.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="upload-container">
+    
+    <div class="header-section">
+        <h1>📁 {{ page_header|default:'File Upload' }}</h1>
+        <p>{{ page_description|default:'Upload data files to import information' }}</p>
+    </div>
+    
+    <div class="description-section">
+        <h3>📄 How to Use</h3>
+        <p>
+            On this page you can upload data from JSON files. The following models are available for import:
+            <strong>Countries</strong>, <strong>Cities</strong>, <strong>CourtLocations</strong>, and <strong>Courts</strong>.
+        </p>
+        
+        <h4>📋 File Structure</h4>
+        <p>The JSON file should follow this structure: <code>{"model_name": [{"attribute": "value"}, ...]}</code></p>
+        <p>You can upload data for all models or partially in a single file.</p>
+        
+        <h4>💡 Example</h4>
+        <pre class="example-code">{
+  "countries": [
+    {
+      "name": "Thailand"
+    },
+    {
+      "name": "Cyprus"
+    }
+  ],
+  "cities": [
+    {
+      "name": "Bangkok",
+      "country": "Thailand"
+    },
+    {
+      "name": "Pattaya",
+      "country": "Thailand"
+    },
+    {
+      "name": "Limassol",
+      "country": "Cyprus"
+    }
+  ],
+}</pre>
+    <div class="main-form">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="upload-section">
+                <div class="file-input-wrapper">
+                    <label for="{{ form.file.id_for_label }}" class="file-input-label">
+                        <span class="upload-icon">📤</span>
+                        <div class="upload-text">{% trans 'Choose a file to upload' %}</div>
+                        <div class="upload-hint">{% trans 'Click to browse your files' %}</div>
+                        <div class="upload-formats">{% trans 'JSON, CSV, XLSX (max 10MB)' %}</div>
+                        {{ form.file }}
+                    </label>
+                </div>
+            </div>
+            
+            {% if form.file.errors %}
+                <div class="error-section">
+                    <h4>⚠️ {% trans 'Validation Error' %}</h4>
+                    <ul>
+                        {% for error in form.file.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <div class="form-section">
+                <h3>⚙️ {% trans 'Processing Options' %}</h3>
+                
+                <div class="checkbox-wrapper">
+                    <label for="{{ form.need_update.id_for_label }}" class="checkbox-container">
+                        <input type="checkbox" 
+                               name="{{ form.need_update.name }}" 
+                               id="{{ form.need_update.id_for_label }}"
+                               class="checkbox-input"
+                               {% if form.need_update.value %}checked{% endif %}>
+                        <div class="checkbox-content">
+                            <span class="checkbox-title">{{ form.need_update.label }}</span>
+                            <p class="checkbox-description">{{ form.need_update.help_text }}</p>
+                        </div>
+                    </label>
+                </div>
+                
+                {% if form.need_update.errors %}
+                    <div class="error-section">
+                        <h4>⚠️ {% trans 'Option Error' %}</h4>
+                        <ul>
+                            {% for error in form.need_update.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button type="submit" class="btn-upload">
+                    📤 {% trans 'Upload & Process File' %}
+                </button>
+                
+                <a href="{% url 'admin:index' %}" class="btn-secondary">
+                    ← {% trans 'Back to Admin' %}
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {% if upload_messages %}
+        <div class="upload-messages">
+            <ul>
+                {% for msg in upload_messages %}
+                    <li>{{ msg }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

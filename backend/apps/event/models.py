@@ -20,9 +20,7 @@ class GameQuerySet(m.query.QuerySet):
         return self
 
     def player_related_games(self, player):
-        return self.filter(
-            m.Q(host=player) | m.Q(players=player)
-        ).distinct()
+        return self.filter(m.Q(host=player) | m.Q(players=player)).distinct()
 
     def future_games(self):
         current_time = now()
@@ -46,10 +44,11 @@ class GameQuerySet(m.query.QuerySet):
 
     def archive_games(self, player):
         current_time = now()
-        return self.player_related_games(
-            player).filter(
-            end_time__lt=current_time).order_by(
-                '-end_time')
+        return (
+            self.player_related_games(player)
+            .filter(end_time__lt=current_time)
+            .order_by('-end_time')
+        )
 
     def recent_games(self, player, limit):
         return self.archive_games(player).order_by('-start_time')[:limit]

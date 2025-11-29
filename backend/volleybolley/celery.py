@@ -1,7 +1,11 @@
+import logging
 import os
 
 from celery import Celery
 from celery.schedules import crontab
+
+
+logger = logging.getLogger('django.celery')
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'volleybolley.settings')
 

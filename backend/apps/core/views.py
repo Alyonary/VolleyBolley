@@ -16,7 +16,7 @@ class FAQView(APIView):
 
     @swagger_auto_schema(
         tags=['faq'],
-        operation_summary="Get FAQ text",
+        operation_summary='Get FAQ text',
         operation_description="""
         **Returns:** FAQ text in markdown format.
         """,
@@ -28,11 +28,11 @@ class FAQView(APIView):
                     properties={
                         'faq': openapi.Schema(
                             type=openapi.TYPE_STRING,
-                            description='FAQ text in markdown format'
-                            )
-                    }
-                )
+                            description='FAQ text in markdown format',
+                        )
+                    },
                 ),
+            ),
             404: openapi.Response(
                 'Not found',
                 schema=openapi.Schema(
@@ -40,10 +40,10 @@ class FAQView(APIView):
                     properties={
                         'faq': openapi.Schema(
                             type=openapi.TYPE_STRING,
-                            default='No active FAQ available.'
-                            )
-                    }
-                )
+                            default='No active FAQ available.',
+                        )
+                    },
+                ),
             ),
         },
         security=[{'Bearer': []}, {'JWT': []}],

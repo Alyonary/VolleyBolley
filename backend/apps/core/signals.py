@@ -5,10 +5,10 @@ from apps.core.models import FAQ
 from apps.core.utils import initialize_faq
 
 
-@receiver(post_migrate)
-def load_faq(sender, **kwargs):
-    """Initialize FAQ data after migrations are applied."""
-    initialize_faq()
+# @receiver(post_migrate)
+# def load_faq(sender, **kwargs):
+#     """Initialize FAQ data after migrations are applied."""
+#     initialize_faq()
 
 
 @receiver(post_save, sender=FAQ)

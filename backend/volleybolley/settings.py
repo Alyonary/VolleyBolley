@@ -28,6 +28,7 @@ if not ALLOWED_HOSTS:
     )
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -47,6 +48,7 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
     'apps.locations.apps.LocationsConfig',
     'apps.notifications.apps.NotificationsConfig',
+    'apps.admin_panel.apps.AdminPanelConfig',
     'phonenumber_field',
     'django_filters',
     'drf_yasg',
@@ -453,3 +455,7 @@ SWAGGER_SETTINGS = {
     Use refresh_token through the appropriate endpoint to refresh your token.
     '''
 }
+from apps.admin_panel.settings import jazzmin_settings, jazzmin_ui_tweaks
+
+JAZZMIN_SETTINGS = jazzmin_settings
+JAZZMIN_UI_TWEAKS = jazzmin_ui_tweaks

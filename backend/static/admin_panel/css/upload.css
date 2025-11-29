@@ -1,0 +1,249 @@
+.upload-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+.header-section {
+    background: linear-gradient(135deg, #0073aa, #005a87);
+    color: white;
+    padding: 30px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.header-section h1 {
+    margin: 0 0 10px 0;
+    font-size: 28px;
+    font-weight: 300;
+}
+
+.header-section p {
+    margin: 0;
+    opacity: 0.9;
+    font-size: 16px;
+}
+
+.main-form {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 40px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.upload-section {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.file-input-wrapper {
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    max-width: 3000px;
+}
+
+.file-input-label {
+    display: block;
+    padding: 60px 30px;
+    border: 3px dashed #ddd;
+    border-radius: 12px;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+}
+
+.file-input-label:hover {
+    border-color: #0073aa;
+    background: #f0f8ff;
+    transform: translateY(-2px);
+}
+
+.file-input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    cursor: pointer;
+}
+
+.upload-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    display: block;
+    color: #666;
+}
+
+.upload-text {
+    font-size: 18px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.upload-hint {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.upload-formats {
+    color: #999;
+    font-size: 12px;
+    font-style: italic;
+}
+
+.form-section {
+    margin-bottom: 30px;
+}
+
+.form-section h3 {
+    color: #333;
+    margin-bottom: 15px;
+    font-size: 18px;
+    border-bottom: 2px solid #0073aa;
+    padding-bottom: 8px;
+}
+
+.checkbox-wrapper {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+    transition: all 0.2s ease;
+}
+
+.checkbox-wrapper:hover {
+    background: #e9ecef;
+    border-color: #0073aa;
+}
+
+.checkbox-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    cursor: pointer;
+}
+
+.checkbox-input {
+    margin: 0;
+    transform: scale(1.3);
+    cursor: pointer;
+    accent-color: #0073aa;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.checkbox-content {
+    flex: 1;
+    line-height: 1.4;
+}
+
+.checkbox-title {
+    font-weight: 600;
+    color: #333;
+    font-size: 16px;
+    margin-bottom: 8px;
+    display: block;
+}
+
+.checkbox-description {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.error-section {
+    background: #ffebee;
+    border: 1px solid #f44336;
+    border-radius: 6px;
+    padding: 20px;
+    margin: 20px 0;
+    color: #d32f2f;
+}
+
+.error-section h4 {
+    margin: 0 0 10px 0;
+    color: #d32f2f;
+}
+
+.btn-upload {
+    background: linear-gradient(135deg, #0073aa, #005a87);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-upload:hover {
+    background: linear-gradient(135deg, #005a87, #004066);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background: #f8f9fa;
+    color: #666;
+    border: 1px solid #ddd;
+    padding: 12px 24px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    margin-left: 15px;
+}
+
+.btn-secondary:hover {
+    background: #e9ecef;
+    color: #333;
+    text-decoration: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .upload-container {
+        padding: 10px;
+    }
+    
+    .main-form {
+        padding: 20px;
+    }
+    
+    .file-input-label {
+        padding: 40px 20px;
+    }
+    
+    .checkbox-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .btn-secondary {
+        margin-left: 0;
+        margin-top: 10px;
+        display: block;
+        text-align: center;
+    }
+}
+
+@media (max-width: 768px) {
+    .description-section {
+        padding: 15px;
+    }
+    
+    .example-code {
+        padding: 15px;
+        font-size: 12px;
+    }
+    
+    .tips-section {
+        padding: 15px;
+    }
+}

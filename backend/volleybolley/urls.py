@@ -5,6 +5,7 @@ from django.urls import include, path
 from django.views.generic import TemplateView
 
 urlpatterns = [
+    path('admin/', include('apps.admin_panel.urls', namespace='admin_panel')),
     path('admin/', admin.site.urls),
     path('api/', include('apps.api.urls', namespace='api')),
     path(
