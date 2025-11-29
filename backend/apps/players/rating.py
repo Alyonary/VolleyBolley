@@ -7,6 +7,118 @@ from apps.players.exceptions import InvalidRatingError
 from apps.players.models import Player, PlayerRating, PlayerRatingVote
 
 
+class PlayerRatingManager:
+    """
+    Handles all ORM-related operations for player ratings.
+
+    Responsibilities:
+    - Interacts with the database to fetch, update, and persist player rating
+      data.
+    - Delegates all business logic and rating calculations to the GradeSystem
+      class.
+    - Provides high-level methods for updating player ratings based on votes
+      and downgrading inactive players.
+
+    Methods:
+        update_player_rating(player, vote):
+            Updates a player's rating based on a vote using GradeSystem logic.
+            Returns a string indicating the type of change: 'unchanged',
+            'updated', 'upgraded', or 'downgraded'.
+
+        downgrade_inactive_players(days):
+            Downgrades the level of players who have been inactive for the
+            specified number of days. Only the level_mark is decreased (not
+            the grade). Returns the number of downgraded players.
+    """
+
+    def __new__(cls):
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(PlayerRatingManager, cls).__new__(cls)
+        return cls.instance
+
+    def __init__(self):
+        self.grade_system = GradeSystem
+
+    def update_player_rating(
+        self, player: Player, vote: PlayerRatingVote
+    ) -> str:
+        """
+        Updates a single player's rating based on their votes.
+        Returns the type of change:
+            'unchanged', 'updated', 'upgraded', 'downgraded'
+        """
+        player_rating: PlayerRating = player.rating
+        if vote.value == 0:
+            vote.is_counted = True
+            vote.save()
+            return 'unchanged'
+        rating_value_sum = player_rating.value + vote.value
+        new_grade = player_rating.grade
+        new_level = player_rating.level_mark
+        new_value = rating_value_sum
+        result = 'updated'
+        if rating_value_sum > PlayerIntEnums.MAX_RATING_VALUE:
+            change = self.grade_system.get_obj_by_level_grade(
+                player_rating.grade, player_rating.level_mark
+            ).next
+            if change:
+                new_grade = change.grade
+                new_level = change.level
+                new_value = PlayerIntEnums.MIN_RATING_VALUE
+                result = 'upgraded'
+            else:
+                new_value = PlayerIntEnums.MAX_RATING_VALUE
+                result = 'updated'
+        elif rating_value_sum < PlayerIntEnums.MIN_RATING_VALUE:
+            change = self.grade_system.get_obj_by_level_grade(
+                player_rating.grade, player_rating.level_mark
+            ).prev
+            if change:
+                new_grade = change.grade
+                new_level = change.level
+                new_value = PlayerIntEnums.MAX_RATING_VALUE
+                result = 'downgraded'
+            else:
+                new_value = PlayerIntEnums.MIN_RATING_VALUE
+                result = 'updated'
+        player_rating.grade = new_grade
+        player_rating.level_mark = new_level
+        player_rating.value = new_value
+        player_rating.save()
+        vote.is_counted = True
+        vote.save()
+        return result
+
+    @classmethod
+    def downgrade_inactive_players(
+        cls, days: int = PlayerIntEnums.PLAYER_INACTIVE_DAYS
+    ) -> int:
+        """
+        Downgrade player level by one step inside current grade if no activity
+        for `days`. Grade (Pro, Hard, etc.) does not change, only level_mark
+        decreases. Returns the number of downgraded players.
+        If level_mark is already 1, it stays at 1.
+        A player is considered inactive if they have not participated in any
+        games in the last `60` days.
+        A player's rating value is reset to 6 upon downgrade or upgrade.
+        """
+
+        inactive_ratings = PlayerRating.objects.filter(
+            updated_at__lt=timezone.now() - timedelta(days=days)
+        ).select_related('player')
+        downgraded_count = 0
+        for rating in inactive_ratings:
+            player: Player = rating.player
+            if player.was_active_recently(days=days):
+                continue
+            if rating.level_mark > 1:
+                rating.level_mark = rating.level_mark - 1
+                rating.value = PlayerIntEnums.DEFAULT_RATING
+                rating.save()
+                downgraded_count += 1
+        return downgraded_count
+
+
 class GradeSystem:
     """
     GradeSystem manages player grade levels and rating logic.
@@ -17,9 +129,12 @@ class GradeSystem:
     - Code: string like 'L:1' for Light grade, level 1
     - Rating coefficients: depend on rater and rated grades
     - Level change: UP, DOWN, CONFIRM
+    - next: next higher grade/level
+    - prev: previous lower grade/level
     - Methods for updating player ratings based on votes and inactivity
     - Utility methods for retrieving grade objects by code, grade, or level
     - Handles mass rating updates and inactivity downgrades
+
 
     Example:
         obj = GradeSystem('L:1')
@@ -138,86 +253,6 @@ class GradeSystem:
         raise InvalidRatingError(
             f'Invalid level_change value: {level_change}.'
         )
-
-    @classmethod
-    def update_player_rating(
-        cls, player: Player, vote: PlayerRatingVote
-    ) -> str:
-        """
-        Updates a single player's rating based on their votes.
-        Returns the type of change:
-            'unchanged', 'updated', 'upgraded', 'downgraded'
-        """
-        player_rating: PlayerRating = player.rating
-        if vote.value == 0:
-            vote.is_counted = True
-            vote.save()
-            return 'unchanged'
-        rating_value_sum = player_rating.value + vote.value
-        new_grade = player_rating.grade
-        new_level = player_rating.level_mark
-        new_value = rating_value_sum
-        result = 'updated'
-        if rating_value_sum > PlayerIntEnums.MAX_RATING_VALUE:
-            change: GradeSystem = cls.get_obj_by_level_grade(
-                player_rating.grade, player_rating.level_mark
-            ).next
-            if change:
-                new_grade = change.grade
-                new_level = change.level
-                new_value = PlayerIntEnums.MIN_RATING_VALUE
-                result = 'upgraded'
-            else:
-                new_value = PlayerIntEnums.MAX_RATING_VALUE
-                result = 'updated'
-        elif rating_value_sum < PlayerIntEnums.MIN_RATING_VALUE:
-            change = cls.get_obj_by_level_grade(
-                player_rating.grade, player_rating.level_mark
-            ).prev
-            if change:
-                new_grade = change.grade
-                new_level = change.level
-                new_value = PlayerIntEnums.MAX_RATING_VALUE
-                result = 'downgraded'
-            else:
-                new_value = PlayerIntEnums.MIN_RATING_VALUE
-                result = 'updated'
-        player_rating.grade = new_grade
-        player_rating.level_mark = new_level
-        player_rating.value = new_value
-        player_rating.save()
-        vote.is_counted = True
-        vote.save()
-        return result
-
-    @classmethod
-    def downgrade_inactive_players(
-        cls, days: int = PlayerIntEnums.PLAYER_INACTIVE_DAYS
-    ) -> int:
-        """
-        Downgrade player level by one step inside current grade if no activity
-        for `days`. Grade (Pro, Hard, etc.) does not change, only level_mark
-        decreases. Returns the number of downgraded players.
-        If level_mark is already 1, it stays at 1.
-        A player is considered inactive if they have not participated in any
-        games in the last `60` days.
-        A player's rating value is reset to 6 upon downgrade or upgrade.
-        """
-
-        inactive_ratings = PlayerRating.objects.filter(
-            updated_at__lt=timezone.now() - timedelta(days=days)
-        ).select_related('player')
-        downgraded_count = 0
-        for rating in inactive_ratings:
-            player: Player = rating.player
-            if player.was_active_recently(days=days):
-                continue
-            if rating.level_mark > 1:
-                rating.level_mark = rating.level_mark - 1
-                rating.value = PlayerIntEnums.DEFAULT_RATING
-                rating.save()
-                downgraded_count += 1
-        return downgraded_count
 
 
 GradeSystem.setup()

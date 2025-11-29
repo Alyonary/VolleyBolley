@@ -8,7 +8,7 @@ from django.utils import timezone
 from apps.event.models import Game
 from apps.players.exceptions import InvalidRatingError
 from apps.players.models import Player, PlayerRating, PlayerRatingVote, User
-from apps.players.rating import GradeSystem
+from apps.players.rating import GradeSystem, PlayerRatingManager
 
 
 @pytest.mark.django_db
@@ -316,7 +316,7 @@ class TestGradeSystemDatabaseOperations:
         assert not player.was_active_recently(days=60)
         assert player.rating.updated_at < timezone.now() - timedelta(days=60)
 
-        downgraded_count = GradeSystem.downgrade_inactive_players()
+        downgraded_count = PlayerRatingManager.downgrade_inactive_players()
         player.refresh_from_db()
 
         assert player.rating.level_mark == 2
@@ -337,7 +337,7 @@ class TestGradeSystemDatabaseOperations:
         player.rating.updated_at = old_date
         player.rating.level_mark = 1
         player.rating.save()
-        GradeSystem.downgrade_inactive_players()
+        PlayerRatingManager().downgrade_inactive_players()
         player.refresh_from_db()
         assert player.rating.level_mark == 1
 
@@ -353,7 +353,7 @@ class TestGradeSystemDatabaseOperations:
         initial_level = player_thailand.rating.level_mark
         player_thailand.rating.save()
 
-        GradeSystem.downgrade_inactive_players()
+        PlayerRatingManager().downgrade_inactive_players()
 
         player_thailand.refresh_from_db()
         assert player_thailand.rating.level_mark == initial_level
