@@ -30,7 +30,7 @@ def validate_birthday(value):
 class PlayerQuerySet(models.QuerySet):
     """Custom QuerySet for Player model."""
 
-    def registrations_by_month(self):
+    def get_objs_by_month(self):
         """Returns the number of player registrations grouped by month."""
         return (
             self.annotate(month=TruncMonth('user__date_joined'))
@@ -44,8 +44,8 @@ class PlayerManager(models.Manager):
     def get_queryset(self):
         return PlayerQuerySet(self.model, using=self._db)
 
-    def registrations_by_month(self):
-        return self.get_queryset().registrations_by_month()
+    def get_objs_by_month(self):
+        return self.get_queryset().get_objs_by_month()
 
 
 class Player(models.Model):

@@ -1,4 +1,6 @@
 from django.db import models as m
+from django.db.models import Count
+from django.db.models.functions import TruncMonth
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
@@ -9,6 +11,7 @@ from apps.event.mixins import EventMixin
 
 class GameQuerySet(m.query.QuerySet):
     def player_located_games(self, player):
+        """Basic queryset for games."""
         country = getattr(player, 'country', None)
         city = getattr(player, 'city', None)
         if country is None or city is None:
@@ -20,13 +23,16 @@ class GameQuerySet(m.query.QuerySet):
         return self
 
     def player_related_games(self, player):
+        """Returns games in which the user is a host or player."""
         return self.filter(m.Q(host=player) | m.Q(players=player)).distinct()
 
     def future_games(self):
+        """Returns games with start_time in the future."""
         current_time = now()
         return self.filter(start_time__gt=current_time).order_by('start_time')
 
     def invited_games(self, player):
+        """Returns games in which the user was invited."""
         return (
             self.player_located_games(player)
             .future_games()
@@ -34,15 +40,19 @@ class GameQuerySet(m.query.QuerySet):
         )
 
     def upcoming_games(self, player):
+        """Returns upcoming games in which the user is a host or player."""
         return self.player_related_games(player).future_games()
 
     def my_upcoming_games(self, player):
+        """Returns upcoming games in which the user is a host."""
         return self.upcoming_games(player).filter(host=player)
 
     def nearest_game(self, player):
+        """Returns nearest upcoming game where user is a host or player."""
         return self.upcoming_games(player).first()
 
     def archive_games(self, player):
+        """Returns past games in which the user is a host or player."""
         current_time = now()
         return (
             self.player_related_games(player)
@@ -51,7 +61,17 @@ class GameQuerySet(m.query.QuerySet):
         )
 
     def recent_games(self, player, limit):
+        """Returns recent past games in which the user is a host or player."""
         return self.archive_games(player).order_by('-start_time')[:limit]
+
+    def get_objs_by_month(self):
+        """Returns the number of games grouped by month."""
+        return (
+            self.annotate(month=TruncMonth('created_at'))
+            .values('month')
+            .annotate(count=Count('id'))
+            .order_by('month')
+        )
 
 
 class GameManager(m.Manager):
@@ -96,6 +116,10 @@ class GameManager(m.Manager):
 
     def recent_games(self, player, limit):
         return self.get_queryset().recent_games(player, limit)
+
+    def get_objs_by_month(self):
+        """Returns the number of games grouped by month."""
+        return self.get_queryset().get_objs_by_month()
 
 
 class GameInvitation(m.Model):
