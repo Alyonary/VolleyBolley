@@ -179,3 +179,23 @@ class FAQ(m.Model):
     def get_active(cls):
         """Get the active FAQ instance."""
         return cls.objects.filter(is_active=True).first()
+
+
+class DailyStats(m.Model):
+    """
+    Stores aggregated dashboard statistics for a specific date (per day).
+    Used to quickly serve dashboard data without heavy DB queries.
+    """
+
+    date = m.DateField(unique=True)
+    players_registered = m.IntegerField()
+    games_created = m.IntegerField()
+    tourneys_created = m.IntegerField()
+
+    class Meta:
+        verbose_name = 'Daily Dashboard Stats'
+        verbose_name_plural = 'Daily Dashboard Stats'
+        ordering = ['-date']
+
+    def __str__(self):
+        return f'Dashboard stats for {self.date}'

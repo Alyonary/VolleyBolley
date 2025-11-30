@@ -1,14 +1,19 @@
+import logging
 from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Sum
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 
 from apps.admin_panel.forms import FileUploadForm
 from apps.admin_panel.services import FileUploadService
+from apps.core.models import DailyStats
 from apps.event.models import Game, Tourney
 from apps.players.models import Player
+
+logger = logging.getLogger(__name__)
 
 
 @staff_member_required
@@ -94,16 +99,37 @@ def process_file_upload(request, form):
 @staff_member_required
 def dashboard_view(request):
     """Admin dashboard view showing key metrics."""
+    from apps.event.models import Game
 
-    # Основные метрики
-    total_players = Player.objects.count()
-    total_games = Game.objects.count()
-    total_tourneys = Tourney.objects.count()
+    # Актуальные значения на момент запроса
     active_games = Game.objects.filter(is_active=True).count()
     active_tourneys = Tourney.objects.filter(is_active=True).count()
 
-    players_chart_labels, players_chart_data = get_qs_by_month(Player)
-    games_chart_labels, games_chart_data = get_qs_by_month(Game)
+    # Последняя доступная статистика (например, за вчера)
+    stats = DailyStats.objects.order_by('-date').first()
+    total_players = total_games = total_tourneys = 0
+    if stats:
+        total_players = (
+            DailyStats.objects.aggregate(total=Sum('players_registered'))[
+                'total'
+            ]
+            or 0
+        )
+        total_games = (
+            DailyStats.objects.aggregate(total=Sum('games_created'))['total']
+            or 0
+        )
+        total_tourneys = (
+            DailyStats.objects.aggregate(total=Sum('tourneys_created'))[
+                'total'
+            ]
+            or 0
+        )
+
+    players_chart_labels, players_chart_data = get_stats_by_month(
+        'players_registered'
+    )
+    games_chart_labels, games_chart_data = get_stats_by_month('games_created')
 
     context = {
         'total_players': total_players,
@@ -119,7 +145,7 @@ def dashboard_view(request):
     return render(request, 'admin_panel/admin_dashboard.html', context)
 
 
-def get_qs_by_month(model: Game | Player) -> list[Game | Player]:
+def get_qs_by_month(model: Game | Player) -> tuple[list[str], list[int]]:
     """Returns the number of objects grouped by month.
     Args:
         model (Game | Player): The model to query.
@@ -145,3 +171,34 @@ def get_qs_by_month(model: Game | Player) -> list[Game | Player]:
     objs_chart_labels = [m.strftime('%b %Y') for m in months]
     objs_chart_data = [objs_by_month_dict.get(m, 0) for m in months]
     return objs_chart_labels, objs_chart_data
+
+
+def get_stats_by_month(stat_type: str) -> tuple[list[str], list[int]]:
+    """Returns the statistics data grouped by month.
+    Args:
+        stat_type (str): The type of statistic to query
+            (e.g., 'players_registered').
+    Returns:
+        tuple: A tuple containing two lists - labels and data.
+    """
+    stats_by_month = DailyStats.objects.get_stats_by_month(stat_type)
+    stats_by_month_dict = {
+        stat['month']: stat['total']
+        for stat in stats_by_month
+        if stat['month']
+    }
+    if stats_by_month_dict:
+        first_month = min(stats_by_month_dict)
+        last_month = max(stats_by_month_dict)
+    else:
+        first_month = last_month = datetime.today().replace(day=1)
+    months = []
+    current = first_month
+    while current <= last_month:
+        months.append(current)
+        year = current.year + (current.month // 12)
+        month = (current.month % 12) + 1
+        current = current.replace(year=year, month=month)
+    stats_chart_labels = [m.strftime('%b %Y') for m in months]
+    stats_chart_data = [stats_by_month_dict.get(m, 0) for m in months]
+    return stats_chart_labels, stats_chart_data

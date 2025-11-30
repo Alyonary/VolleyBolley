@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from typing import Any, Dict, List
 
 from apps.courts.models import Court, CourtLocation
@@ -15,7 +16,14 @@ logger = logging.getLogger(__name__)
 class FileUploadService:
     """Service for processing uploaded files."""
 
+    def __new__(cls):
+        """Singleton pattern implementation."""
+        if not hasattr(cls, 'instance'):
+            cls.instance = super(FileUploadService, cls).__new__(cls)
+        return cls.instance
+
     def __init__(self):
+        """Initialize model mapping for file processing."""
         self.model_mapping = {
             'countries': {
                 'model': Country,
@@ -44,6 +52,10 @@ class FileUploadService:
         filename = file.name.lower()
         if filename.endswith('.json'):
             return 'json'
+        if filename.endswith('.csv'):
+            return 'csv'
+        if filename.endswith('.xlsx') or filename.endswith('.xls'):
+            return 'excel'
         return None
 
     def process_file(self, file, need_update: bool = False) -> Dict[str, Any]:
@@ -52,6 +64,13 @@ class FileUploadService:
         if file_type == 'json':
             return self.proccess_json_load(file, need_update)
         return {'success': False, 'error': 'Unsupported file type'}
+
+    def download_file_by_path(self, file_path: str) -> bytes:
+        """Download file from given path."""
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f'FAQ file not found at {file_path}')
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
 
     def proccess_json_load(
         self, file, need_update: bool = False

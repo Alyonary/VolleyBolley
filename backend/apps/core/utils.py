@@ -1,6 +1,6 @@
 import logging
-import os
 
+from backend.apps.admin_panel.services import FileUploadService
 from django.db import transaction
 
 from apps.core.constants import DEFAULT_FAQ
@@ -16,21 +16,16 @@ def load_faq_from_file(file_path) -> bool:
     Create an active FAQ entry in the database if none exists.
     """
 
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f'FAQ file not found at {file_path}')
-
-    with open(file_path, 'r', encoding='utf-8') as faq_file:
-        content = faq_file.read()
+    content = FileUploadService().download_file_by_path(file_path)
 
     with transaction.atomic():
         if not FAQ.objects.filter(name=DEFAULT_FAQ).exists():
-            faq = FAQ.objects.create(
+            FAQ.objects.create(
                 content=content, is_active=True, name=DEFAULT_FAQ
             )
-            print(faq.content)
             logger.info('Created default FAQ.')
-            return True
-    return False
+            return
+    logger.info('FAQ already exists. No action taken.')
 
 
 def initialize_faq() -> None:
