@@ -388,9 +388,7 @@ class TestGameFiltering:
         game_thailand,
         game_thailand_with_players,
     ):
-        game_thailand_with_players.end_time = (
-            now() - timedelta(weeks=520)
-        )
+        game_thailand_with_players.end_time = now() - timedelta(weeks=520)
         game_thailand_with_players.save()
         assert Game.objects.count() == 2
         result = Game.objects.archive_games(player_thailand)

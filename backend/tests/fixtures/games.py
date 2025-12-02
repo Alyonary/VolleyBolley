@@ -78,10 +78,7 @@ def game_data_past(game_data):
     start_time = timezone.now() - timedelta(days=2)
     end_time = start_time + timedelta(hours=3)
     new_game_data = deepcopy(game_data)
-    new_game_data.update(
-        {'start_time': start_time,
-         'end_time': end_time}
-    )
+    new_game_data.update({'start_time': start_time, 'end_time': end_time})
     return new_game_data
 
 

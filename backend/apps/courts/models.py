@@ -16,12 +16,16 @@ class CourtLocation(models.Model):
             MinValueValidator(
                 LocationEnums.MIN_LONGITUDE.value,
                 message=_(
-                    f'Min longitude: {LocationEnums.MIN_LONGITUDE.value}')),
+                    f'Min longitude: {LocationEnums.MIN_LONGITUDE.value}'
+                ),
+            ),
             MaxValueValidator(
                 LocationEnums.MAX_LONGITUDE.value,
                 message=_(
-                    f'Max longitude: {LocationEnums.MAX_LONGITUDE.value}')),
-        )
+                    f'Max longitude: {LocationEnums.MAX_LONGITUDE.value}'
+                ),
+            ),
+        ),
     )
 
     latitude = models.FloatField(

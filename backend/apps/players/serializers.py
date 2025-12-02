@@ -175,6 +175,7 @@ class AvatarSerializer(PlayerBaseSerializer):
 
 class PlayerAuthSerializer(PlayerBaseSerializer):
     """Serialize data of player after authentication."""
+
     player_id = serializers.PrimaryKeyRelatedField(
         source='id', read_only=True, help_text='Integer type'
     )
@@ -213,12 +214,12 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
     first_name = serializers.CharField(
         source='user.first_name',
         max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
-        required=True
+        required=True,
     )
     last_name = serializers.CharField(
         source='user.last_name',
         max_length=PlayerIntEnums.PLAYER_DATA_MAX_LENGTH.value,
-        required=True
+        required=True,
     )
     country = serializers.PrimaryKeyRelatedField(
         required=True, queryset=Country.objects.all()
@@ -232,9 +233,7 @@ class PlayerRegisterSerializer(PlayerBaseSerializer):
         required=True,
         write_only=True,
     )
-    gender = serializers.ChoiceField(
-        choices=Genders.choices, required=True
-        )
+    gender = serializers.ChoiceField(choices=Genders.choices, required=True)
 
     class Meta(PlayerBaseSerializer.Meta):
         fields = (
@@ -270,9 +269,7 @@ class PlayerListSerializer(PlayerBaseSerializer):
     player_id = serializers.PrimaryKeyRelatedField(
         source='id', read_only=True, help_text='`Integer`'
     )
-    is_favorite = serializers.SerializerMethodField(
-        read_only=True
-    )
+    is_favorite = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Player
@@ -282,7 +279,7 @@ class PlayerListSerializer(PlayerBaseSerializer):
             'last_name',
             'avatar',
             'level',
-            'is_favorite'
+            'is_favorite',
         ]
         read_only_fields = [
             'player_id',
@@ -290,7 +287,7 @@ class PlayerListSerializer(PlayerBaseSerializer):
             'last_name',
             'avatar',
             'level',
-            'is_favorite'
+            'is_favorite',
         ]
 
     def get_is_favorite(self, obj) -> bool:
@@ -458,7 +455,7 @@ class PlayerRateSerializer(serializers.Serializer):
     players = serializers.ListField(
         child=serializers.DictField(),
         allow_empty=False,
-        help_text="list of entities with fields 'player_id', 'level_changed'"
+        help_text="list of entities with fields 'player_id', 'level_changed'",
     )
 
     def validate_players(self, players_data):
@@ -561,22 +558,24 @@ class PlayerDetailSerializer(PlayerListSerializer):
 
     class Meta(PlayerListSerializer.Meta):
         fields = PlayerListSerializer.Meta.fields + ['latest_activity']
-        read_only_fields = (
-            PlayerListSerializer.Meta.read_only_fields + ['latest_activity']
-        )
+        read_only_fields = PlayerListSerializer.Meta.read_only_fields + [
+            'latest_activity'
+        ]
 
     def get_latest_activity(self, obj):
         activities = []
 
         for game in getattr(obj, 'recent_games', []):
-            activities.append({
-                'event_timestamp': game.start_time,
-                'court_location': game.court.location
-            })
+            activities.append(
+                {
+                    'event_timestamp': game.start_time,
+                    'court_location': game.court.location,
+                }
+            )
 
         activities.sort(key=lambda x: x['event_timestamp'], reverse=True)
         return LatestActivitySerializer(
-            activities[:PlayerIntEnums.RECENT_ACTIVITIES_LENGTH], many=True
+            activities[: PlayerIntEnums.RECENT_ACTIVITIES_LENGTH], many=True
         ).data
 
 

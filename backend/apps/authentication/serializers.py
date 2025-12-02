@@ -20,18 +20,16 @@ logger = logging.getLogger(__name__)
 class LoginSerializer(serializers.Serializer):
     """Serialize data after successful authentication of player."""
 
-    player = PlayerAuthSerializer(
-        read_only=True,
-        help_text='Player data')
+    player = PlayerAuthSerializer(read_only=True, help_text='Player data')
     access_token = serializers.CharField(
         max_length=APIEnums.TOKEN_MAX_LENGTH,
         read_only=True,
-        help_text="JWT access token"
+        help_text='JWT access token',
     )
     refresh_token = serializers.CharField(
         max_length=APIEnums.TOKEN_MAX_LENGTH,
         read_only=True,
-        help_text="JWT refresh token"
+        help_text='JWT refresh token',
     )
 
 
@@ -72,7 +70,7 @@ class AuthBaseSerializer(serializers.Serializer):
 
         return (
             PlayerStrEnums.DEFAULT_FIRST_NAME.value,
-            PlayerStrEnums.DEFAULT_LAST_NAME.value
+            PlayerStrEnums.DEFAULT_LAST_NAME.value,
         )
 
     def configure_from_email(self, email: str) -> tuple[str, str]:
@@ -102,7 +100,7 @@ class AuthBaseSerializer(serializers.Serializer):
             'email': email,
             'first_name': first_name,
             'last_name': last_name,
-            'username': self.get_username(validated_data)
+            'username': self.get_username(validated_data),
         }
 
     def get_username(self, validated_data: dict[str, Any]) -> str:
@@ -217,11 +215,12 @@ class CustomTokenVerifySerializer(serializers.Serializer):
 
         if (
             self.blacklist
-            and "rest_framework_simplejwt.token_blacklist" in INSTALLED_APPS
+            and 'rest_framework_simplejwt.token_blacklist' in INSTALLED_APPS
         ):
             from rest_framework_simplejwt.token_blacklist.models import (
                 BlacklistedToken,
             )
+
             jti = token.get(api_settings.JTI_CLAIM)
             if BlacklistedToken.objects.filter(token__jti=jti).exists():
                 raise serializers.ValidationError('Token is blacklisted')

@@ -27,7 +27,7 @@ def process_rate_players_request(self, request, *args, **kwargs) -> Response:
         valid_players = rater_player.get_players_to_rate(event)
         serializer = PlayerShortSerializer(valid_players, many=True)
         return Response(
-            {"players": serializer.data}, status=status.HTTP_200_OK
+            {'players': serializer.data}, status=status.HTTP_200_OK
         )
 
     serializer = PlayerRateSerializer(
@@ -66,4 +66,3 @@ def send_rate_notification_for_events(
         event.is_active = False
         event.save()
     return True
-

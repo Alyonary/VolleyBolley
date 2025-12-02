@@ -11,9 +11,14 @@ from apps.courts.serializers import CourtSerializer
 
 
 class CourtViewSet(mixins.ListModelMixin, GenericViewSet):
-    http_method_names = ['get',]
-    queryset = Court.objects.select_related(
-        'location').prefetch_related('contacts', 'tag_list').all()
+    http_method_names = [
+        'get',
+    ]
+    queryset = (
+        Court.objects.select_related('location')
+        .prefetch_related('contacts', 'tag_list')
+        .all()
+    )
 
     serializer_class = CourtSerializer
     filter_backends = [filters.DjangoFilterBackend]
@@ -36,7 +41,7 @@ class CourtViewSet(mixins.ListModelMixin, GenericViewSet):
 
     @swagger_auto_schema(
         tags=['courts'],
-        operation_summary="List of filtered courts",
+        operation_summary='List of filtered courts',
         operation_description="""
         **Returns:** a list of courts filtered depending on players location.
         """,

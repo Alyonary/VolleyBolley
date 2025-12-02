@@ -120,8 +120,8 @@ class TestGoogleAuth:
             ),
             ('access_token', '', status.HTTP_400_BAD_REQUEST),
             ('id_token', '', status.HTTP_400_BAD_REQUEST),
-            (None, None, status.HTTP_400_BAD_REQUEST)
-        ]
+            (None, None, status.HTTP_400_BAD_REQUEST),
+        ],
     )
     def test_auth_with_invalid_google_token(
         self, api_client, token_type, token_value, expected_status
@@ -181,7 +181,7 @@ class TestPhoneNumberAuth:
     ):
         with patch(
             'apps.authentication.utils.firebase_auth.verify_id_token',
-            return_value=firebase_response
+            return_value=firebase_response,
         ):
             response = api_client.post(
                 self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
@@ -240,7 +240,7 @@ class TestPhoneNumberAuth:
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
             'apps.authentication.utils.firebase_auth.verify_id_token',
-            return_value=invalid_token
+            return_value=invalid_token,
         ):
             response = api_client.post(
                 self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
@@ -333,7 +333,7 @@ class TestFacebookAuth:
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
             'apps.authentication.utils.firebase_auth.verify_id_token',
-            return_value=invalid_token
+            return_value=invalid_token,
         ):
             response = api_client.post(
                 self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
@@ -345,7 +345,7 @@ class TestFacebookAuth:
     ):
         with patch(
             'apps.authentication.utils.firebase_auth.verify_id_token',
-            return_value=firebase_fb_response
+            return_value=firebase_fb_response,
         ):
             response = api_client.post(
                 self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
@@ -423,7 +423,7 @@ class TestFirebaseGoogleAuth:
         invalid_token = request.getfixturevalue(invalid_token_fixture)
         with patch(
             'apps.authentication.utils.firebase_auth.verify_id_token',
-            return_value=invalid_token
+            return_value=invalid_token,
         ):
             response = api_client.post(
                 self.url, {'id_token': 'fake-firebase-id-token'}, format='json'
@@ -435,7 +435,7 @@ class TestFirebaseGoogleAuth:
     ):
         with patch(
             'apps.authentication.utils.firebase_auth.verify_id_token',
-            return_value=firebase_fb_response
+            return_value=firebase_fb_response,
         ):
             response = api_client.post(
                 self.url, {'id_token': 'fake-firebase-id-token'}, format='json'

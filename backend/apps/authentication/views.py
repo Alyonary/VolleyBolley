@@ -42,7 +42,7 @@ logger = logging.getLogger(__name__)
 User = get_user_model()
 
 
-class AuthIdTokenMixin():
+class AuthIdTokenMixin:
     """Mix a special auth method to API views.
 
     Provide the method to authenticate a user via 'id_token'.
@@ -98,9 +98,7 @@ class AuthIdTokenMixin():
         except Exception as e:
             error_msg = f'unexpected error: {e}'
             logger.error(error_msg)
-            return Response(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def auth_via_id_token(
         self, token: str, serializer: Serializer
@@ -113,9 +111,7 @@ class AuthIdTokenMixin():
         username = user_data_cleaned.get('username')
 
         if username:
-            user = User.objects.filter(
-                username=username
-            ).first()
+            user = User.objects.filter(username=username).first()
 
         else:
             user = None
@@ -142,7 +138,8 @@ class LogoutView(APIView):
             properties={
                 'refresh_token': openapi.Schema(
                     type=openapi.TYPE_STRING,
-                    description='Refresh token to blacklist'),
+                    description='Refresh token to blacklist',
+                ),
             },
             required=['refresh_token'],
         ),
@@ -177,9 +174,7 @@ class LogoutView(APIView):
             error_msg = f'Internal server error: {e}.'
             logger.error(error_msg)
 
-            return Response(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class GoogleLogin(APIView, AuthIdTokenMixin):
@@ -188,9 +183,10 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
     Client can use token_id received from google
     to be authenticated in the app.
     """
+
     @swagger_auto_schema(
         tags=['auth'],
-        operation_summary="Authenticate via Google (id_token)",
+        operation_summary='Authenticate via Google (id_token)',
         operation_description="""
         Authenticate user in the app via 'id_token' or 'access_token'
         received from Google.
@@ -204,43 +200,33 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
             type=openapi.TYPE_OBJECT,
             properties={
                 'access_token': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description='Google access token'
-                    ),
+                    type=openapi.TYPE_STRING, description='Google access token'
+                ),
                 'id_token': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description='Google ID token'
-                    ),
+                    type=openapi.TYPE_STRING, description='Google ID token'
+                ),
             },
-            anyOf=[
-                {'required': ['access_token']},
-                {'required': ['id_token']}
-            ],
-            description="Either 'id_token' or 'access_token' must be provided."
+            anyOf=[{'required': ['access_token']}, {'required': ['id_token']}],
+            description="'id_token' or 'access_token' must be provided.",
         ),
         responses={
             200: openapi.Response(
                 'Successful authentication',
                 LoginSerializer,
-                ),
+            ),
             400: 'Bad request',
         },
         security=[],
     )
     def post(self, request: Request) -> Response:
-
         data = request.data
 
         if 'id_token' in data:
-            logger.info(
-                'Starting authentication via google id_token.'
-            )
+            logger.info('Starting authentication via google id_token.')
             return self._post(request, GoogleUserDataSerializer)
 
         if 'access_token' in data:
-            logger.info(
-                'Starting authentication via google access_token.'
-            )
+            logger.info('Starting authentication via google access_token.')
             return self.auth_via_access_token(data.get('access_token'))
 
         error_msg = "No 'id_token' or 'access_token' in request body."
@@ -251,13 +237,11 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
 
     def verify_id_token(self, token: str) -> dict[str, Any]:
         return id_token.verify_oauth2_token(
-            token,
-            requests.Request(),
-            SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
+            token, requests.Request(), SOCIAL_AUTH_GOOGLE_OAUTH2_KEY
         )
 
     @swagger_auto_schema(
-        operation_summary="Start Google OAuth authentication",
+        operation_summary='Start Google OAuth authentication',
         operation_description="""
         Initiates the OAuth 2.0 authentication process with Google.
 
@@ -277,17 +261,15 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
                         type=openapi.TYPE_STRING,
                         description='URL for Google authorization',
                         example='https://accounts.google.com/o/oauth2/auth?'
-                                'response_type=code&client_id=...'
+                        'response_type=code&client_id=...',
                     )
-                }
+                },
             ),
         },
         security=[],
     )
     def get(self, request: Request) -> Response:
-        logger.info(
-            'Starting authentication via google without token.'
-        )
+        logger.info('Starting authentication via google without token.')
         return redirect('api:social:begin', backend='google-oauth2')
 
     def auth_via_access_token(self, token: str) -> Response:
@@ -329,9 +311,7 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
             error_msg = f'Internal server error: {e}.'
             logger.error(error_msg)
 
-            return Response(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class FirebaseAuthMixin(AuthIdTokenMixin):
@@ -354,7 +334,7 @@ class PhoneNumberLogin(APIView, FirebaseAuthMixin):
 
     @swagger_auto_schema(
         tags=['auth'],
-        operation_summary="Authenticate via phone number (firebase id_token)",
+        operation_summary='Authenticate via phone number (firebase id_token)',
         operation_description="""
         Authenticate user in the app via 'id_token' received from the Firebase
         application during the authentication process via phone number.
@@ -368,9 +348,8 @@ class PhoneNumberLogin(APIView, FirebaseAuthMixin):
             type=openapi.TYPE_OBJECT,
             properties={
                 'id_token': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description='Firebase ID token'
-                    ),
+                    type=openapi.TYPE_STRING, description='Firebase ID token'
+                ),
             },
             required=['id_token'],
         ),
@@ -378,7 +357,7 @@ class PhoneNumberLogin(APIView, FirebaseAuthMixin):
             200: openapi.Response(
                 'Successful authentication',
                 LoginSerializer,
-                ),
+            ),
             400: 'Bad request',
         },
         security=[],
@@ -397,7 +376,7 @@ class FacebookLogin(APIView, FirebaseAuthMixin):
 
     @swagger_auto_schema(
         tags=['auth'],
-        operation_summary="Authenticate via Facebook (firebase id_token)",
+        operation_summary='Authenticate via Facebook (firebase id_token)',
         operation_description="""
         Authenticate user in the app via 'id_token' received from the Firebase
         application during the authentication process via Facebook.
@@ -411,9 +390,8 @@ class FacebookLogin(APIView, FirebaseAuthMixin):
             type=openapi.TYPE_OBJECT,
             properties={
                 'id_token': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description='Firebase ID token'
-                    ),
+                    type=openapi.TYPE_STRING, description='Firebase ID token'
+                ),
             },
             required=['id_token'],
         ),
@@ -421,7 +399,7 @@ class FacebookLogin(APIView, FirebaseAuthMixin):
             200: openapi.Response(
                 'Successful authentication',
                 LoginSerializer,
-                ),
+            ),
             400: 'Bad request',
         },
         security=[],
@@ -440,7 +418,7 @@ class GoogleLoginV2(APIView, FirebaseAuthMixin):
 
     @swagger_auto_schema(
         tags=['auth'],
-        operation_summary="Authenticate via Google (firebase id_token)",
+        operation_summary='Authenticate via Google (firebase id_token)',
         operation_description="""
         Authenticate user in the app via 'id_token' received from the Firebase
         application during the authentication process via Google.
@@ -454,9 +432,8 @@ class GoogleLoginV2(APIView, FirebaseAuthMixin):
             type=openapi.TYPE_OBJECT,
             properties={
                 'id_token': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description='Firebase ID token'
-                    ),
+                    type=openapi.TYPE_STRING, description='Firebase ID token'
+                ),
             },
             required=['id_token'],
         ),
@@ -464,7 +441,7 @@ class GoogleLoginV2(APIView, FirebaseAuthMixin):
             200: openapi.Response(
                 'Successful authentication',
                 LoginSerializer,
-                ),
+            ),
             400: 'Bad request',
         },
         security=[],
@@ -481,7 +458,7 @@ class CustomTokenRefreshView(APIView):
     authentication_classes = []
 
     @swagger_auto_schema(
-        operation_summary="Refresh access_token",
+        operation_summary='Refresh access_token',
         operation_description="""
         Refreshes access_token using refresh_token.
 
@@ -497,7 +474,7 @@ class CustomTokenRefreshView(APIView):
                 'refresh_token': openapi.Schema(
                     type=openapi.TYPE_STRING,
                     description='Refresh token generated previously.',
-                    example='eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1Ni...'
+                    example='eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1Ni...',
                 ),
             },
         ),
@@ -509,15 +486,15 @@ class CustomTokenRefreshView(APIView):
                     properties={
                         'access_token': openapi.Schema(
                             type=openapi.TYPE_STRING,
-                            description='New access token'
+                            description='New access token',
                         ),
-                    }
+                    },
                 ),
                 examples={
                     'application/json': {
                         'access_token': 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1Ni...'
                     }
-                }
+                },
             ),
             400: 'Bad request',
         },
@@ -564,7 +541,7 @@ class CustomTokenVerifyView(APIView):
     authentication_classes = []
 
     @swagger_auto_schema(
-        operation_summary="Verify access_token",
+        operation_summary='Verify access_token',
         operation_description="""
         Verifies access_token validity.
 
@@ -578,20 +555,15 @@ class CustomTokenVerifyView(APIView):
                 'access_token': openapi.Schema(
                     type=openapi.TYPE_STRING,
                     description='Access token to verify validity',
-                    example='eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...'
+                    example='eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...',
                 ),
             },
         ),
         responses={
             200: openapi.Response(
                 description='Token is valid',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={}
-                ),
-                examples={
-                    'application/json': {}
-                }
+                schema=openapi.Schema(type=openapi.TYPE_OBJECT, properties={}),
+                examples={'application/json': {}},
             ),
             400: 'Bad request',
         },

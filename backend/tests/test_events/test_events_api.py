@@ -349,9 +349,7 @@ class TestRatePlayersAPI:
         assert vote_count == 1
 
     def test_post_rate_player_unauthorized(
-        self,
-        api_client,
-        archived_game_thailand
+        self, api_client, archived_game_thailand
     ):
         """Test that unauthorized requests return 401."""
         game = archived_game_thailand
@@ -616,8 +614,8 @@ class TestRatePlayersAPI:
                 }
                 response = api_client.post(url, post_data, format='json')
                 assert response.status_code == status.HTTP_201_CREATED, (
-                    f"Failed for rater={rater.id}, rated={rated.id}, "
-                    f"response={response.data}"
+                    f'Failed for rater={rater.id}, rated={rated.id}, '
+                    f'response={response.data}'
                 )
                 vote = PlayerRatingVote.objects.filter(
                     rater=rater,
@@ -625,6 +623,6 @@ class TestRatePlayersAPI:
                     game=game,
                 ).first()
                 assert vote is not None, (
-                    f"Vote not created for rater={rater.id}, rated={rated.id}"
+                    f'Vote not created for rater={rater.id}, rated={rated.id}'
                 )
                 assert vote.value > 0, "Vote value should be positive for 'UP'"

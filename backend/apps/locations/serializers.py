@@ -27,7 +27,8 @@ class CountrySerializer(serializers.ModelSerializer):
 
 
 class CountryListSerializer(serializers.Serializer):
-    '''Serializer for countries with nested cities.'''
+    """Serializer for countries with nested cities."""
+
     countries = CountrySerializer(many=True, read_only=True)
 
 

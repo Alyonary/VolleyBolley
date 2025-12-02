@@ -32,7 +32,11 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
 
     permission_classes = [IsRegisteredPlayer]
     serializer_class = NotificationListSerializer
-    http_method_names = ['get', 'put', 'patch',]
+    http_method_names = [
+        'get',
+        'put',
+        'patch',
+    ]
 
     def get_queryset(self):
         return Notifications.objects.filter(
@@ -48,14 +52,12 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         context = super().get_serializer_context()
         user = self.request.user
         if not isinstance(user, AnonymousUser):
-            context.update({
-                'player': Player.objects.get(user=user)
-            })
+            context.update({'player': Player.objects.get(user=user)})
         return context
 
     @swagger_auto_schema(
         tags=['notifications'],
-        operation_summary="list of active notifications for current player",
+        operation_summary='list of active notifications for current player',
         operation_description="""
         **Returns:** a list of active notifications for the current player.
         """,
@@ -74,7 +76,7 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     @swagger_auto_schema(
         tags=['notifications'],
         method='put',
-        operation_summary="Register FCM device token for current player",
+        operation_summary='Register FCM device token for current player',
         operation_description="""
         **Returns:** empty body response.
         """,
@@ -110,13 +112,11 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             if created:
                 return Response(status=status.HTTP_201_CREATED)
             return Response(status=status.HTTP_200_OK)
-        return Response(
-            serializer.errors, status=status.HTTP_400_BAD_REQUEST
-        )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
         tags=['notifications'],
-        operation_summary="Mark list of notifications as read",
+        operation_summary='Mark list of notifications as read',
         operation_description="""
         Mark a list of the notifications for the current player as read
 
@@ -153,7 +153,7 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             serializer = NotificationSerializer(
                 instance=instance,
                 data={'notification_id': instance.pk},
-                context=self.get_serializer_context()
+                context=self.get_serializer_context(),
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()

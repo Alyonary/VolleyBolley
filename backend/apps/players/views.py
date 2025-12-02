@@ -27,12 +27,11 @@ from apps.users.models import User
 
 
 class PlayerViewSet(ReadOnlyModelViewSet):
-
-    queryset = Player.objects.select_related(
-        'country', 'city', 'user'
-    ).prefetch_related(
-        'payments', 'player', 'favorite', 'rating'
-    ).all()
+    queryset = (
+        Player.objects.select_related('country', 'city', 'user')
+        .prefetch_related('payments', 'player', 'favorite', 'rating')
+        .all()
+    )
     serializer_class = PlayerBaseSerializer
     http_method_names = ['get', 'post', 'patch', 'put', 'delete']
     permission_classes = [IsRegisteredPlayer]
@@ -60,10 +59,14 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         context = super().get_serializer_context()
         user = self.request.user
         if not isinstance(user, AnonymousUser):
-            context.update({
-                'player': self.queryset.filter(user=self.request.user).first(),
-                'current_user': self.request.user
-            })
+            context.update(
+                {
+                    'player': self.queryset.filter(
+                        user=self.request.user
+                    ).first(),
+                    'current_user': self.request.user,
+                }
+            )
         return context
 
     def get_queryset(self):
@@ -80,21 +83,24 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             if player_id:
                 player = queryset.get(pk=player_id)
                 if player and player.is_registered is True:
-                    return Player.objects.filter(pk=player_id).select_related(
-                        'country', 'city', 'user'
-                    ).prefetch_related(
-                        'player',
-                        'favorite',
-                        'rating',
-                        Prefetch(
-                            'games_players',
-                            Game.objects.recent_games(
-                                player=player,
-                                limit=PlayerIntEnums.RECENT_ACTIVITIES_LENGTH
-                            ).select_related('court__location'),
-                            to_attr='recent_games'
-                        ),
-                    ).all()
+                    return (
+                        Player.objects.filter(pk=player_id)
+                        .select_related('country', 'city', 'user')
+                        .prefetch_related(
+                            'player',
+                            'favorite',
+                            'rating',
+                            Prefetch(
+                                'games_players',
+                                Game.objects.recent_games(
+                                    player=player,
+                                    limit=PlayerIntEnums.RECENT_ACTIVITIES_LENGTH,
+                                ).select_related('court__location'),
+                                to_attr='recent_games',
+                            ),
+                        )
+                        .all()
+                    )
             return None
 
         if self.action == 'get_put_payments':
@@ -103,11 +109,9 @@ class PlayerViewSet(ReadOnlyModelViewSet):
             return None
 
         if self.action == 'list':
-
             queryset = queryset.exclude(user=self.request.user)
             is_favorite_subquery = Favorite.objects.filter(
-                player=current_player,
-                favorite=OuterRef('pk')
+                player=current_player, favorite=OuterRef('pk')
             )
             queryset.annotate(
                 is_favorite=Exists(is_favorite_subquery)
@@ -128,7 +132,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     @swagger_auto_schema(
         tags=['players'],
-        operation_summary="List of all players excluding current user",
+        operation_summary='List of all players excluding current user',
         operation_description="""
         **Returns:** a sorted list of all players excluding the current user.
         The favorite players are going first.
@@ -145,13 +149,13 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     @swagger_auto_schema(
         tags=['players'],
-        operation_summary="Get info about player",
+        operation_summary='Get info about player',
         operation_description="""
         **Returns:** information about the chosen player.
         """,
         responses={
             200: openapi.Response(
-                description="Player details retrieved successfully",
+                description='Player details retrieved successfully',
                 schema=openapi.Schema(
                     type=openapi.TYPE_OBJECT,
                     properties={
@@ -162,22 +166,22 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                                     type=openapi.TYPE_INTEGER, example=1
                                 ),
                                 'first_name': openapi.Schema(
-                                    type=openapi.TYPE_STRING, example="Ivan"
+                                    type=openapi.TYPE_STRING, example='Ivan'
                                 ),
                                 'last_name': openapi.Schema(
-                                    type=openapi.TYPE_STRING, example="Petrov"
+                                    type=openapi.TYPE_STRING, example='Petrov'
                                 ),
                                 'avatar': openapi.Schema(
                                     type=openapi.TYPE_STRING,
                                     format=openapi.FORMAT_URI,
-                                    example="https://storage.example.com/"
-                                            "avatars/1.jpg"
+                                    example='https://storage.example.com/'
+                                    'avatars/1.jpg',
                                 ),
                                 'is_favorite': openapi.Schema(
                                     type=openapi.TYPE_BOOLEAN, example=False
                                 ),
                                 'level': openapi.Schema(
-                                    type=openapi.TYPE_STRING, example="PRO"
+                                    type=openapi.TYPE_STRING, example='PRO'
                                 ),
                                 'latest_activity': openapi.Schema(
                                     type=openapi.TYPE_ARRAY,
@@ -187,7 +191,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                                             'event_timestamp': openapi.Schema(
                                                 type=openapi.TYPE_STRING,
                                                 format=openapi.FORMAT_DATETIME,
-                                                example="2025-07-12T14:23:45Z"
+                                                example='2025-07-12T14:23:45Z',
                                             ),
                                             'court_location': openapi.Schema(
                                                 type=openapi.TYPE_OBJECT,
@@ -195,29 +199,29 @@ class PlayerViewSet(ReadOnlyModelViewSet):
                                                     'longitude': openapi.Schema(  # noqa
                                                         type=openapi.TYPE_NUMBER,  # noqa
                                                         format=openapi.FORMAT_FLOAT,  # noqa
-                                                        example=37.6173
+                                                        example=37.6173,
                                                     ),
                                                     'latitude': openapi.Schema(
                                                         type=openapi.TYPE_NUMBER,  # noqa
                                                         format=openapi.FORMAT_FLOAT,  # noqa
-                                                        example=55.7558
+                                                        example=55.7558,
                                                     ),
                                                     'court_name': openapi.Schema(  # noqa
                                                         type=openapi.TYPE_STRING,  # noqa
-                                                        example="Karon Arena"
+                                                        example='Karon Arena',
                                                     ),
                                                     'location_name': openapi.Schema(  # noqa
                                                         type=openapi.TYPE_STRING,  # noqa
-                                                        example="Russia, Moscow"  # noqa
-                                                    )
-                                                }
-                                            )
-                                        }
-                                    )
-                                )
-                            }
+                                                        example='Russia, Moscow',  # noqa
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                ),
+                            },
                         )
-                    }
+                    },
                 ),
             ),
             401: 'Unauthorized',
@@ -234,7 +238,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @swagger_auto_schema(
         tags=['me'],
         method='get',
-        operation_summary="Get current player info",
+        operation_summary='Get current player info',
         operation_description="""
         Get information about the current player
 
@@ -250,7 +254,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @swagger_auto_schema(
         tags=['me'],
         method='patch',
-        operation_summary="Update current player info",
+        operation_summary='Update current player info',
         operation_description="""
         Update the current player object
 
@@ -270,7 +274,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @swagger_auto_schema(
         tags=['me'],
         method='delete',
-        operation_summary="Delete current player",
+        operation_summary='Delete current player',
         operation_description="""
         Delete current player by deleting the user associated with
         the player. The player is deleted due to cascade relation.
@@ -320,22 +324,22 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @swagger_auto_schema(
         tags=['avatar'],
         method='put',
-        operation_summary="Update or delete avatar",
+        operation_summary='Update or delete avatar',
         operation_description="""
         Update or delete avatar
 
         To delete avatar set its value to 'null'.
         """,
         request_body=openapi.Schema(
-                type=openapi.TYPE_OBJECT,
-                properties={
-                    'avatar': openapi.Schema(
-                        type=openapi.TYPE_STRING,
-                        description='Base64 encoded image'
-                    ),
-                },
-                required=['avatar'],
-            ),
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'avatar': openapi.Schema(
+                    type=openapi.TYPE_STRING,
+                    description='Base64 encoded image',
+                ),
+            },
+            required=['avatar'],
+        ),
         responses={
             200: openapi.Response('Success', AvatarSerializer),
             400: 'Bad request',
@@ -366,7 +370,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @swagger_auto_schema(
         tags=['payments'],
         method='get',
-        operation_summary="Get payment data of player",
+        operation_summary='Get payment data of player',
         operation_description="""
         Get payment data of player
 
@@ -382,7 +386,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @swagger_auto_schema(
         tags=['payments'],
         method='put',
-        operation_summary="Update payment data of player",
+        operation_summary='Update payment data of player',
         operation_description="""
         Update players payment data.
 
@@ -430,7 +434,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @swagger_auto_schema(
         tags=['favorite'],
         method='post',
-        operation_summary="Add player to favorite list",
+        operation_summary='Add player to favorite list',
         operation_description="""
         Add a player to a favorite list
 
@@ -448,7 +452,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @swagger_auto_schema(
         tags=['favorite'],
         method='delete',
-        operation_summary="Delete player from favorite list",
+        operation_summary='Delete player from favorite list',
         operation_description="""
         Add a player to a favorite list
 
@@ -499,7 +503,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
     @swagger_auto_schema(
         tags=['register'],
-        operation_summary="Register new player",
+        operation_summary='Register new player',
         operation_description="""
         Register a new player.
 

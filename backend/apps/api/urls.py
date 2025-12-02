@@ -35,7 +35,7 @@ urlpatterns = [
     path('auth/', include('apps.authentication.urls', namespace='auth')),
     path(
         'notifications/',
-        include('apps.notifications.urls', namespace='notifications')
+        include('apps.notifications.urls', namespace='notifications'),
     ),
     # Swagger UI (interactive API docs)
     re_path(
