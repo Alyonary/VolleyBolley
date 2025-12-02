@@ -193,8 +193,8 @@ class DailyStats(m.Model):
     tourneys_created = m.IntegerField()
 
     class Meta:
-        verbose_name = 'Daily Dashboard Stats'
-        verbose_name_plural = 'Daily Dashboard Stats'
+        verbose_name = _('Daily Stats')
+        verbose_name_plural = _('Daily Stats')
         ordering = ['-date']
 
     def __str__(self):

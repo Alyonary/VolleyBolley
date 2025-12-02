@@ -24,17 +24,18 @@ def collect_daily_stats(
         players_registered = Player.objects.filter(
             user__date_joined__date=today
         ).count()
-        games_created = Game.objects.filter(created_at__date=today).count()
-        tourneys_created = Tourney.objects.filter(
-            created_at__date=today
+        games_created = Game.objects.filter(
+            end_time__date=today, is_active=False
         ).count()
-
+        tourneys_created = Tourney.objects.filter(
+            start_time__date=today, is_active=False
+        ).count()
         DailyStats.objects.update_or_create(
             date=today,
             defaults={
                 'players_registered': players_registered,
-                'games_created': games_created,
-                'tourneys_created': tourneys_created,
+                'games_played': games_created,
+                'tourneys_played': tourneys_created,
             },
         )
         logger.info(

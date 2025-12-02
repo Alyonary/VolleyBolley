@@ -14,6 +14,7 @@ from apps.core.models import (
     FAQ,
     Contact,
     CurrencyType,
+    DailyStats,
     GameLevel,
     InfoPage,
     InfoSection,
@@ -124,6 +125,21 @@ class FAQAdmin(admin.ModelAdmin):
         if obj.is_active:
             FAQ.objects.exclude(id=obj.id).update(is_active=False)
         super().save_model(request, obj, form, change)
+
+
+@admin.register(DailyStats)
+class DailyStatsAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'date',
+        'players_registered',
+        'games_created',
+        'tourneys_created',
+    )
+    search_fields = ('date',)
+    ordering = ('-date',)
+    empty_value_display = _('Not defined')
+    list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
 
 
 models_for_unregister = [

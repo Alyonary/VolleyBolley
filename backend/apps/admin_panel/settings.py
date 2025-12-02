@@ -74,6 +74,7 @@ jazzmin_settings = {
         'core.FAQ': 'fas fa-question-circle',
         'Core.CurrencyType': 'fas fa-coins',
         'core.InfoSection': 'fas fa-newspaper',
+        'core.DailyStats': 'fas fa-bar-chart',
         'locations.Country': 'fas fa-flag',
         'locations.City': 'fas fa-city',
         'notifications.Device': 'fas fa-tablet',

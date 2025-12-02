@@ -106,7 +106,7 @@ def dashboard_view(request):
     active_tourneys = Tourney.objects.filter(is_active=True).count()
 
     # Последняя доступная статистика (например, за вчера)
-    stats = DailyStats.objects.order_by('-date').first()
+    stats = DailyStats.objects.all().order_by('-date')[:1]
     total_players = total_games = total_tourneys = 0
     if stats:
         total_players = (
