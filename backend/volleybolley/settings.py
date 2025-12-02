@@ -455,7 +455,6 @@ SWAGGER_SETTINGS = {
     '''
 }
 
-TESTING = "pytest" in sys.modules or "test" in sys.argv
 DEBUG_TOOLBAR_ENABLED = DEBUG and not TESTING
 
 if DEBUG_TOOLBAR_ENABLED:
