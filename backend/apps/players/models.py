@@ -116,14 +116,6 @@ class Player(models.Model):
             days=PlayerIntEnums.RATING_PERIOD_DAYS
         )
 
-<<<<<<< HEAD
-        return event.players.exclude(id=self.id).annotate(
-            votes_from_me=models.Count(
-                'received_ratings',
-                filter=models.Q(
-                    received_ratings__rater=self,
-                    received_ratings__created_at__gte=period_start
-=======
         return (
             event.players.exclude(id=self.id)
             .annotate(
@@ -133,12 +125,10 @@ class Player(models.Model):
                         received_ratings__rater=self,
                         received_ratings__created_at__gte=period_start,
                     ),
->>>>>>> origin/main
                 )
             )
             .filter(votes_from_me__lt=PlayerIntEnums.PLAYER_VOTE_LIMIT.value)
         )
-
 
 
 class Payment(models.Model):

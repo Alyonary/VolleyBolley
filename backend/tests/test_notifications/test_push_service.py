@@ -160,11 +160,7 @@ class TestPushServiceNotificationMethods:
         push_service_enabled,
         in_game_notification_type,
         sample_device,
-<<<<<<< HEAD
         game_for_notification
-=======
-        game_for_notification,
->>>>>>> origin/main
     ):
         """Test single device notification with game_id."""
 

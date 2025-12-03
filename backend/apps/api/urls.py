@@ -16,15 +16,7 @@ api_v1 = DefaultRouter()
 api_v1.register(r'courts', CourtViewSet, basename='courts')
 api_v1.register(r'players', PlayerViewSet, basename='players')
 api_v1.register(r'games', GameViewSet, basename='games')
-<<<<<<< HEAD
 api_v1.register(r'tournaments', TourneyViewSet, basename='tournaments')
-api_v1.register(
-    r'notifications',
-    NotificationsViewSet,
-    basename='notifications'
-)
-=======
->>>>>>> origin/main
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -46,43 +38,22 @@ urlpatterns = [
         'notifications/',
         include('apps.notifications.urls', namespace='notifications')
     ),
-<<<<<<< HEAD
-    path(
-        'auth/facebook/login',
-        FacebookLogin.as_view(),
-        name='facebook-login'
-    ),
-=======
->>>>>>> origin/main
     # Swagger UI (interactive API docs)
     re_path(
         r'^swagger(?P<format>\.json|\.yaml)$',
         schema_view.without_ui(cache_timeout=0),
-<<<<<<< HEAD
-        name='schema-json'
-=======
         name='schema-json',
->>>>>>> origin/main
     ),
     path(
         'swagger/',
         schema_view.with_ui('swagger', cache_timeout=0),
-<<<<<<< HEAD
-        name='schema-swagger-ui'
-=======
         name='schema-swagger-ui',
->>>>>>> origin/main
     ),
     # ReDoc UI (alternative API docs UI)
     path(
         'redoc/',
         schema_view.with_ui('redoc', cache_timeout=0),
-<<<<<<< HEAD
-        name='schema-redoc'
-    ),
-=======
         name='schema-redoc',
     ),
     path('faq/', FAQView.as_view(), name='faq'),
->>>>>>> origin/main
 ]
