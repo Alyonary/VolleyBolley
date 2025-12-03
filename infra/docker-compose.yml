@@ -1,4 +1,80 @@
 services:
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "9080"
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../monitoring/promtail-config.yml:/etc/promtail/config.yml
+    command: -config.file=/etc/promtail/config.yml
+    privileged: true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1:9080/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "3100"
+    volumes:
+      - ../monitoring/loki-config.yml:/etc/loki/local-config.yml:ro
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose:
+      - "9090"
+    volumes:
+      - ../monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheusdata:/prometheus
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./.env
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-changeme}
+    volumes:
+      - ../monitoring/grafana/datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml
+      - grafanadata:/var/lib/grafana
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
+
   db:
     image: postgres:17.5-alpine
     container_name: postgres_db
@@ -12,6 +88,10 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   redis:
     image: redis:7-alpine
@@ -42,6 +122,10 @@ services:
           memory: 512M
         reservations:
           memory: 128M
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   backend:
     container_name: volleybolley_backend
@@ -62,10 +146,15 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
   
   celery_worker:
     container_name: volleybolley_celery_worker
     build: ../backend
+    entrypoint: []
     command: celery -A volleybolley worker -l info --concurrency=${CELERY_WORKER_CONCURRENCY:-2}
     env_file: ./.env
     environment:
@@ -84,10 +173,15 @@ services:
       resources:
         limits:
           memory: 512M
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   celery_beat:
     container_name: volleybolley_celery_beat
     build: ../backend
+    entrypoint: []
     command: celery -A volleybolley beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     env_file: ./.env
     environment:
@@ -100,6 +194,10 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
   nginx:
     container_name: volleybolley-proxy
@@ -114,9 +212,15 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        tag: "{{.ImageName}}|{{.Name}}|{{.ImageFullID}}|{{.FullID}}"
 
 volumes:
   pg_data_volleybolley:
   redis_data:
   static:
   media:
+  grafanadata:
+  prometheusdata:

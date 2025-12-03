@@ -23,7 +23,7 @@ class BaseEventSerializer(s.ModelSerializer):
         slug_field='name',
         queryset=GameLevel.objects.all(),
         source='player_levels',
-        many=True
+        many=True,
     )
 
     gender = s.ChoiceField(choices=GenderChoices.choices)
@@ -133,10 +133,7 @@ class GameSerializer(BaseGameSerializer):
 
     class Meta(BaseGameSerializer.Meta):
         model = BaseGameSerializer.Meta.model
-        fields = BaseGameSerializer.Meta.fields + [
-            'court_id',
-            'players'
-        ]
+        fields = BaseGameSerializer.Meta.fields + ['court_id', 'players']
 
     def create(self, validated_data):
         host = self.context['request'].user.player
@@ -146,11 +143,11 @@ class GameSerializer(BaseGameSerializer):
 
         game = Game.objects.create(
             currency_type=self.get_currency_type(),
-
             payment_account=self.get_payment_account(
                 validated_data['payment_type']
             ),
-            **validated_data)
+            **validated_data,
+        )
 
         game.players.add(host)
         game.player_levels.set(levels)
@@ -402,7 +399,7 @@ class BaseShortSerializer(s.ModelSerializer):
             'court_location',
             'message',
             'start_time',
-            'end_time'
+            'end_time',
         ]
 
 
@@ -428,3 +425,25 @@ class GameTourneySerializer(s.Serializer):
 
     games = GameShortSerializer(many=True)
     tournaments = TourneyShortSerializer(many=True)
+
+
+class GameListShortSerializer(s.Serializer):
+    games = s.ListSerializer(
+        child=GameShortSerializer(), read_only=True
+    )
+
+
+class GameJoinDetailSerializer(GameDetailSerializer):
+    is_joined = s.BooleanField(read_only=True)
+
+    class Meta(GameDetailSerializer.Meta):
+        fields = GameDetailSerializer.Meta.fields + ['is_joined']
+
+
+class EventListShortSerializer(s.Serializer):
+    games = s.ListSerializer(
+        child=GameShortSerializer(), read_only=True
+    )
+    tournaments = s.ListSerializer(
+        child=TourneyShortSerializer(), read_only=True
+    )

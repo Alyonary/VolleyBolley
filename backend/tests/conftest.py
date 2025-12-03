@@ -12,8 +12,8 @@ pytest_plugins = [
     'tests.fixtures.players',
     'tests.fixtures.users',
     'tests.fixtures.notifications',
-    "tests.fixtures.games",
-    "tests.fixtures.core",
+    'tests.fixtures.games',
+    'tests.fixtures.core',
     'tests.fixtures.auth',
     'tests.fixtures.push_service',
     'tests.fixtures.tourneys',
@@ -34,9 +34,7 @@ def auth_api_client_with_not_registered_player(
 
 
 @pytest.fixture
-def auth_api_client_registered_player(
-    api_client, user_with_registered_player
-):
+def auth_api_client_registered_player(api_client, user_with_registered_player):
     api_client.force_authenticate(user=user_with_registered_player)
     return api_client
 
@@ -49,13 +47,8 @@ def authenticated_client(api_client):
     """
 
     user = User.objects.create_user(
-        username='testuser',
-        email='test@example.com',
-        password='password123'
+        username='testuser', email='test@example.com', password='password123'
     )
-    Player.objects.create(
-        user=user,
-        is_registered=True
-    )
+    Player.objects.create(user=user, is_registered=True)
     api_client.force_authenticate(user=user)
     return api_client, user

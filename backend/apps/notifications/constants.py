@@ -7,6 +7,7 @@ class DeviceType(models.TextChoices):
     IOS = 'ios', 'ios'
     ANDROID = 'android', 'android'
 
+
 class NotificationTypes:
     """Notification types constants."""
 
@@ -14,7 +15,7 @@ class NotificationTypes:
     GAME_REMINDER: str = 'game_reminder'
     GAME_RATE: str = 'game_rate'
     GAME_REMOVED: str = 'game_removed'
-    
+
     TOURNEY_INVITE: str = 'tourney_join'
     TOURNEY_REMINDER: str = 'tourney_reminder'
     TOURNEY_RATE: str = 'tourney_rate'
@@ -29,6 +30,7 @@ class NotificationTypes:
         (TOURNEY_RATE, 'tourney_rate'),
         (TOURNEY_REMOVED, 'tourney_removed'),
     ]
+
 
 FCM_TOKEN_EXPIRY_DAYS: int = 270
 DEVICE_TOKEN_MAX_LENGTH: int = 255
@@ -81,4 +83,3 @@ NOTIFICATION_INIT_DATA = {
 }
 
 RETRY_PUSH_TIME: int = 60
-

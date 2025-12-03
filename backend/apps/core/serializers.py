@@ -17,3 +17,7 @@ class ContactSerializer(serializers.ModelSerializer):
     class Meta:
         exclude = ('id', 'court')
         model = Contact
+
+
+class EmptyBodySerializer(serializers.Serializer):
+    pass

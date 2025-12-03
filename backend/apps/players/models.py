@@ -41,7 +41,7 @@ class Player(models.Model):
         max_length=PlayerIntEnums.GENDER_MAX_LENGTH.value,
         choices=Genders.choices,
         blank=False,
-        default=PlayerStrEnums.DEFAULT_GENDER.value
+        default=PlayerStrEnums.DEFAULT_GENDER.value,
     )
     avatar = models.ImageField(
         verbose_name=_('Avatar'),
@@ -53,6 +53,8 @@ class Player(models.Model):
     date_of_birth = models.DateField(
         default=PlayerStrEnums.DEFAULT_BIRTHDAY.value,
         validators=[validate_birthday],
+        blank=False,
+        null=False,
     )
     country = models.ForeignKey(
         Country,
@@ -60,7 +62,7 @@ class Player(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name=_('Country of player')
+        verbose_name=_('Country of player'),
     )
     city = models.ForeignKey(
         City,
@@ -68,12 +70,12 @@ class Player(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        verbose_name=_('City of player')
+        verbose_name=_('City of player'),
     )
     is_registered = models.BooleanField(
         verbose_name=_('Status of player registration in app'),
         default=False,
-        null=False
+        null=False,
     )
 
     class Meta:
@@ -81,7 +83,7 @@ class Player(models.Model):
         verbose_name_plural = _('Players')
 
     def __str__(self):
-        return f"Player {self.user.first_name} {self.user.last_name}"
+        return f'Player {self.user.first_name} {self.user.last_name}'
 
     def clean(self):
         super().clean()
@@ -101,14 +103,10 @@ class Player(models.Model):
         Returns True if the player participated in any games in last 60 days.
         """
         return Game.objects.filter(
-            players=self,
-            end_time__gte=timezone.now() - timedelta(days=days)
+            players=self, end_time__gte=timezone.now() - timedelta(days=days)
         ).exists()
 
-    def get_players_to_rate(
-        self,
-        event: Game | Tourney
-    ):
+    def get_players_to_rate(self, event: Game | Tourney):
         """
         Returns a QuerySet of players whom rater_player can still rate
         (not more than 2 ratings in the last 2 months).
@@ -118,15 +116,29 @@ class Player(models.Model):
             days=PlayerIntEnums.RATING_PERIOD_DAYS
         )
 
+<<<<<<< HEAD
         return event.players.exclude(id=self.id).annotate(
             votes_from_me=models.Count(
                 'received_ratings',
                 filter=models.Q(
                     received_ratings__rater=self,
                     received_ratings__created_at__gte=period_start
+=======
+        return (
+            event.players.exclude(id=self.id)
+            .annotate(
+                votes_from_me=models.Count(
+                    'received_ratings',
+                    filter=models.Q(
+                        received_ratings__rater=self,
+                        received_ratings__created_at__gte=period_start,
+                    ),
+>>>>>>> origin/main
                 )
             )
-        ).filter(votes_from_me__lt=PlayerIntEnums.PLAYER_VOTE_LIMIT.value)
+            .filter(votes_from_me__lt=PlayerIntEnums.PLAYER_VOTE_LIMIT.value)
+        )
+
 
 
 class Payment(models.Model):
@@ -139,26 +151,25 @@ class Payment(models.Model):
         on_delete=models.CASCADE,
         null=False,
         blank=False,
-
     )
     payment_type = models.CharField(
         verbose_name=_('Type of payment'),
         max_length=PlayerIntEnums.PAYMENT_MAX_LENGTH.value,
         choices=Payments.choices,
-        blank=False
+        blank=False,
     )
     payment_account = models.CharField(
         verbose_name=_('Payment account of player'),
         max_length=PlayerIntEnums.PAYMENT_MAX_LENGTH.value,
         default=None,
         null=True,
-        blank=True
+        blank=True,
     )
     is_preferred = models.BooleanField(
         verbose_name=_('Players preferable payment type'),
         null=False,
         blank=False,
-        default=False
+        default=False,
     )
 
     def __str__(self) -> str:
@@ -172,21 +183,20 @@ class Favorite(models.Model):
         Player,
         on_delete=models.CASCADE,
         related_name='player',
-        verbose_name=_('Player')
+        verbose_name=_('Player'),
     )
     favorite = models.ForeignKey(
         Player,
         on_delete=models.CASCADE,
         related_name='favorite',
-        verbose_name=_('Players favorite')
+        verbose_name=_('Players favorite'),
     )
 
     class Meta:
         ordering = ['id']
         constraints = [
             models.UniqueConstraint(
-                fields=['player', 'favorite'],
-                name='unique_player_favorite'
+                fields=['player', 'favorite'], name='unique_player_favorite'
             )
         ]
         verbose_name = _('Favorite')
@@ -247,24 +257,20 @@ class PlayerRatingVote(models.Model):
         Player,
         on_delete=models.CASCADE,
         related_name='given_ratings',
-        verbose_name=_('Player who gives the rating')
+        verbose_name=_('Player who gives the rating'),
     )
     rated = models.ForeignKey(
         Player,
         on_delete=models.CASCADE,
         related_name='received_ratings',
-        verbose_name=_('Player who receives the rating')
+        verbose_name=_('Player who receives the rating'),
     )
-    value = models.FloatField(
-        verbose_name=_('Rating value')
-    )
+    value = models.FloatField(verbose_name=_('Rating value'))
     created_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name=_('Date of rating vote creation')
+        auto_now_add=True, verbose_name=_('Date of rating vote creation')
     )
     is_counted = models.BooleanField(
-        default=False,
-        verbose_name=_('Is vote counted in rating calculation')
+        default=False, verbose_name=_('Is vote counted in rating calculation')
     )
     game = models.ForeignKey(
         Game,
@@ -290,12 +296,12 @@ class PlayerRatingVote(models.Model):
             models.UniqueConstraint(
                 fields=['rater', 'rated', 'game'],
                 name='unique_rating_vote_per_game',
-                condition=models.Q(game__isnull=False)
+                condition=models.Q(game__isnull=False),
             ),
             models.UniqueConstraint(
                 fields=['rater', 'rated', 'tourney'],
                 name='unique_rating_vote_per_tourney',
-                condition=models.Q(tourney__isnull=False)
+                condition=models.Q(tourney__isnull=False),
             ),
         ]
 

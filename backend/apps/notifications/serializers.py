@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from apps.notifications.models import DeviceType, Notifications
 
@@ -18,20 +19,19 @@ class NotificationSerializer(serializers.ModelSerializer):
     """
 
     title = serializers.CharField(
-        source='notification_type.title',
-        read_only=True
+        source='notification_type.title', read_only=True
     )
     body = serializers.CharField(
-        source='notification_type.body',
-        read_only=True
+        source='notification_type.body', read_only=True
     )
     screen = serializers.CharField(
-        source='notification_type.screen',
-        read_only=True
+        source='notification_type.screen', read_only=True
     )
-    notification_id = serializers.IntegerField(source='id')
-    event_id = serializers.SerializerMethodField()
-    date = serializers.SerializerMethodField()
+    notification_id = serializers.PrimaryKeyRelatedField(
+        source='id', queryset=Notifications.objects.all()
+    )
+    event_id = serializers.SerializerMethodField(read_only=True)
+    date = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Notifications
@@ -58,3 +58,28 @@ class NotificationSerializer(serializers.ModelSerializer):
         instance.is_read = True
         instance.save()
         return instance
+
+    def validate(self, attrs):
+        player = self.context.get('player')
+        notification = attrs.get('id')
+        if not notification:
+            raise ValidationError(
+                'Notification does not exist'
+            )
+        if notification.player != player:
+            raise ValidationError(
+                f'Notification {notification.id} does not belong'
+                f' to player {player.id}'
+            )
+        return super().validate(attrs)
+
+    def save(self, **kwargs):
+        return super().save(**kwargs)
+
+
+class NotificationListSerializer(serializers.Serializer):
+    """Serializer for notification list.
+
+    Verify, serialize and deserialize data.
+    """
+    notifications = serializers.ListField(child=NotificationSerializer())

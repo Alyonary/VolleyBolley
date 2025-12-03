@@ -19,7 +19,8 @@ class CustomLocationAdmin(ModelForm):
         super().clean()
         if self.cleaned_data['country'] != self.cleaned_data['city'].country:
             raise ValidationError(
-                _('The city and country of the courts must match.'))
+                _('The city and country of the courts must match.')
+            )
 
 
 @admin.register(CourtLocation)
@@ -31,7 +32,8 @@ class LocationAdmin(admin.ModelAdmin):
         'latitude',
         'court_name',
         'country',
-        'city')
+        'city',
+    )
     search_fields = ('court_name', 'country', 'city')
     list_filter = ('country',)
     empty_value_display = _('Not defined')
@@ -47,7 +49,7 @@ class CourtAdmin(admin.ModelAdmin):
         'price_description',
         'description',
         'working_hours',
-        'is_active'
+        'is_active',
     )
     fields = (
         'location',
@@ -56,7 +58,7 @@ class CourtAdmin(admin.ModelAdmin):
         'photo_url',
         'tag_list',
         'working_hours',
-        'is_active'
+        'is_active',
     )
     search_fields = ('location__location_name',)
     list_display_links = ('location',)
@@ -66,11 +68,15 @@ class CourtAdmin(admin.ModelAdmin):
 
     def loc_court_name(self, obj):
         return str(obj.location.location_name)
+
     loc_court_name.short_description = _('Location name')
 
     def link_to_location(self, obj):
         link = reverse(
-            'admin:courts_courtlocation_change', args=[obj.location.id])
+            'admin:courts_courtlocation_change', args=[obj.location.id]
+        )
         return format_html(
-            f'<a href="{link}">Edit {obj.location.location_name}</a>')
+            f'<a href="{link}">Edit {obj.location.location_name}</a>'
+        )
+
     link_to_location.short_description = 'Edit location'

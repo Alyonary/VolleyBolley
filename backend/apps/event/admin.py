@@ -6,20 +6,18 @@ from apps.event.models import Game, GameInvitation, Tourney, TourneyTeam
 
 
 class BaseEventAdmin(admin.ModelAdmin):
-    list_display = (
-        'id',
-        'court',
-        'host',
-        'is_active',
-        'is_private',
-        'gender'
-    )
+    list_display = ('id', 'court', 'host', 'is_active', 'is_private', 'gender')
     list_display_links = ('id',)
     search_fields = ('message',)
     list_filter = ('court', 'is_active', 'is_private')
     filter_horizontal = ('player_levels', 'players')
-    empty_value_display = _('Not defined',)
-    autocomplete_fields = ('court', 'host',)
+    empty_value_display = _(
+        'Not defined',
+    )
+    autocomplete_fields = (
+        'court',
+        'host',
+    )
     readonly_fields = ('created_at', 'updated_at')
     ordering = ('id',)
     list_per_page = EventIntEnums.ADMIN_LIST_PER_PAGE.value

@@ -16,30 +16,28 @@ def location_for_court_data():
 
 @pytest.fixture
 def location_for_court_thailand(
-        location_for_court_data,
-        country_thailand,
-        city_in_thailand
+    location_for_court_data, country_thailand, city_in_thailand
 ):
     thailand_court_data = location_for_court_data.copy()
-    thailand_court_data.update({
-                'court_name': 'Test court in Thailand',
-                'country': country_thailand,
-                'city': city_in_thailand
-    })
+    thailand_court_data.update(
+        {
+            'court_name': 'Test court in Thailand',
+            'country': country_thailand,
+            'city': city_in_thailand,
+        }
+    )
     return CourtLocation.objects.create(**thailand_court_data)
 
 
 @pytest.fixture
 def location_for_court_cyprus(
-    location_for_court_data,
-    country_cyprus,
-    city_in_cyprus
+    location_for_court_data, country_cyprus, city_in_cyprus
 ):
     cyprus_court_data = location_for_court_data.copy()
     another_country = {
         'country': country_cyprus,
         'city': city_in_cyprus,
-        'court_name': 'Test court in Cyprus'
+        'court_name': 'Test court in Cyprus',
     }
     cyprus_court_data.update(another_country)
     return CourtLocation.objects.create(**cyprus_court_data)
@@ -50,7 +48,7 @@ def court_data():
     return {
         'price_description': '1$/hour',
         'description': 'Test court description',
-        'working_hours': 'Test court working hours'
+        'working_hours': 'Test court working hours',
     }
 
 
@@ -68,9 +66,7 @@ def court_thailand(court_data, location_for_court_thailand):
 
 @pytest.fixture
 def tag_data():
-    return {
-        'name': 'Test tag'
-    }
+    return {'name': 'Test tag'}
 
 
 @pytest.fixture
@@ -83,7 +79,7 @@ def contact_data(court_thailand):
     return {
         'contact_type': 'TEST Phone',
         'contact': '+79999999999',
-        'court': court_thailand
+        'court': court_thailand,
     }
 
 
@@ -109,15 +105,15 @@ def court_api_response_data():
         'price_description': '1$/hour',
         'description': 'Test court description',
         'contacts_list': [
-            {'contact_type': 'TEST Phone',
-             'contact': '+79999999999'}
+            {'contact_type': 'TEST Phone', 'contact': '+79999999999'}
         ],
         'photo_url': None,
-        'tag_list': ['Test tag'],
+        'tags': ['Test tag'],
         'location': {
             'longitude': 12.345,
             'latitude': -54.321,
             'court_name': 'Test court',
-            'location_name': 'Test location'
+            'location_name': 'Test location',
         },
-        'court_id': 1}
+        'court_id': 1,
+    }

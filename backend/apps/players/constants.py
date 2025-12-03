@@ -20,7 +20,6 @@ class LevelMarkChoices(models.IntegerChoices):
 
 
 class PlayerIntEnums(IntEnum):
-
     LOCATION_MAX_LENGTH = 150
     GENDER_MAX_LENGTH = 6
     LEVEL_MAX_LENGTH = 6
@@ -32,6 +31,8 @@ class PlayerIntEnums(IntEnum):
     PLAYER_INACTIVE_DAYS = 60
     PLAYER_VOTE_LIMIT = 2
     RATING_PERIOD_DAYS = 60
+    RECENT_ACTIVITIES_LENGTH = 5
+
 
 class Genders(models.TextChoices):
     """Gender enums for player."""
@@ -41,12 +42,12 @@ class Genders(models.TextChoices):
 
 
 class PlayerStrEnums(Enum):
-
     DEFAULT_BIRTHDAY = '2000-01-01'
-    DEFAULT_GENDER = Genders.MALE.value
-    DEFAULT_GRADE = Grades.LIGHT.value
+    DEFAULT_GENDER = Genders.MALE
+    DEFAULT_GRADE = Grades.LIGHT
     DEFAULT_FIRST_NAME = 'Anonym'
     DEFAULT_LAST_NAME = 'Anonym'
+
 
 class Payments(models.TextChoices):
     """Payments types."""
@@ -60,16 +61,16 @@ BASE_PAYMENT_DATA = [
     {
         'payment_type': Payments.CASH,
         'payment_account': None,
-        'is_preferred': True
+        'is_preferred': True,
     },
     {
         'payment_type': Payments.REVOLUT,
         'payment_account': None,
-        'is_preferred': False
+        'is_preferred': False,
     },
     {
         'payment_type': Payments.THAIBANK,
         'payment_account': None,
-        'is_preferred': False
+        'is_preferred': False,
     },
 ]

@@ -17,7 +17,7 @@ class NameMixin(m.Model):
         ordering = ('name',)
 
     def __str__(self):
-        return self.name[:CoreFieldLength.NAME_STR.value]
+        return self.name[: CoreFieldLength.NAME_STR.value]
 
 
 class TitleMixin(m.Model):
@@ -33,4 +33,4 @@ class TitleMixin(m.Model):
         ordering = ('title',)
 
     def __str__(self):
-        return self.title[:CoreFieldLength.TITLE_STR.value]
+        return self.title[: CoreFieldLength.TITLE_STR.value]

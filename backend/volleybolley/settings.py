@@ -1,7 +1,7 @@
 import os
-import sys
 from datetime import timedelta
 from pathlib import Path
+import sys
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
@@ -16,12 +16,10 @@ if ENV_PATH.exists():
 else:
     load_dotenv()
 
-load_dotenv()
-
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-
+TESTING = "pytest" in sys.modules or "test" in sys.argv
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 if not ALLOWED_HOSTS:
@@ -43,6 +41,7 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'apps.users.apps.UsersConfig',
     'apps.api.apps.ApiConfig',
+    'apps.authentication.apps.AuthenticationConfig',
     'apps.players.apps.PlayersConfig',
     'apps.courts.apps.CourtsConfig',
     'apps.event.apps.EventConfig',
@@ -52,6 +51,7 @@ INSTALLED_APPS = [
     'phonenumber_field',
     'django_filters',
     'drf_yasg',
+    'django_prometheus',
 ]
 
 USE_X_FORWARDED_HOST = True
@@ -73,14 +73,16 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = False
 
 MIDDLEWARE = [
+    "django_prometheus.middleware.PrometheusBeforeMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'apps.api.middlewares.OAuthResponseMiddleware',
+    'apps.authentication.middlewares.OAuthResponseMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    "django_prometheus.middleware.PrometheusAfterMiddleware",
 ]
 
 ROOT_URLCONF = 'volleybolley.urls'
@@ -115,16 +117,20 @@ DATABASES = {
 
 AUTH_PASSWORD_VALIDATORS = [
     {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+        'NAME': 'django.contrib.auth.password_validation.'
+                'UserAttributeSimilarityValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'NAME': 'django.contrib.auth.password_validation.'
+                'MinimumLengthValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.'
+                'CommonPasswordValidator',
     },
     {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+        'NAME': 'django.contrib.auth.password_validation.'
+                'NumericPasswordValidator',
     },
 ]
 
@@ -150,10 +156,11 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('Bearer', 'JWT'),
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=15000),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=700),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'ROTATE_REFRESH_TOKENS': False,
     'BLACKLIST_AFTER_ROTATION': False,
+    'SHOW_REFRESH_TOKEN': False,
     'UPDATE_LAST_LOGIN': True,
     'ALGORITHM': 'HS256',
     'SIGNING_KEY': SECRET_KEY,
@@ -184,12 +191,14 @@ SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.load_extra_data',
     'social_core.pipeline.user.user_details',
     'apps.players.pipeline.create_player',
-    'apps.api.pipeline.generate_json_response',
-    'apps.api.pipeline.raise_oauth_success',
+    'apps.authentication.pipeline.generate_json_response',
+    'apps.authentication.pipeline.raise_oauth_success',
 )
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_KEY', '')
-SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv('SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', '')
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = os.getenv(
+    'SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET', ''
+)
 SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
     'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
@@ -197,7 +206,9 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
 ]
 SOCIAL_AUTH_GOOGLE_OAUTH2_EXTRA_DATA = ['first_name', 'last_name']
 SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {'access_type': 'online'}
-SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = 'https://api.volleybolley.app/api/social-auth/complete/google-oauth2/'
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI = (
+    'https://api.volleybolley.app/api/social-auth/complete/google-oauth2/'
+)
 
 FIREBASE_SERVICE_ACCOUNT = {
     'type': os.getenv('FIREBASE_TYPE', 'service_account'),
@@ -206,9 +217,16 @@ FIREBASE_SERVICE_ACCOUNT = {
     'private_key': os.getenv('FIREBASE_PRIVATE_KEY', '').replace('\\n', '\n'),
     'client_email': os.getenv('FIREBASE_CLIENT_EMAIL', ''),
     'client_id': os.getenv('FIREBASE_CLIENT_ID', ''),
-    'auth_uri': os.getenv('FIREBASE_AUTH_URI', 'https://accounts.google.com/o/oauth2/auth'),
-    'token_uri': os.getenv('FIREBASE_TOKEN_URI', 'https://oauth2.googleapis.com/token'),
-    'auth_provider_x509_cert_url': os.getenv('FIREBASE_AUTH_PROVIDER_CERT_URL', 'https://www.googleapis.com/oauth2/v1/certs'),
+    'auth_uri': os.getenv(
+        'FIREBASE_AUTH_URI', 'https://accounts.google.com/o/oauth2/auth'
+    ),
+    'token_uri': os.getenv(
+        'FIREBASE_TOKEN_URI', 'https://oauth2.googleapis.com/token'
+    ),
+    'auth_provider_x509_cert_url': os.getenv(
+        'FIREBASE_AUTH_PROVIDER_CERT_URL',
+        'https://www.googleapis.com/oauth2/v1/certs'
+    ),
     'client_x509_cert_url': os.getenv('FIREBASE_CLIENT_CERT_URL', ''),
     'universe_domain': os.getenv('FIREBASE_UNIVERSE_DOMAIN', 'googleapis.com'),
 }
@@ -244,6 +262,10 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 AUTH_USER_MODEL = 'users.User'
+AUTO_CREATE_DEFAULT_SUPERUSER = os.getenv(
+    'AUTO_CREATE_DEFAULT_SUPERUSER', False
+)
+MANY_SUPERUSERS = os.getenv('MANY_SUPERUSERS', False)
 
 LOGGING = {
     'version': 1,
@@ -340,10 +362,15 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
-    #    'root': {
-    #        'handlers': ['console'],
-    #        'level': 'INFO',
-    #    },
+        'apps.users': {
+            'handlers': ['console', 'file', 'error_file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+        # 'root': {
+        #     'handlers': ['console'],
+        #     'level': 'INFO',
+        # },
     },
 }
 
@@ -367,4 +394,73 @@ CELERY_TASK_SOFT_TIME_LIMIT = 1500  # 25 minutes
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
-SWAGGER_USE_COMPAT_RENDERERS = False
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Bearer': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'Enter token in format: '
+                           '**Bearer <your_access_token>**\n\n'
+                           'You can obtain the token through authentication'
+                           ' endpoints:\n'
+                           '- Authenticate via Google (id_token)\n'
+                           '- Authenticate via Google (firebase id_token)\n'
+                           '- Authenticate via Facebook (firebase id_token)\n'
+                           '- Authenticate via phone number '
+                           '(firebase id_token)\n\n'
+                           'Response will include JSON with access_token, '
+                           'refresh_token and player data.'
+        },
+        'JWT': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header',
+            'description': 'Enter token in format: '
+                           '**JWT <your_access_token>**\n\n'
+                           'You can obtain the token through authentication'
+                           ' endpoints:\n'
+                           '- Authenticate via Google (id_token)\n'
+                           '- Authenticate via Google (firebase id_token)\n'
+                           '- Authenticate via Facebook (firebase id_token)\n'
+                           '- Authenticate via phone number '
+                           '(firebase id_token)\n\n'
+                           'Response will include JSON with access_token, '
+                           'refresh_token and player data.'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+
+    # Settings for Authorize button
+    'SECURITY_REQUIREMENTS': [
+        {'Bearer': []},
+        {'JWT': []}
+    ],
+
+    # UI customization
+    'DEEP_LINKING': True,
+    'PERSIST_AUTH': True,
+    'REFETCH_SCHEMA_ON_LOGGED_OUT': False,
+
+    # Token descriptions
+    'TOKEN_DESCRIPTION': f'''
+    ### Token Information:
+
+    - **Access Token Lifetime**: {SIMPLE_JWT['ACCESS_TOKEN_LIFETIME']}
+    - **Refresh Token Lifetime**: {SIMPLE_JWT['REFRESH_TOKEN_LIFETIME']}
+    - **Supported prefixes**: Bearer, JWT
+    - **Algorithm**: {SIMPLE_JWT['ALGORITHM']}
+
+    Use refresh_token through the appropriate endpoint to refresh your token.
+    '''
+}
+
+DEBUG_TOOLBAR_ENABLED = DEBUG and not TESTING
+
+if DEBUG_TOOLBAR_ENABLED:
+    INSTALLED_APPS += ['debug_toolbar']
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+    INTERNAL_IPS = ['127.0.0.1']
+    DEBUG_TOOLBAR_CONFIG = {
+        'SHOW_TOOLBAR_CALLBACK': lambda request: True,
+    }

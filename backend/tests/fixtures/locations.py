@@ -6,30 +6,17 @@ from apps.locations.models import City, Country
 @pytest.fixture
 def countries_cities_data():
     return {
-        'countries': [
-            {
-                'name': 'Thailand'
-            },
-            {
-                'name': 'Cyprus'
-            }
-        ],
+        'countries': [{'name': 'Thailand'}, {'name': 'Cyprus'}],
         'cities': [
-            {
-                'name': 'Bangkok',
-                'country': 'Thailand'
-            },
-            {
-                'name': 'Paphos',
-                'country': 'Cyprus'
-            }
-        ]
+            {'name': 'Bangkok', 'country': 'Thailand'},
+            {'name': 'Paphos', 'country': 'Cyprus'},
+        ],
     }
 
 
 @pytest.fixture
 def countries_cities(countries_cities_data):
-    '''Create test cities and countries data.'''
+    """Create test cities and countries data."""
     countries = {}
     for country_info in countries_cities_data['countries']:
         country = Country.objects.get_or_create(name=country_info['name'])[0]

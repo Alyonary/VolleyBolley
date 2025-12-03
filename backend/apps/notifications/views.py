@@ -1,5 +1,8 @@
 import logging
 
+from django.contrib.auth.models import AnonymousUser
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -11,15 +14,15 @@ from apps.notifications.models import Device, Notifications, NotificationsBase
 from apps.notifications.push_service import PushService
 from apps.notifications.serializers import (
     FCMTokenSerializer,
+    NotificationListSerializer,
     NotificationSerializer,
 )
+from apps.players.models import Player
 
 logger = logging.getLogger(__name__)
 
 
-class NotificationsViewSet(
-    mixins.ListModelMixin, viewsets.GenericViewSet
-):
+class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
     """
     ViewSet for notifications:
     - GET /notifications/ : list active notifications for current user
@@ -28,7 +31,7 @@ class NotificationsViewSet(
     """
 
     permission_classes = [IsRegisteredPlayer]
-    serializer_class = NotificationSerializer
+    serializer_class = NotificationListSerializer
     http_method_names = ['get', 'put', 'patch',]
 
     def get_queryset(self):
@@ -37,19 +40,56 @@ class NotificationsViewSet(
         ).order_by('-created_at')
 
     def get_serializer_class(self):
-        if self.request.method == 'PUT' and getattr(
-            self, 'action', None
-        ) == 'fcm_auth':
+        if self.action == 'fcm_auth':
             return FCMTokenSerializer
-        return NotificationSerializer
+        return NotificationListSerializer
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        user = self.request.user
+        if not isinstance(user, AnonymousUser):
+            context.update({
+                'player': Player.objects.get(user=user)
+            })
+        return context
+
+    @swagger_auto_schema(
+        tags=['notifications'],
+        operation_summary="list of active notifications for current player",
+        operation_description="""
+        **Returns:** a list of active notifications for the current player.
+        """,
+        responses={
+            200: openapi.Response('Success', NotificationListSerializer),
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response({"notifications": serializer.data})
+        serializer = self.get_serializer({'notifications': queryset})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
+    @swagger_auto_schema(
+        tags=['notifications'],
+        method='put',
+        operation_summary="Register FCM device token for current player",
+        operation_description="""
+        **Returns:** empty body response.
+        """,
+        request_body=FCMTokenSerializer,
+        responses={
+            200: 'Token updated',
+            201: 'Token created',
+            400: 'Bad request',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
     @action(
-        methods=['put', 'patch',],
+        methods=['put'],
         detail=False,
         url_path='fcm-auth',
         serializer_class=FCMTokenSerializer,
@@ -58,8 +98,6 @@ class NotificationsViewSet(
         """
         Registers or updates FCM device token for current user.
         """
-        if request.method == 'PATCH':
-            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
             token = serializer.validated_data['token']
@@ -71,34 +109,54 @@ class NotificationsViewSet(
             )
             if created:
                 return Response(status=status.HTTP_201_CREATED)
-            else:
-                return Response(status=status.HTTP_200_OK)
+            return Response(status=status.HTTP_200_OK)
         return Response(
             serializer.errors, status=status.HTTP_400_BAD_REQUEST
         )
 
-    def patch(self, request, *args, **kwargs):
+    @swagger_auto_schema(
+        tags=['notifications'],
+        operation_summary="Mark list of notifications as read",
+        operation_description="""
+        Mark a list of the notifications for the current player as read
+
+        **Returns:** empty body response.
+        """,
+        request_body=NotificationListSerializer,
+        responses={
+            200: 'Success',
+            400: 'Bad request',
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['patch'],
+        detail=False,
+        url_path='',
+        url_name='mark-read',
+        serializer_class=NotificationListSerializer,
+    )
+    def mark_read(self, request):
         """
         Bulk mark notifications as read.
         PATCH /api/notifications/
         """
-        notifications_data = request.data.get('notifications', [])
-        updated: list[int] = []
-        not_found: list[int] = []
-        for item in notifications_data:
-            notification_id = item.get('notification_id')
-            try:
-                notification = Notifications.objects.get(
-                    id=notification_id, player=request.user.player
-                )
-                notification.is_read = True
-                notification.save()
-                updated.append(notification_id)
-            except Notifications.DoesNotExist:
-                not_found.append(notification_id)
-        logger.info(
-            f'Notifications marked as read: {updated}, not found: {not_found}'
+        notifications_from_request = request.data.get('notifications')
+        instances = Notifications.objects.filter(
+            pk__in=[
+                item['notification_id'] for item in notifications_from_request
+            ]
         )
+        for instance in instances:
+            serializer = NotificationSerializer(
+                instance=instance,
+                data={'notification_id': instance.pk},
+                context=self.get_serializer_context()
+            )
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
         return Response(status=status.HTTP_200_OK)
 
     # TEST ACTION VIEW - DELETE IN PROD
@@ -142,9 +200,7 @@ class NotificationsViewSet(
             )
             if notification_type == NotificationTypes.GAME_REMINDER:
                 push_service.send_push_notifications(
-                    tokens=all_tokens,
-                    notification=notification,
-                    game_id=1
+                    tokens=all_tokens, notification=notification, game_id=1
                 )
             else:
                 push_service.send_push_notifications(

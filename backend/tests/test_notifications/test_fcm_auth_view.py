@@ -14,7 +14,7 @@ class TestFCMApi:
         fcm_token_url,
         auth_api_client_registered_player,
         user_with_registered_player,
-        fcm_token_data
+        fcm_token_data,
     ):
         """Test successful FCM token registration."""
         client = auth_api_client_registered_player
@@ -31,7 +31,7 @@ class TestFCMApi:
         fcm_token_url,
         auth_api_client_registered_player,
         user_with_registered_player,
-        existing_device
+        existing_device,
     ):
         """Test updating an existing FCM token."""
         client = auth_api_client_registered_player
@@ -50,7 +50,7 @@ class TestFCMApi:
         self,
         fcm_token_url,
         auth_api_client_registered_player,
-        invalid_fcm_token_data
+        invalid_fcm_token_data,
     ):
         """Test FCM token registration with invalid data."""
         client = auth_api_client_registered_player
@@ -64,16 +64,11 @@ class TestFCMApi:
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_fcm_token_unauthenticated(
-        self,
-        fcm_token_url,
-        fcm_token_data,
-        api_client
+        self, fcm_token_url, fcm_token_data, api_client
     ):
         """Test FCM token registration for unauthenticated user."""
 
-        response = api_client.put(
-            fcm_token_url, fcm_token_data, format='json'
-        )
+        response = api_client.put(fcm_token_url, fcm_token_data, format='json')
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_api_allowed_methods(
@@ -93,7 +88,7 @@ class TestFCMApi:
 
         response = client.patch(fcm_token_url, fcm_token_data)
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
-        
+
         response = client.put(fcm_token_url, fcm_token_data, format='json')
         assert response.status_code == status.HTTP_201_CREATED
 

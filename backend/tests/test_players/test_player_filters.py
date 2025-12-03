@@ -11,28 +11,16 @@ User = get_user_model()
 
 @pytest.fixture
 def setup_test_data():
-    '''Creates test data for filters.'''
+    """Creates test data for filters."""
     thailand = Country.objects.create(name='Thailand')
     cyprus = Country.objects.create(name='Cyprus')
-    
-    bangkok = City.objects.create(
-        country=thailand, name='Bangkok'
-    )
-    pattaya = City.objects.create(
-        country=thailand, name='Pattaya'
-    )
-    City.objects.create(
-        country=thailand, name='Chiang Mai'
-    )
-    limassol = City.objects.create(
-        country=cyprus, name='Limassol'
-    )
-    nicosia = City.objects.create(
-        country=cyprus, name='Nicosia'
-    )
-    larnaca = City.objects.create(
-        country=cyprus, name='Larnaca'
-    )
+
+    bangkok = City.objects.create(country=thailand, name='Bangkok')
+    pattaya = City.objects.create(country=thailand, name='Pattaya')
+    City.objects.create(country=thailand, name='Chiang Mai')
+    limassol = City.objects.create(country=cyprus, name='Limassol')
+    nicosia = City.objects.create(country=cyprus, name='Nicosia')
+    larnaca = City.objects.create(country=cyprus, name='Larnaca')
     john_bangkok_user = User.objects.create_user(
         username='john_bangkok',
         first_name='John',
@@ -191,10 +179,10 @@ def setup_test_data():
 
 @pytest.mark.django_db
 class TestPlayersFilter:
-    '''Tests for player filter with location sorting.'''
+    """Tests for player filter with location sorting."""
 
     def test_thailand_user_sees_only_same_city_players(self, setup_test_data):
-        '''Test Thailand users only see players from their city.'''
+        """Test Thailand users only see players from their city."""
         factory = APIRequestFactory()
         request = factory.get('/players/?search=John')
         request.user = setup_test_data['requesting_player_bangkok'].user
@@ -214,7 +202,7 @@ class TestPlayersFilter:
     def test_thailand_user_different_city_no_cross_city_results(
         self, setup_test_data
     ):
-        '''Test Thailand user from Pattaya doesn't see Bangkok players.'''
+        """Test Thailand user from Pattaya doesn't see Bangkok players."""
         factory = APIRequestFactory()
         request = factory.get('/players/?search=John')
         request.user = setup_test_data['requesting_player_pattaya'].user
@@ -232,7 +220,7 @@ class TestPlayersFilter:
         assert player.user.username == 'john_pattaya'
 
     def test_cyprus_user_sees_all_cyprus_cities(self, setup_test_data):
-        '''Test Cyprus users see players from all Cyprus cities.'''
+        """Test Cyprus users see players from all Cyprus cities."""
         factory = APIRequestFactory()
         request = factory.get('/players/?search=John')
         request.user = setup_test_data['requesting_player_limassol'].user
@@ -253,7 +241,7 @@ class TestPlayersFilter:
         assert all(country == 'Cyprus' for country in countries)
 
     def test_cyprus_user_no_thailand_players_in_results(self, setup_test_data):
-        '''Test Cyprus users don't see Thailand players.'''
+        """Test Cyprus users don't see Thailand players."""
         factory = APIRequestFactory()
         request = factory.get('/players/?search=John')
         request.user = setup_test_data['requesting_player_limassol'].user
@@ -275,7 +263,7 @@ class TestPlayersFilter:
         assert len(cyprus_players) == 2
 
     def test_cyprus_user_multiple_cities_same_name(self, setup_test_data):
-        '''Test Cyprus user sees players with same name from other cities.'''
+        """Test Cyprus user sees players with same name from other cities."""
         factory = APIRequestFactory()
         request = factory.get('/players/?search=Jane')
         request.user = setup_test_data['requesting_player_limassol'].user
@@ -294,7 +282,7 @@ class TestPlayersFilter:
         assert all(country == 'Cyprus' for country in countries)
 
     def test_thailand_city_isolation(self, setup_test_data):
-        '''Test that Thailand cities are properly isolated.'''
+        """Test that Thailand cities are properly isolated."""
         factory = APIRequestFactory()
 
         request_bangkok = factory.get('/players/?search=Jane')
@@ -326,7 +314,7 @@ class TestPlayersFilter:
         assert len(pattaya_results) == 0
 
     def test_cyprus_country_wide_search(self, setup_test_data):
-        '''Test Cyprus search works country-wide, not city-specific.'''
+        """Test Cyprus search works country-wide, not city-specific."""
         factory = APIRequestFactory()
         request = factory.get('/players/?search=John')
         request.user = setup_test_data['requesting_player_limassol'].user
@@ -364,7 +352,7 @@ class TestPlayersFilter:
         expected_cities,
         expected_count,
     ):
-        '''Parametrized test for location filtering behavior.'''
+        """Parametrized test for location filtering behavior."""
         factory = APIRequestFactory()
 
         if requesting_city == 'Bangkok':
@@ -393,7 +381,7 @@ class TestPlayersFilter:
     def test_relevance_sorting_within_location_constraints(
         self, setup_test_data
     ):
-        '''Test relevance sorting works within location constraints.'''
+        """Test relevance sorting works within location constraints."""
         factory = APIRequestFactory()
         request = factory.get('/players/?search=J')
         request.user = setup_test_data['requesting_player_bangkok'].user
@@ -409,7 +397,7 @@ class TestPlayersFilter:
             gender='MALE',
             country=setup_test_data['countries'].get(name='Thailand'),
             city=setup_test_data['thailand_cities'].get(name='Bangkok'),
-            is_registered=True
+            is_registered=True,
         )
 
         data = {'search': 'J'}
@@ -429,7 +417,7 @@ class TestPlayersFilter:
         assert 'Johnny' in names
 
     def test_empty_search_returns_all_players(self, setup_test_data):
-        '''Test that empty search returns all players.'''
+        """Test that empty search returns all players."""
         factory = APIRequestFactory()
         request = factory.get('/players/?search=')
         request.user = setup_test_data['requesting_player_bangkok'].user
@@ -446,4 +434,4 @@ class TestPlayersFilter:
 
 @pytest.mark.django_db
 class TestPlayersFilterAPI:
-    '''Class for API filter tests.'''
+    """Class for API filter tests."""

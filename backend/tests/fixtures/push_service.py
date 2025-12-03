@@ -17,38 +17,29 @@ def reset_push_service(auto_use=True):
 
 
 @pytest.fixture
-def push_service_enabled(
-    reset_push_service,
-    mock_fcm_service_ok,
-    monkeypatch
-):
+def push_service_enabled(reset_push_service, mock_fcm_service_ok, monkeypatch):
     """
     Create real PushService instance with mocked connection checks.
     All services are available and working.
     """
+
     def mock_initialize_firebase(self):
         return True
 
     def mock_check_fcm(self):
         return True
-    
+
     def mock_check_celery_availability(self):
         return True
-    
+
     monkeypatch.setattr(
-        PushService,
-        '_initialize_firebase',
-        mock_initialize_firebase
+        PushService, '_initialize_firebase', mock_initialize_firebase
     )
-    monkeypatch.setattr(
-        PushService,
-        '_check_fcm',
-        mock_check_fcm
-    )
+    monkeypatch.setattr(PushService, '_check_fcm', mock_check_fcm)
     monkeypatch.setattr(
         PushService,
         '_check_celery_availability',
-        mock_check_celery_availability
+        mock_check_celery_availability,
     )
 
     service = PushService()
@@ -63,6 +54,7 @@ def push_service_disabled(reset_push_service, monkeypatch):
     Create real PushService instance with mocked connection checks.
     All services are unavailable.
     """
+
     def mock_initialize_firebase(self):
         return False
 
@@ -73,20 +65,16 @@ def push_service_disabled(reset_push_service, monkeypatch):
         return False
 
     monkeypatch.setattr(
-        PushService,
-        '_initialize_firebase',
-        mock_initialize_firebase
-    )    
+        PushService, '_initialize_firebase', mock_initialize_firebase
+    )
     monkeypatch.setattr(PushService, '_check_fcm', mock_check_fcm)
     monkeypatch.setattr(
         PushService,
         '_check_celery_availability',
-        mock_check_celery_availability
+        mock_check_celery_availability,
     )
 
-    service = PushService()
-    
-    return service
+    return PushService()
 
 
 @pytest.fixture
@@ -94,38 +82,36 @@ def push_service_fcm_only(reset_push_service, monkeypatch):
     """
     Create real PushService with FCM available but Celery unavailable.
     """
+
     def mock_initialize_firebase(self):
         return True
 
     def mock_check_fcm(self):
         return True
-    
+
     def mock_check_celery_availability(self):
         return False
-    
+
     mock_fcm_instance = Mock()
     mock_fcm_instance.notify.return_value = None
-    
+
     def mock_fcm_notification(*args, **kwargs):
         return mock_fcm_instance
+
     monkeypatch.setattr(
-        PushService,
-        '_initialize_firebase',
-        mock_initialize_firebase
+        PushService, '_initialize_firebase', mock_initialize_firebase
     )
     monkeypatch.setattr(PushService, '_check_fcm', mock_check_fcm)
     monkeypatch.setattr(
         PushService,
         '_check_celery_availability',
-        mock_check_celery_availability
+        mock_check_celery_availability,
     )
     monkeypatch.setattr(
         'apps.notifications.push_service.FCMNotification',
-        mock_fcm_notification
+        mock_fcm_notification,
     )
-    service = PushService()
-
-    return service
+    return PushService()
 
 
 @pytest.fixture
@@ -140,7 +126,7 @@ def mock_fcm_service_ok():
 def mock_fcm_service_fail():
     """Mock FCM service that always fails."""
     mock_fcm = Mock()
-    mock_fcm.notify.side_effect =  Exception("FCM service error")
+    mock_fcm.notify.side_effect = Exception('FCM service error')
     return mock_fcm
 
 
@@ -148,7 +134,7 @@ def mock_fcm_service_fail():
 def mock_fcm_service_token_fail():
     """Mock FCM service that always fails."""
     mock_fcm = Mock()
-    mock_fcm.notify.side_effect =  FCMError("Invalid token")
+    mock_fcm.notify.side_effect = FCMError('Invalid token')
     return mock_fcm
 
 
@@ -158,7 +144,7 @@ def mock_celery_inspector_active():
     mock_inspector = Mock()
     mock_inspector.active.return_value = {
         'worker1@hostname': [],
-        'worker2@hostname': []
+        'worker2@hostname': [],
     }
     return mock_inspector
 
@@ -176,15 +162,14 @@ def push_service_mock(monkeypatch):
     """Mock PushService for tasks."""
     mock_service = Mock()
     monkeypatch.setattr(
-        'apps.notifications.tasks.PushService',
-        lambda: mock_service
+        'apps.notifications.tasks.PushService', lambda: mock_service
     )
     return mock_service
 
 
 @pytest.fixture
 def mock_tasks_import(monkeypatch):
-    '''Mock import of apps.notifications.tasks for Celery retry.'''
+    """Mock import of apps.notifications.tasks for Celery retry."""
     mock_retry_task = Mock()
     mock_retry_task.apply_async = Mock()
 
@@ -199,5 +184,3 @@ def mock_tasks_import(monkeypatch):
 
     monkeypatch.setattr(builtins, '__import__', mock_import_func)
     return mock_retry_task
-
-    

@@ -12,10 +12,7 @@ User = get_user_model()
 
 @pytest.mark.django_db
 class TestPlayerModel:
-
-    def test_create_default_player(
-        self, active_user
-    ):  
+    def test_create_default_player(self, active_user):
         player = Player.objects.create(user=active_user)
         assert player.user == active_user
         assert player.gender == 'MALE'
@@ -28,10 +25,7 @@ class TestPlayerModel:
         assert player.is_registered is False
 
     def test_not_default_player(
-        self,
-        player_not_default_data,
-        player_grade,
-        active_user
+        self, player_not_default_data, player_grade, active_user
     ):
         player = Player.objects.create(**player_not_default_data)
         player.rating.grade = player_grade
@@ -53,30 +47,21 @@ class TestPlayerModel:
             player_not_default_data.pop('user')
             Player.objects.create(**player_not_default_data)
 
-    def test_player_gender_choices_validation(
-        self, player_not_default_data
-    ):
+    def test_player_gender_choices_validation(self, player_not_default_data):
         with pytest.raises(ValidationError):
-            player_not_default_data.update(
-                {'gender': 'invalid'}
-            )
+            player_not_default_data.update({'gender': 'invalid'})
             player = Player(**player_not_default_data)
             player.full_clean()
 
     def test_player_with_bad_birthday_format(self, player_not_default_data):
         with pytest.raises(ValidationError):
-            
-            player_not_default_data.update(
-                {'date_of_birth': '12:01:1998'}
-            )
+            player_not_default_data.update({'date_of_birth': '12:01:1998'})
             player = Player(**player_not_default_data)
             player.full_clean()
 
     def test_players_birthday_in_future(self, player_not_default_data):
         with pytest.raises(ValidationError):
             future_date = date.today() + timedelta(days=(1))
-            player_not_default_data.update(
-                {'date_of_birth': future_date}
-            )
+            player_not_default_data.update({'date_of_birth': future_date})
             player = Player(**player_not_default_data)
             player.full_clean()

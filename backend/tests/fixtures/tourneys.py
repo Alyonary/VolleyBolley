@@ -13,7 +13,7 @@ def base_tourney_data(
     payment_account_revolut,
     game_levels_light,
     game_levels_medium,
-    player_thailand
+    player_thailand,
 ):
     """
     Return data for creating a tourney.
@@ -35,7 +35,7 @@ def base_tourney_data(
         'payment_type': payment_account_revolut.payment_type,
         'host': player_thailand,
         'currency_type': currency_type_thailand,
-        'payment_account': payment_account_revolut.payment_account
+        'payment_account': payment_account_revolut.payment_account,
     }
 
 
@@ -78,11 +78,6 @@ def tourney_thai_team(tourney_data_team):
 
 
 @pytest.fixture
-def tourney_for_args(tourney_thai_ind):
-    return (tourney_thai_ind.id,)
-
-
-@pytest.fixture
 def create_custom_tourney(tourney_data_individual):
     # working_data = tourney_data_individual.copy()
 
@@ -96,3 +91,22 @@ def create_custom_tourney(tourney_data_individual):
         tourney_data_individual['player_levels'] = levels
         return tourney
     return _create
+
+
+def ended_tourney(player_thailand, bulk_create_registered_players):
+    """Create a tourney that has ended."""
+    tourney = Tourney.objects.create(
+        host=player_thailand,
+        start_time=timezone.now() - timedelta(hours=3),
+        end_time=timezone.now() - timedelta(hours=1),
+        is_active=True,
+        max_players=8,
+        message='Ended tourney for testing',
+    )
+    tourney.players.set(bulk_create_registered_players[:3])
+    return tourney
+
+
+@pytest.fixture
+def tourney_for_args(tourney_thailand):
+    return (tourney_thailand.id,)

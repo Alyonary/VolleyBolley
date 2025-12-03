@@ -27,3 +27,18 @@ class IsPlayerOrReadOnly(IsRegisteredPlayer):
         if isinstance(obj, Tourney):
             return request.user.player in obj.players
         return False
+
+
+class IsPlayerInEvent(IsRegisteredPlayer):
+    """Verification of access rights for players participating in the event."""
+
+    message = 'You must be a participant of this event to access it.'
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in SAFE_METHODS:
+            return True
+        if isinstance(obj, Game):
+            return request.user.player in obj.players.all()
+        if isinstance(obj, Tourney):
+            return request.user.player in obj.players
+        return False

@@ -24,38 +24,43 @@ def users():
     user1 = User.objects.create(
         username='test_user1',
         email='test1@example.com',
-        password='testpass123'
+        password='testpass123',
     )
     user2 = User.objects.create(
         username='test_user2',
         email='test2@example.com',
-        password='testpass123'
+        password='testpass123',
     )
     user3 = User.objects.create(
         username='test_user3',
         email='test3@example.com',
-        password='testpass123'
+        password='testpass123',
     )
     user4 = User.objects.create(
         username='test_user4',
         email='test4@example.com',
-        password='testpass123'
+        password='testpass123',
     )
     user5 = User.objects.create(
         username='test_user5',
         email='test5@example.com',
-        password='testpass123'
+        password='testpass123',
     )
     user6 = User.objects.create(
         username='test_user6',
         email='test6@example.com',
-        password='testpass123'
+        password='testpass123',
     )
 
     return {
-        'user1': user1, 'user2': user2, 'user3': user3,
-        'user4': user4, 'user5': user5, 'user6': user6
+        'user1': user1,
+        'user2': user2,
+        'user3': user3,
+        'user4': user4,
+        'user5': user5,
+        'user6': user6,
     }
+
 
 @pytest.fixture
 def players(users):
@@ -66,10 +71,14 @@ def players(users):
     player4 = Player.objects.create(user=users['user4'], is_registered=True)
     player5 = Player.objects.create(user=users['user5'], is_registered=True)
     player6 = Player.objects.create(user=users['user6'], is_registered=True)
-    
+
     return {
-        'player1': player1, 'player2': player2, 'player3': player3,
-        'player4': player4, 'player5': player5, 'player6': player6
+        'player1': player1,
+        'player2': player2,
+        'player3': player3,
+        'player4': player4,
+        'player5': player5,
+        'player6': player6,
     }
 
 
@@ -77,37 +86,30 @@ def players(users):
 def devices(players):
     """Creates test devices for different players."""
     device1 = Device.objects.create(
-        token='fcm_test_token_1',
-        player=players['player1'],
-        is_active=True
+        token='fcm_test_token_1', player=players['player1'], is_active=True
     )
-    
+
     device2 = Device.objects.create(
-        token='fcm_test_token_2',
-        player=players['player2'],
-        is_active=True
+        token='fcm_test_token_2', player=players['player2'], is_active=True
     )
-    
+
     device3 = Device.objects.create(
-        token='fcm_test_token_3',
-        player=players['player3'],
-        is_active=False
+        token='fcm_test_token_3', player=players['player3'], is_active=False
     )
-    
+
     device4 = Device.objects.create(
-        token='fcm_test_token_4',
-        player=players['player3'],
-        is_active=True
+        token='fcm_test_token_4', player=players['player3'], is_active=True
     )
-    
+
     return {
         'device1': device1,
         'device2': device2,
         'device3': device3,
         'device4': device4,
         'all_devices': [device1, device2, device3, device4],
-        'active_devices': [device1, device2, device4]
+        'active_devices': [device1, device2, device4],
     }
+
 
 @pytest.fixture
 def sample_device(devices):
@@ -120,16 +122,15 @@ def device_tokens(devices):
     """Returns only device tokens for easier testing."""
     return {
         'active_tokens': [d.token for d in devices['active_devices']],
-        'all_tokens': [d.token for d in devices['all_devices']]
+        'all_tokens': [d.token for d in devices['all_devices']],
     }
+
 
 @pytest.fixture
 def fcm_token_data():
     """Returns a sample token data for FCM API tests."""
-    return {
-            'token': 'fcm-test-token-123',
-            'platform': DeviceType.ANDROID
-        }
+    return {'token': 'fcm-test-token-123', 'platform': DeviceType.ANDROID}
+
 
 @pytest.fixture
 def fcm_token_url():
@@ -146,13 +147,9 @@ def notifications_url():
 @pytest.fixture
 def user_with_player():
     """Create a user with player profile."""
-    user = User.objects.create_user(
-        username='testuser')
-    
-    player = Player.objects.create(
-        user=user,
-        is_registered=True
-    )
+    user = User.objects.create_user(username='testuser')
+
+    player = Player.objects.create(user=user, is_registered=True)
     return user, player
 
 
@@ -160,14 +157,9 @@ def user_with_player():
 def second_user_with_player():
     """Create a second user with player profile."""
     user = User.objects.create_user(
-        username='another',
-        email='another@example.com',
-        password='password123'
+        username='another', email='another@example.com', password='password123'
     )
-    player = Player.objects.create(
-        user=user,
-        is_registered=True
-    )
+    player = Player.objects.create(user=user, is_registered=True)
     return user, player
 
 
@@ -176,12 +168,9 @@ def existing_device(user_with_registered_player):
     """Create an existing device for the second user."""
     player = user_with_registered_player.player
     token = 'existing-fcm-token'
-    device = Device.objects.create(
-        token=token,
-        player=player,
-        platform=DeviceType.IOS
+    return Device.objects.create(
+        token=token, player=player, platform=DeviceType.IOS
     )
-    return device
 
 
 @pytest.fixture
@@ -189,8 +178,9 @@ def invalid_fcm_token_data():
     """Returns invalid FCM token data for testing."""
     return [
         {'platform': DeviceType.ANDROID},
-        {'token': 'some-token', 'platform': 'invalid'}
+        {'token': 'some-token', 'platform': 'invalid'},
     ]
+
 
 @pytest.fixture
 def all_notification_types(db):
@@ -201,47 +191,50 @@ def all_notification_types(db):
             defaults={
                 'title': data['title'],
                 'body': data['body'],
-                'screen': data['screen']
-            }
+                'screen': data['screen'],
+            },
         )
         notifications_objs[notif_type] = obj
     return notifications_objs
+
 
 @pytest.fixture
 def rate_notification_type(all_notification_types):
     return all_notification_types.get(NotificationTypes.GAME_RATE)
 
+
 @pytest.fixture
 def remove_notification_type(all_notification_types):
     return all_notification_types.get(NotificationTypes.GAME_REMOVED)
 
+
 @pytest.fixture
 def in_game_notification_type(all_notification_types):
     obj = all_notification_types.get(NotificationTypes.GAME_REMINDER)
-    assert obj is not None, "GAME_REMINDER notification type not found in DB"
+    assert obj is not None, 'GAME_REMINDER notification type not found in DB'
     return obj
+
 
 @pytest.fixture
 def sample_notification(
-    rate_notification_type,
-    remove_notification_type,
-    in_game_notification_type
+    rate_notification_type, remove_notification_type, in_game_notification_type
 ):
     """Returns a random NotificationsBase instance."""
     return choice(
         [
             rate_notification_type,
             remove_notification_type,
-            in_game_notification_type
+            in_game_notification_type,
         ]
     )
+
 
 @pytest.fixture
 def notifications_objs(
     authenticated_client,
     rate_notification_type,
     in_game_notification_type,
-    remove_notification_type
+    remove_notification_type,
 ):
     client, user = authenticated_client
     notif1 = Notifications.objects.create(
@@ -251,16 +244,18 @@ def notifications_objs(
         player=user.player, notification_type=in_game_notification_type
     )
     notif3 = Notifications.objects.create(
-        player=user.player, notification_type=remove_notification_type,
+        player=user.player,
+        notification_type=remove_notification_type,
     )
     return {
         'notif1': notif1,
         'notif2': notif2,
         'notif3': notif3,
         'all_notifications': [notif1, notif2, notif3],
-        'unread_notifications': [notif1, notif2]
+        'unread_notifications': [notif1, notif2],
     }
-    
+
+
 @pytest.fixture
 def game_for_notification(game_thailand):
     return game_thailand

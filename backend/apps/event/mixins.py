@@ -13,14 +13,10 @@ class EventMixin(m.Model):
 
     message = m.TextField(
         verbose_name=_('Description'),
-        validators=[MaxLengthValidator(EventIntEnums.MESSAGE.value)]
+        validators=[MaxLengthValidator(EventIntEnums.MESSAGE.value)],
     )
-    start_time = m.DateTimeField(
-        verbose_name=_('Start date and time')
-    )
-    end_time = m.DateTimeField(
-        verbose_name=_('End date and time')
-    )
+    start_time = m.DateTimeField(verbose_name=_('Start date and time'))
+    end_time = m.DateTimeField(verbose_name=_('End date and time'))
     court = m.ForeignKey(
         'courts.Court',
         verbose_name=_('Court'),
@@ -32,7 +28,7 @@ class EventMixin(m.Model):
         verbose_name=_('Gender of players'),
         choices=GenderChoices.choices,
         null=True,
-        blank=True
+        blank=True,
     )
     player_levels = m.ManyToManyField(
         'core.GameLevel',
@@ -54,16 +50,16 @@ class EventMixin(m.Model):
     payment_type = m.CharField(
         verbose_name=_('Payment type'),
         max_length=EventIntEnums.PAYMENT_VALUE.value,
-        choices=Payments.choices
+        choices=Payments.choices,
     )
     payment_account = m.CharField(
         verbose_name=_('Payment account'),
-        max_length=EventIntEnums.PAYMENT_VALUE.value
+        max_length=EventIntEnums.PAYMENT_VALUE.value,
     )
     currency_type = m.ForeignKey(
         'core.CurrencyType',
         verbose_name=_('Currency type'),
-        on_delete=m.CASCADE
+        on_delete=m.CASCADE,
     )
     is_private = m.BooleanField(
         verbose_name=_('Private event'),

@@ -1,4 +1,3 @@
-
 import pytest
 from django.contrib.auth import get_user_model
 
@@ -21,7 +20,7 @@ class TestDeviceModel:
         device = Device.objects.create(
             token='test_token_new',
             player=self.players['player1'],
-            is_active=True
+            is_active=True,
         )
         assert device.token == 'test_token_new'
         assert device.player == self.players['player1']
@@ -36,8 +35,7 @@ class TestDeviceModel:
         assert original_player == self.players['player1']
 
         device, created = Device.objects.update_or_create_token(
-            token=original_device.token,
-            player=self.players['player2']
+            token=original_device.token, player=self.players['player2']
         )
         assert not created
         assert device.player == self.players['player2']
@@ -66,12 +64,12 @@ class TestDeviceModel:
         device1 = Device.objects.create(
             token='multi_token_1',
             player=self.players['player1'],
-            is_active=True
+            is_active=True,
         )
         device2 = Device.objects.create(
             token='multi_token_2',
             player=self.players['player1'],
-            is_active=True
+            is_active=True,
         )
         player_devices = Device.objects.filter(player=self.players['player1'])
         assert player_devices.count() >= 2
@@ -100,13 +98,14 @@ class TestDeviceModel:
     def test_device_manager_in_game(self, game_for_notification):
         """Test in_game() method of Device manager."""
         import warnings
+
         with warnings.catch_warnings():
             warnings.filterwarnings(
                 'ignore',
                 message=(
                     'DateTimeField .* received a naive datetime .* while '
                     'time zone support is active.'
-                )
+                ),
             )
             game = game_for_notification
             game.players.add(self.players['player1'], self.players['player2'])
@@ -121,10 +120,7 @@ class TestDeviceModel:
         player = self.players['player1']
         token = 'unique-token-xyz'
         device, created = Device.objects.update_or_create_token(
-            token=token,
-            player=player,
-            platform=DeviceType.IOS,
-            is_active=True
+            token=token, player=player, platform=DeviceType.IOS, is_active=True
         )
         assert created is True
         assert device.token == token
@@ -134,7 +130,7 @@ class TestDeviceModel:
             token=token,
             player=player,
             platform=DeviceType.ANDROID,
-            is_active=False
+            is_active=False,
         )
         assert created2 is False
         assert device2.token == token

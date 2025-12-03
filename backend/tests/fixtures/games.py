@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import timedelta
 
 import pytest
@@ -21,7 +22,7 @@ def country_thailand():
 @pytest.fixture
 def city_in_thailand(country_thailand):
     return City.objects.get_or_create(
-        name='Pattaya', country=country_thailand
+        name='Bangkok', country=country_thailand
     )[0]
 
 
@@ -32,9 +33,9 @@ def country_cyprus():
 
 @pytest.fixture
 def city_in_cyprus(country_cyprus):
-    return City.objects.get_or_create(
-        name='Limassol', country=country_cyprus
-    )[0]
+    return City.objects.get_or_create(name='Limassol', country=country_cyprus)[
+        0
+    ]
 
 
 @pytest.fixture
@@ -45,7 +46,7 @@ def game_data(
     payment_account_revolut,
     game_levels_light,
     game_levels_medium,
-    player_thailand
+    player_thailand,
 ):
     """
     Return data for creating a game.
@@ -60,10 +61,7 @@ def game_data(
         'start_time': start_time,
         'end_time': end_time,
         'gender': 'MEN',
-        'player_levels': [
-            game_levels_light,
-            game_levels_medium
-        ],
+        'player_levels': [game_levels_light, game_levels_medium],
         'is_private': False,
         'max_players': 5,
         'price_per_person': '5.00',
@@ -71,8 +69,20 @@ def game_data(
         'players': bulk_create_registered_players,
         'host': player_thailand,
         'currency_type': currency_type_thailand,
-        'payment_account': payment_account_revolut.payment_account
+        'payment_account': payment_account_revolut.payment_account,
     }
+
+
+@pytest.fixture
+def game_data_past(game_data):
+    start_time = timezone.now() - timedelta(days=2)
+    end_time = start_time + timedelta(hours=3)
+    new_game_data = deepcopy(game_data)
+    new_game_data.update(
+        {'start_time': start_time,
+         'end_time': end_time}
+    )
+    return new_game_data
 
 
 @pytest.fixture
@@ -97,14 +107,33 @@ def game_thailand_with_players(game_data):
 
 
 @pytest.fixture
+def archived_game_thailand(game_thailand_with_players):
+    game = game_thailand_with_players
+    game.end_time = timezone.now() - timedelta(days=1)
+    game.is_active = False
+    game.save()
+    return game
+
+
+@pytest.fixture
+def game_thailand_with_players_past(game_data_past):
+    working_data = game_data_past.copy()
+    players = working_data.pop('players')
+    levels = working_data.pop('player_levels')
+    game = Game.objects.create(**working_data)
+    game.players.set(players)
+    game.player_levels.set(levels)
+    return game
+
+
+@pytest.fixture
 def game_for_args(game_thailand):
     return (game_thailand.id,)
 
 
 @pytest.fixture
 def client():
-    client = APIClient()
-    return client
+    return APIClient()
 
 
 @pytest.fixture
@@ -120,7 +149,7 @@ def another_user():
         last_name='Test user for Cyprus 1',
         username='Test user for Cyprus 1',
         email='test4@cyprus.com',
-        password='test4@cyprus.com'
+        password='test4@cyprus.com',
     )
 
 
@@ -131,7 +160,7 @@ def player_thailand(active_user, country_thailand, city_in_thailand):
         gender='MALE',
         country=country_thailand,
         city=city_in_thailand,
-        is_registered=True
+        is_registered=True,
     )
 
 
@@ -140,7 +169,7 @@ def payment_account_revolut(player_thailand):
     return Payment.objects.create(
         player=player_thailand,
         payment_type='REVOLUT',
-        payment_account='test acc'
+        payment_account='test acc',
     )
 
 
@@ -151,7 +180,7 @@ def player_cyprus(another_user, country_cyprus, city_in_cyprus):
         gender='MALE',
         country=country_cyprus,
         city=city_in_cyprus,
-        is_registered=True
+        is_registered=True,
     )
 
 
@@ -180,7 +209,7 @@ def game_create_data(
     court_thailand,
     game_levels_light,
     game_levels_medium,
-    payment_account_revolut
+    payment_account_revolut,
 ):
     start_time = timezone.now() + timedelta(days=2)
     end_time = start_time + timedelta(hours=2)
@@ -191,13 +220,12 @@ def game_create_data(
         'start_time': start_time.isoformat().replace('+00:00', 'Z'),
         'end_time': end_time.isoformat().replace('+00:00', 'Z'),
         'gender': 'MEN',
-        'levels': [game_levels_light.name,
-                   game_levels_medium.name],
+        'levels': [game_levels_light.name, game_levels_medium.name],
         'is_private': False,
         'maximum_players': 5,
         'price_per_person': '5.00',
         'payment_type': payment_account_revolut.payment_type,
-        'players': []
+        'players': [],
     }
 
 
@@ -215,7 +243,7 @@ def player_thailand_female_pro(country_thailand):
         user=user,
         gender='FEMALE',
         country=country_thailand,
-        is_registered=True
+        is_registered=True,
     )
     player.rating.grade = Grades.PRO.value
     player.rating.save()
@@ -234,7 +262,7 @@ def three_games_thailand(game_data):
     games = []
     for i in range(3):
         working_data = game_data.copy()
-        working_data['message'] = f'Test game {i+1} in Thailand'
+        working_data['message'] = f'Test game {i + 1} in Thailand'
         players = working_data.pop('players')
         levels = working_data.pop('player_levels')
 

@@ -1,8 +1,8 @@
 # apps/api/middleware.py
 from django.http import JsonResponse
 
-from .exceptions import OAuthSuccessException
-from .serializers import LoginSerializer
+from apps.authentication.exceptions import OAuthSuccessException
+from apps.authentication.serializers import LoginSerializer
 
 
 class OAuthResponseMiddleware:
@@ -12,8 +12,7 @@ class OAuthResponseMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        response = self.get_response(request)
-        return response
+        return self.get_response(request)
 
     def process_exception(self, request, exception):
         """Break social-auth pipeline and return JsonResponse."""
