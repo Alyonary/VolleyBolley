@@ -1,4 +1,4 @@
-from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 
 
 class IsNotRegisteredPlayer(IsAuthenticated):

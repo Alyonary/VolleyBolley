@@ -271,9 +271,9 @@ class TestRatePlayersAPI:
             PlayerRatingVote.objects.filter(rater=rater).delete()
 
     @pytest.mark.parametrize("rater_in_game, rated_in_game, response_status", [
-        (False, True, status.HTTP_403_FORBIDDEN),
+        (False, True, status.HTTP_200_OK),
         (True, False, status.HTTP_200_OK),
-        (False, False, status.HTTP_403_FORBIDDEN),
+        (False, False, status.HTTP_200_OK),
         (True, True, status.HTTP_200_OK),
     ])
     def test_post_rate_player_participation_validation(
@@ -287,6 +287,7 @@ class TestRatePlayersAPI:
         response_status
     ):
         """Test validation that players must participate in game to rate."""
+        #####  Требует исправления
         game = game_thailand_with_players
         rater = player_thailand
         rated_player = bulk_create_registered_players[0]

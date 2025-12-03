@@ -11,7 +11,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from apps.core.permissions import IsRegisteredPlayer
 from apps.event.enums import EventIntEnums
 from apps.event.models import Game, GameInvitation, Tourney, TourneyTeam
 from apps.event.permissions import IsHostOrReadOnly, IsPlayerOrReadOnly
@@ -19,9 +18,9 @@ from apps.event.serializers import (
     GameDetailSerializer,
     GameInviteSerializer,
     GameSerializer,
+    GameTourneySerializer,
     TourneyDetailSerializer,
     TourneySerializer,
-    GameTourneySerializer
 )
 from apps.event.utils import procces_rate_players_request
 
@@ -234,7 +233,8 @@ class GameViewSet(GenericViewSet,
 
         game = self.get_object()
         player = request.user.player
-        if game.max_players > game.players.count():
+        if (game.event_invites.filter(invited=player).exists()
+                and game.max_players > game.players.count()):
             is_joined = {'is_joined': True}
             game.players.add(player)
             game.event_invites.filter(invited=player).delete()
@@ -265,10 +265,9 @@ class TourneyViewSet(
         if player is None or player.country is None:
             return Tourney.objects.all().select_related(
                 'host', 'court').prefetch_related('teams', 'teams__players')
-        return Tourney.objects.filter(
-            court__location__country=player.country
-        ).select_related('host', 'court'
-                         ).prefetch_related('teams', 'teams__players')
+        return Tourney.objects.player_located_games(
+            player).select_related(
+                'host', 'court').prefetch_related('teams', 'teams__players')
 
     def get_serializer_class(self):
         if self.action in ('retrieve', 'joining_tournament'):
@@ -302,6 +301,13 @@ class TourneyViewSet(
                 data={
                     'team_id': (
                         'The player is already participate in tournament.')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif not tourney.event_invites.filter(invited=player).exists():
+            return Response(
+                data={
+                    'team_id': (
+                        'The player have not invitation in this tournament.')},
                 status=status.HTTP_400_BAD_REQUEST
             )
         elif (

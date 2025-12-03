@@ -1,24 +1,26 @@
 from datetime import timedelta
 
 import pytest
+
 # from django.core.exceptions import ValidationError
 from django.urls import reverse
-# from django.utils.dateparse import parse_datetime
+from django.utils.dateparse import parse_datetime
 from django.utils.timezone import now
 from pytest_lazy_fixtures import lf
 from rest_framework import status
 
-from apps.event.models import Tourney, GameInvitation, TourneyTeam
+from apps.event.models import GameInvitation, Tourney, TourneyTeam
+from apps.event.serializers import TourneyShortSerializer
 
 
 @pytest.mark.django_db
-class TestGameModel:
+class TestTourneyModel:
 
     @pytest.mark.parametrize('tourney, data', [
         (lf('tourney_thai_ind'), lf('tourney_data_individual')),
         (lf('tourney_thai_team'), lf('tourney_data_team'))
     ])
-    def test_create_tourney_ind(
+    def test_create_tourney(
             self,
             tourney,
             player_thailand,
@@ -45,6 +47,15 @@ class TestGameModel:
         assert TourneyTeam.objects.filter(tourney=tourney).exists()
         assert tourney.teams.count() == tourney.maximum_teams
 
+    @pytest.mark.parametrize('tourney', [
+        (lf('tourney_thai_ind')),
+        (lf('tourney_thai_team'))
+    ])
+    def test_create_tourney_teams(
+            self,
+            tourney
+            ):
+        assert tourney.teams.count() == tourney.maximum_teams
 
 
 @pytest.mark.django_db
@@ -143,6 +154,23 @@ class TestTourneyAPI:
             ).first()
             assert invite is not None
 
+    def test_create_invitation_wrong_level(
+            self,
+            tourney_thai_ind,
+            api_client_thailand,
+            player_thailand_female_pro
+            ):
+        levels = [level.name for level in tourney_thai_ind.player_levels.all()]
+        assert player_thailand_female_pro.rating.grade not in levels
+        url = reverse(
+            'api:tournaments-invite-players',
+            args=(tourney_thai_ind.id,)
+        )
+        data = {'players': [player_thailand_female_pro.id,]}
+        response = api_client_thailand.post(url, data, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert GameInvitation.objects.count() == 0
+
 
 @pytest.mark.django_db
 class TestTourney:
@@ -166,7 +194,7 @@ class TestTourney:
             api_client_thailand_pro,
             player_thailand_female_pro
     ):
-        inv = GameInvitation.objects.create(
+        GameInvitation.objects.create(
             host=tourney.host,
             invited=player_thailand_female_pro,
             content_object=tourney
@@ -174,357 +202,431 @@ class TestTourney:
         url = reverse(
             'api:tournaments-joining-tournament', args=(tourney.id,))
         assert len(tourney.players) == 0
-        response = api_client_thailand_pro.post(url)
+        request_data = {'team_id': tourney.teams.last().id}
+        response = api_client_thailand_pro.post(
+            url, request_data, format='json')
 
         assert player_thailand_female_pro in tourney.players
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
-        assert data['is_joined'] is True
+        assert response.json()['is_joined'] is True
         assert GameInvitation.objects.first() is None
-        assert inv is None
 
-#     def test_for_game_invitation_declining(
-#             self,
-#             game_thailand,
-#             api_client_cyprus,
-#             player_cyprus,
+    def test_team_tourney_joining_with_wrong_data(
+            self,
+            tourney_thai_ind,
+            tourney_thai_team,
+            api_client_thailand_pro,
+            player_thailand_female_pro,
+            bulk_create_registered_players
+    ):
+        url = reverse(
+            'api:tournaments-joining-tournament', args=(tourney_thai_team.id,))
+        # wrong team_id
+        request_data = {'team_id': tourney_thai_ind.teams.last().id}
+        response = api_client_thailand_pro.post(
+            url, request_data, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert player_thailand_female_pro not in tourney_thai_team.players
+        # wrong key
+        request_data = {'wrong_key': tourney_thai_team.teams.last().id}
+        response = api_client_thailand_pro.post(
+            url, request_data, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert player_thailand_female_pro not in tourney_thai_team.players
+        # no invitation
+        request_data = {'team_id': tourney_thai_team.teams.last().id}
+        response = api_client_thailand_pro.post(
+            url, request_data, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert player_thailand_female_pro not in tourney_thai_team.players
+        # already paticipate
+        team = tourney_thai_team.teams.last()
+        another_team = tourney_thai_team.teams.first()
+        team.players.add(player_thailand_female_pro)
+        GameInvitation.objects.create(
+            host=tourney_thai_team.host,
+            invited=player_thailand_female_pro,
+            content_object=tourney_thai_team
+        )
+        request_data = {'team_id': another_team.id}
+        response = api_client_thailand_pro.post(
+            url, request_data, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert player_thailand_female_pro not in another_team.players.all()
+        assert player_thailand_female_pro in team.players.all()
+        team.players.clear()
+        # team is fullfilled in team tourney
+        team.players.set(bulk_create_registered_players[:2])
+        assert team.players.count() == 2
+        request_data = {'team_id': team.id}
+        response = api_client_thailand_pro.post(
+            url, request_data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()['is_joined'] is False
+        assert player_thailand_female_pro not in tourney_thai_team.players
 
-#     ):
-#         GameInvitation.objects.create(
-#             host=game_thailand.host,
-#             invited=player_cyprus,
-#             content_object=game_thailand
-#         )
-#         url = reverse(
-#             'api:games-delete-invitation',
-#             args=(game_thailand.id,)
-#         )
-#         assert game_thailand.players.count() == 0
-#         response = api_client_cyprus.delete(url)
-#         assert player_cyprus not in game_thailand.players.all()
-#         assert response.status_code == status.HTTP_204_NO_CONTENT
-#         assert GameInvitation.objects.first() is None
+    def test_ind_tourney_joining_with_wrong_data(
+            self,
+            tourney_thai_ind,
+            api_client_thailand_pro,
+            player_thailand_female_pro,
+            bulk_create_registered_players,
+            player_thailand
+    ):
+        # team is fullfilled in individual tourney
+        url = reverse(
+            'api:tournaments-joining-tournament', args=(tourney_thai_ind.id,))
+        team = tourney_thai_ind.teams.first()
+        team.players.set(bulk_create_registered_players)
+        team.players.add(player_thailand)
+        assert team.players.count() == tourney_thai_ind.max_players
+        assert tourney_thai_ind.teams.count() == 1
+        GameInvitation.objects.create(
+            host=tourney_thai_ind.host,
+            invited=player_thailand_female_pro,
+            content_object=tourney_thai_ind
+        )
+        request_data = {'team_id': team.id}
+        response = api_client_thailand_pro.post(
+            url, request_data, format='json')
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json()['is_joined'] is False
+        assert player_thailand_female_pro not in tourney_thai_ind.players
 
-#     def test_filtering_queryset(
-#             self,
-#             game_thailand,
-#             game_cyprus,
-#             player_thailand,
-#             api_client_thailand,
-#     ):
-#         assert Game.objects.count() == 2
-#         response = api_client_thailand.get(
-#             reverse('api:games-upcoming-games')
-#         )
-#         assert len(response.data['games']) == 1
-#         assert response.data['games'][0]['game_id'] == game_thailand.id
+    def test_for_tourney_invitation_declining(
+            self,
+            tourney_thai_ind,
+            api_client_thailand_pro,
+            player_thailand_female_pro,
 
-#     def test_deleting_game_by_host(
-#             self,
-#             api_client_thailand,
-#             game_thailand,
-#             game_for_args
-#     ):
-#         assert Game.objects.count() == 1
-#         response = api_client_thailand.delete(
-#             reverse('api:games-detail', args=game_for_args))
-#         assert response.status_code == status.HTTP_204_NO_CONTENT
-#         assert Game.objects.count() == 0
+    ):
+        GameInvitation.objects.create(
+            host=tourney_thai_ind.host,
+            invited=player_thailand_female_pro,
+            content_object=tourney_thai_ind
+        )
+        url = reverse(
+            'api:tournaments-delete-invitation',
+            args=(tourney_thai_ind.id,)
+        )
+        assert len(tourney_thai_ind.players) == 0
+        assert tourney_thai_ind.event_invites.count() == 1
+        response = api_client_thailand_pro.delete(url)
+        assert player_thailand_female_pro not in tourney_thai_ind.players
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert GameInvitation.objects.first() is None
 
-#     def test_deleting_game_by_non_host(
-#             self,
-#             player_thailand_female_pro,
-#             game_thailand,
-#             game_for_args,
-#             client
-#     ):
-#         client.force_authenticate(player_thailand_female_pro.user)
-#         assert Game.objects.count() == 1
-#         response = client.delete(
-#             reverse('api:games-detail', args=game_for_args))
-#         assert response.status_code == status.HTTP_403_FORBIDDEN
-#         assert Game.objects.count() == 1
+    def test_for_tourney_invitation_declining_wrong_player(
+            self,
+            tourney_thai_ind,
+            api_client_thailand,
+            player_thailand_female_pro,
 
+    ):
+        GameInvitation.objects.create(
+            host=tourney_thai_ind.host,
+            invited=player_thailand_female_pro,
+            content_object=tourney_thai_ind
+        )
+        url = reverse(
+            'api:tournaments-delete-invitation',
+            args=(tourney_thai_ind.id,)
+        )
+        assert tourney_thai_ind.event_invites.count() == 1
+        assert len(tourney_thai_ind.players) == 0
+        response = api_client_thailand.delete(url)
+        assert player_thailand_female_pro not in tourney_thai_ind.players
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert GameInvitation.objects.first() is not None
 
-# @pytest.mark.django_db(transaction=False)
-# class TestGameSerializers:
+    def test_filtering_queryset(
+            self,
+            tourney_thai_ind,
+            create_custom_tourney,
+            court_cyprus,
+            api_client_thailand,
+    ):
+        create_custom_tourney(court_id=court_cyprus.id)
+        assert Tourney.objects.count() == 2
+        response = api_client_thailand.get(
+            reverse('api:games-upcoming-games')
+        )
+        assert len(response.data['tournaments']) == 1
+        assert response.data['tournaments'][0][
+            'tournament_id'] == tourney_thai_ind.id
 
-#     def test_game_create_serializer(
-#             self,
-#             court_thailand,
-#             api_client_thailand,
-#             player_thailand,
-#             currency_type_thailand,
-#             payment_account_revolut,
-#             game_create_data
-#     ):
+    def test_deleting_game_by_host(
+            self,
+            api_client_thailand,
+            tourney_thai_ind,
+            tourney_for_args
+    ):
+        assert Tourney.objects.count() == 1
+        response = api_client_thailand.delete(
+            reverse('api:tournaments-detail', args=tourney_for_args))
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert Tourney.objects.count() == 0
 
-#         response = api_client_thailand.post(
-#             reverse('api:games-list'),
-#             data=game_create_data,
-#             format='json'
-#         )
+    def test_deleting_game_by_non_host(
+            self,
+            api_client_thailand_pro,
+            tourney_thai_ind,
+            tourney_for_args
+    ):
 
-#         assert response.status_code == status.HTTP_201_CREATED
-#         assert Game.objects.filter(
-#             pk=response.json()['game_id']
-#         ).exists()
-
-#         response_data = response.json()
-
-#         assert response_data['court_id'] == court_thailand.id
-#         assert response_data['message'] == game_create_data['message']
-#         assert response_data['gender'] == game_create_data['gender']
-#         assert response_data['levels'] == game_create_data['levels']
-#         assert response_data['is_private'] == game_create_data['is_private']
-#         assert (response_data['maximum_players'] ==
-#                 game_create_data['maximum_players'])
-#         assert (response_data['price_per_person'] ==
-#                 game_create_data['price_per_person'])
-#         assert (response_data['currency_type'] ==
-#                 currency_type_thailand.currency_type)
-#         assert (response_data['payment_type'] ==
-#                 game_create_data['payment_type'])
-#         assert (response_data['payment_account'] ==
-#                 payment_account_revolut.payment_account)
-#         assert response_data['players'] == [player_thailand.id]
-#         assert response_data['start_time'] == game_create_data['start_time']
-#         assert response_data['end_time'] == game_create_data['end_time']
-#         assert 'game_id' in response_data
-#         assert isinstance(response_data['game_id'], int)
-
-#     def test_game_detail_serializer(
-#             self,
-#             api_client_thailand,
-#             player_thailand,
-#             game_thailand_with_players,
-#             court_thailand
-#     ):
-#         response = api_client_thailand.get(
-#             reverse(
-#                 'api:games-detail',
-#                 args=(game_thailand_with_players.id,)
-#             )
-#         )
-#         response_data = response.json()
-
-#         players = response_data.pop('players')
-#         assert game_thailand_with_players.players.count() == len(players)
-#         for key in list(players[0].keys()):
-#             assert key in (
-#                 'player_id', 'first_name', 'last_name', 'level', 'avatar'
-#             )
-
-#         levels = response_data.pop('levels')
-#         for level in game_thailand_with_players.player_levels.all():
-#             assert level.name in levels
-
-#         assert (response_data['game_id'] ==
-#                 game_thailand_with_players.id)
-#         assert (response_data['is_private'] ==
-#                 game_thailand_with_players.is_private)
-#         assert (response_data['message'] ==
-#                 game_thailand_with_players.message)
-#         assert (response_data['gender'] ==
-#                 game_thailand_with_players.gender)
-#         assert (response_data['price_per_person'] ==
-#                 game_thailand_with_players.price_per_person)
-#         assert (response_data['currency_type'] ==
-#                 game_thailand_with_players.currency_type.currency_type)
-#         assert (response_data['payment_type'] ==
-#                 game_thailand_with_players.payment_type)
-#         assert (response_data['payment_account'] ==
-#                 game_thailand_with_players.payment_account)
-#         assert (response_data['maximum_players'] ==
-#                 game_thailand_with_players.max_players)
-
-#         host = response_data['host']
-#         assert host['player_id'] == player_thailand.id
-#         assert host['first_name'] == player_thailand.user.first_name
-#         assert host['last_name'] == player_thailand.user.last_name
-#         assert host['avatar'] == player_thailand.avatar
-#         assert host['level'] == player_thailand.rating.grade
-
-#         court = response_data['court_location']
-#         assert court['longitude'] == court_thailand.location.longitude
-#         assert court['latitude'] == court_thailand.location.latitude
-#         assert court['court_name'] == court_thailand.location.court_name
-#         assert (court['location_name'] ==
-#                 court_thailand.location.location_name)
-
-#         assert (parse_datetime(response_data['start_time']) ==
-#                 game_thailand_with_players.start_time)
-#         assert (parse_datetime(response_data['end_time']) ==
-#                 game_thailand_with_players.end_time)
-
-#     @pytest.mark.parametrize(('field, value'), [
-#         ('start_time', '2024-07-01T14:30:00Z'),
-#         ('end_time', '2024-07-01T14:30:00Z'),
-#         ('gender', 'Wrong gender'),
-#         ('levels', ['Wrong levels'])
-#     ])
-#     def test_create_game_with_wrong_data(
-#             self,
-#             game_create_data,
-#             api_client_thailand,
-#             field,
-#             value
-#     ):
-#         wrong_data = game_create_data
-#         wrong_data[field] = value
-#         response = api_client_thailand.post(
-#             reverse('api:games-list'),
-#             data=game_create_data,
-#             format='json'
-#         )
-#         assert response.status_code == status.HTTP_400_BAD_REQUEST
-
-#     def test_level_validation_in_game_invitation(
-#             self,
-#             player_thailand_female_pro,
-#             api_client_thailand,
-#             game_for_args
-#     ):
-#         response = api_client_thailand.post(
-#             reverse('api:games-invite-players', args=game_for_args),
-#             data={'players': [player_thailand_female_pro.id,]}
-#         )
-#         assert response.status_code == status.HTTP_400_BAD_REQUEST
-#         assert response.data.get('invited')
-
-#     def test_game_short_serializer(
-#             self,
-#             game_thailand,
-#             game_thailand_with_players
-#     ):
-#         games = Game.objects.all()
-#         serializer = GameShortSerializer(games, many=True)
-#         result = serializer.data[0]
-#         assert result['game_id'] == game_thailand.id
-#         assert result['message'] == game_thailand.message
-
-#         assert (parse_datetime(result['start_time']) ==
-#                 game_thailand.start_time)
-#         assert (parse_datetime(result['end_time']) ==
-#                 game_thailand.end_time)
-
-#         host = result['host']
-#         assert host['player_id'] == game_thailand.host.id
-#         assert host['first_name'] == game_thailand.host.user.first_name
-#         assert host['last_name'] == game_thailand.host.user.last_name
-#         assert host['avatar'] == game_thailand.host.avatar
-#         assert host['level'] == game_thailand.host.rating.grade
-
-#         court = result['court_location']
-#         assert court['longitude'] == game_thailand.court.location.longitude
-#         assert court['latitude'] == game_thailand.court.location.latitude
-#         assert (court['court_name'] ==
-#                 game_thailand.court.location.court_name)
-#         assert (court['location_name'] ==
-#                 game_thailand.court.location.location_name)
+        assert Tourney.objects.count() == 1
+        response = api_client_thailand_pro.delete(
+            reverse('api:tournaments-detail', args=tourney_for_args))
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Tourney.objects.count() == 1
 
 
-# @pytest.mark.django_db()
-# class TestGameFiltering:
+@pytest.mark.django_db(transaction=False)
+class TestTourneySerializers:
 
-#     def test_preview_filtering(
-#             self,
-#             api_client_thailand,
-#             game_data,
-#             game_thailand,
-#             player_thailand
-#     ):
-#         nearest_time = now() + timedelta(minutes=5)
-#         nearest_time = nearest_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-#         game_data['start_time'] = nearest_time
-#         game_data.pop('players')
-#         game_data.pop('player_levels')
-#         Game.objects.create(**game_data)
-#         assert Game.objects.count() == 2
-#         response = api_client_thailand.get(reverse('api:games-preview'))
-#         assert response.json() == {
-#             'upcoming_game_time': nearest_time,
-#             'invites': 0
-#         }
+    @pytest.mark.parametrize(
+        ('tourney'),
+        [lf('tourney_thai_ind'),
+            lf('tourney_thai_team')])
+    def test_tourney_detail_serializer(
+            self,
+            api_client_thailand,
+            player_thailand,
+            tourney,
+            court_thailand,
+            bulk_create_registered_players
+    ):
+        team = tourney.teams.first()
+        team.players.set(bulk_create_registered_players[:2])
 
-#     def test_preview_with_invites(
-#             self,
-#             api_client_thailand,
-#             player_thailand,
-#             game_cyprus
-#     ):
-#         GameInvitation.objects.create(
-#             content_object=game_cyprus,
-#             host=game_cyprus.host,
-#             invited=player_thailand
-#         )
-#         response = api_client_thailand.get(reverse('api:games-preview'))
-#         assert response.json() == {
-#             'upcoming_game_time': None,
-#             'invites': 1
-#         }
+        response = api_client_thailand.get(
+            reverse(
+                'api:tournaments-detail',
+                args=(tourney.id,)
+            )
+        )
+        response_data = response.json()
 
-#     def test_my_games_filtering(
-#             self,
-#             api_client_thailand,
-#             game_thailand,
-#             game_thailand_with_players,
-#             player_thailand_female_pro
-#     ):
-#         game_thailand_with_players.host = player_thailand_female_pro
-#         game_thailand_with_players.save()
-#         assert Game.objects.count() == 2
-#         response = api_client_thailand.get(reverse('api:games-my-games'))
-#         assert len(response.data['games']) == 1
-#         assert (response.data['games'][0]['game_id'] ==
-#                 game_thailand.id)
+        teams = response_data.pop('teams')
+        assert tourney.teams.count() == len(teams)
+        assert teams[0]['team_id'] == team.id
+        player_ids = [
+            player.id for player in bulk_create_registered_players[:2]
+        ]
+        for player in teams[0]['players']:
+            assert player['player_id'] in player_ids
 
-#     def test_archive_filtering(
-#             self,
-#             player_thailand,
-#             game_thailand,
-#             game_thailand_with_players,
-#     ):
-#         game_thailand_with_players.start_time = (
-#             now() - timedelta(weeks=520)
-#         )
-#         game_thailand_with_players.save()
-#         assert Game.objects.count() == 2
-#         result = Game.objects.archive_games(player_thailand)
-#         assert len(result) == 1
-#         assert result[0].id == game_thailand_with_players.id
+        levels = response_data.pop('levels')
+        for level in tourney.player_levels.all():
+            assert level.name in levels
 
-#     def test_invites_filtering(
-#             self,
-#             game_thailand,
-#             game_thailand_with_players,
-#             player_thailand_female_pro
-#     ):
-#         games = Game.objects.invited_games(player_thailand_female_pro)
-#         assert not games
+        court_data = response_data.pop('court_location')
+        assert court_data['longitude'] == court_thailand.location.longitude
+        assert court_data['latitude'] == court_thailand.location.latitude
+        assert court_data['court_name'] == court_thailand.location.court_name
+        assert court_data[
+            'location_name'] == court_thailand.location.location_name
 
-#         GameInvitation.objects.create(
-#             content_object=game_thailand,
-#             host=game_thailand.host,
-#             invited=player_thailand_female_pro
-#         )
-#         games = Game.objects.invited_games(player_thailand_female_pro)
-#         assert len(games) == 1
-#         assert games.first() == game_thailand
+        host = response_data.pop('host')
+        assert host['player_id'] == player_thailand.id
+        assert host['first_name'] == player_thailand.user.first_name
+        assert host['last_name'] == player_thailand.user.last_name
+        assert host['avatar'] == player_thailand.avatar
+        assert host['level'] == player_thailand.rating.grade
 
-#     def test_upcoming_filtering(
-#             self,
-#             game_thailand,
-#             game_thailand_with_players,
-#             player_thailand_female_pro
-#     ):
-#         upcomming_games = Game.objects.upcomming_games(
-#             player_thailand_female_pro
-#         )
-#         assert not upcomming_games
-#         game_thailand.players.add(player_thailand_female_pro)
-#         upcomming_games = Game.objects.upcomming_games(
-#             player_thailand_female_pro
-#         )
-#         assert len(upcomming_games) == 1
-#         assert upcomming_games.first() == game_thailand
+        assert (response_data['tournament_id'] ==
+                tourney.id)
+        assert (response_data['is_individual'] ==
+                tourney.is_individual)
+        assert (response_data['message'] ==
+                tourney.message)
+        assert (parse_datetime(response_data['start_time']) ==
+                tourney.start_time)
+        assert (parse_datetime(response_data['end_time']) ==
+                tourney.end_time)
+        assert (response_data['gender'] ==
+                tourney.gender)
+        assert (response_data['price_per_person'] ==
+                tourney.price_per_person)
+        assert (response_data['currency_type'] ==
+                tourney.currency_type.currency_type)
+        assert (response_data['payment_type'] ==
+                tourney.payment_type)
+        assert (response_data['payment_account'] ==
+                tourney.payment_account)
+        assert (response_data['maximum_players'] ==
+                tourney.max_players)
+        assert (response_data['maximum_teams'] ==
+                tourney.maximum_teams)
+
+    def test_wrong_level_validation_in_tourney_invitation(
+            self,
+            player_thailand_female_pro,
+            api_client_thailand,
+            tourney_thai_ind,
+            tourney_for_args
+    ):
+        response = api_client_thailand.post(
+            reverse('api:tournaments-invite-players', args=tourney_for_args),
+            data={'players': [player_thailand_female_pro.id,]}
+        )
+        levels = [level.name for level in tourney_thai_ind.player_levels.all()]
+        assert player_thailand_female_pro.rating.grade not in levels
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert response.data[0].get('invited')
+
+    def test_level_validation_in_tourney_invitation(
+            self,
+            player_thailand_female_pro,
+            api_client_thailand_pro,
+            player_thailand,
+            create_custom_tourney
+    ):
+        tourney = create_custom_tourney(host=player_thailand_female_pro)
+        response = api_client_thailand_pro.post(
+            reverse('api:tournaments-invite-players', args=(tourney.id,)),
+            data={'players': [player_thailand.id,]}
+        )
+        levels = [level.name for level in tourney.player_levels.all()]
+        assert player_thailand.rating.grade in levels
+        assert response.status_code == status.HTTP_201_CREATED
+        assert tourney.event_invites.filter(invited=player_thailand).exists()
+
+    def test_tourney_short_serializer(
+            self,
+            tourney_thai_ind,
+            tourney_thai_team,
+            court_thailand,
+            player_thailand
+    ):
+        tourneys = Tourney.objects.all()
+        serializer = TourneyShortSerializer(tourneys, many=True)
+        response_data = serializer.data[0]
+        assert len(serializer.data) == 2
+        court_data = response_data.pop('court_location')
+        assert court_data['longitude'] == court_thailand.location.longitude
+        assert court_data['latitude'] == court_thailand.location.latitude
+        assert court_data['court_name'] == court_thailand.location.court_name
+        assert court_data[
+            'location_name'] == court_thailand.location.location_name
+
+        host = response_data.pop('host')
+        assert host['player_id'] == player_thailand.id
+        assert host['first_name'] == player_thailand.user.first_name
+        assert host['last_name'] == player_thailand.user.last_name
+        assert host['avatar'] == player_thailand.avatar
+        assert host['level'] == player_thailand.rating.grade
+
+        assert (response_data['message'] ==
+                tourney_thai_ind.message)
+        assert (parse_datetime(response_data['start_time']) ==
+                tourney_thai_ind.start_time)
+        assert (parse_datetime(response_data['end_time']) ==
+                tourney_thai_ind.end_time)
+
+
+@pytest.mark.django_db
+class TestTourneyFiltering:
+
+    def test_preview_filtering(
+            self,
+            api_client_thailand,
+            create_custom_tourney,
+            tourney_thai_ind
+    ):
+        nearest_time = now() + timedelta(minutes=1)
+        nearest_time = nearest_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        create_custom_tourney(start_time=nearest_time)
+        assert Tourney.objects.count() == 2
+        response = api_client_thailand.get(reverse('api:games-preview'))
+        assert response.json() == {
+            'upcoming_game_time': nearest_time,
+            'invites': 0
+        }
+
+    def test_preview_with_invites(
+            self,
+            api_client_thailand_pro,
+            player_thailand_female_pro,
+            tourney_thai_ind,
+            create_custom_tourney
+    ):
+        nearest_time = now() + timedelta(minutes=5)
+        nearest_time = nearest_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+        create_custom_tourney(
+            host=player_thailand_female_pro, start_time=nearest_time)
+        GameInvitation.objects.create(
+            content_object=tourney_thai_ind,
+            host=tourney_thai_ind.host,
+            invited=player_thailand_female_pro
+        )
+        response = api_client_thailand_pro.get(reverse('api:games-preview'))
+        assert response.json() == {
+            'upcoming_game_time': nearest_time,
+            'invites': 1
+        }
+
+    def test_my_games_filtering(
+            self,
+            api_client_thailand,
+            tourney_thai_ind,
+            create_custom_tourney,
+            player_thailand_female_pro
+    ):
+        create_custom_tourney(host=player_thailand_female_pro)
+        assert Tourney.objects.count() == 2
+        response = api_client_thailand.get(reverse('api:games-my-games'))
+        assert len(response.data['tournaments']) == 1
+        assert (response.data['tournaments'][0]['tournament_id'] ==
+                tourney_thai_ind.id)
+
+    def test_archive_filtering(
+            self,
+            tourney_thai_ind,
+            create_custom_tourney,
+            player_thailand
+    ):
+        archived = create_custom_tourney(
+            start_time=(now() - timedelta(weeks=52)))
+        assert Tourney.objects.count() == 2
+        result = Tourney.objects.archive_games(player_thailand)
+        assert len(result) == 1
+        assert result[0].id == archived.id
+
+    def test_invites_filtering(
+            self,
+            tourney_thai_ind,
+            tourney_thai_team,
+            player_thailand_female_pro
+    ):
+        assert Tourney.objects.count() == 2
+        tourneys = Tourney.objects.invited_games(player_thailand_female_pro)
+        assert not tourneys
+
+        GameInvitation.objects.create(
+            content_object=tourney_thai_ind,
+            host=tourney_thai_ind.host,
+            invited=player_thailand_female_pro
+        )
+        tourneys = Tourney.objects.invited_games(player_thailand_female_pro)
+        assert len(tourneys) == 1
+        assert tourneys.first() == tourney_thai_ind
+
+    def test_upcoming_filtering(
+            self,
+            tourney_thai_ind,
+            tourney_thai_team,
+            player_thailand_female_pro
+    ):
+        assert Tourney.objects.count() == 2
+        upcomming_tourneys = Tourney.objects.upcomming_games(
+            player_thailand_female_pro
+        )
+        assert not upcomming_tourneys
+        team = tourney_thai_team.teams.last()
+        team.players.add(player_thailand_female_pro)
+        upcomming_games = Tourney.objects.upcomming_games(
+            player_thailand_female_pro
+        )
+        assert len(upcomming_games) == 1
+        assert upcomming_games.first() == tourney_thai_team

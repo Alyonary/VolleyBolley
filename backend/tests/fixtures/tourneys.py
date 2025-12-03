@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 from django.utils import timezone
-from django.db.models.signals import post_save
+
 from apps.event.models import Tourney
 
 
@@ -44,7 +44,7 @@ def tourney_data_individual(base_tourney_data):
     individual_data = {
         "is_individual": True,
         "max_players": 5,
-        "maximum_teams": None
+        "maximum_teams": 1
     }
     return individual_data | base_tourney_data
 
@@ -90,9 +90,9 @@ def create_custom_tourney(tourney_data_individual):
         for key, value in kwargs.items():
             if tourney_data_individual.get(key, None):
                 tourney_data_individual[key] = value
-            levels = tourney_data_individual.pop('player_levels')
-            tourney = Tourney.objects.create(**tourney_data_individual)
-            tourney.player_levels.set(levels)
-            tourney_data_individual['player_levels'] = levels
-            return tourney
+        levels = tourney_data_individual.pop('player_levels')
+        tourney = Tourney.objects.create(**tourney_data_individual)
+        tourney.player_levels.set(levels)
+        tourney_data_individual['player_levels'] = levels
+        return tourney
     return _create

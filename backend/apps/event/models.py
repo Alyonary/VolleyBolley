@@ -184,7 +184,7 @@ class Game(EventMixin, CreatedUpdatedMixin):
         name = (
             f'{self.id}, '
             f'{self.court.location.court_name}, '
-            f'{self.message[:15]}, '
+            f'{self.message}, '
             f'time: {self.start_time}'
             f'host: {self.host}, '
         )
@@ -213,7 +213,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
     maximum_teams = m.PositiveIntegerField(
         verbose_name=_('Maximum of teams'),
         blank=True,
-        null=True
+        null=False
     )
     objects = TourneyManager()
 
@@ -237,7 +237,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         name = (
             f'{self.id}, '
             f'{self.court.location.court_name}, '
-            f'{self.message[:15]}, '
+            f'{self.message}, '
             f'time: {self.start_time}'
             f'host: {self.host}, '
         )
