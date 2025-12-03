@@ -2,8 +2,9 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from apps.event.models import Game, GameInvitation, Tourney
+from apps.event.models import Game, GameInvitation, Tourney, TourneyTeam
 from apps.notifications.constants import NotificationTypes
+from apps.notifications.push_service import PushService
 from apps.notifications.tasks import send_event_notification_task
 
 
@@ -12,6 +13,9 @@ def schedule_event_notifications(instance, event_type):  # noqa: RET503
     Schedule notifications for the event (Game or Tourney).
     Sends notifications 1 hour and 1 day before the event start time.
     """
+    push_service = PushService()
+    if not push_service.enable:
+        return False
     now = timezone.now()
     notification_type = {
         'game': NotificationTypes.GAME_REMINDER,
@@ -56,17 +60,31 @@ def tourney_created_handler(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=GameInvitation)
-def game_invitation_created_handler(sender, instance, created, **kwargs):
+def event_invitation_created_handler(sender, instance, created, **kwargs):
     if created:
-        send_event_notification_task.delay(
-            instance.game.id, NotificationTypes.GAME_INVITE
-        )
+        event = instance.content_object  # Game or Tourney
+        if isinstance(event, Game):
+            # send_event_notification_task.delay(
+            #     event.id,
+            #     NotificationTypes.GAME_INVITE
+            # )
+            pass
+        elif isinstance(event, Tourney):
+            # send_event_notification_task.delay(
+            #     event.id,
+            #     NotificationTypes.TOURNEY_INVITE
+            # )
+            pass
+        else:
+            raise Exception(
+                f'{isinstance} - not an invitation to a game or tournament.'
+            )
 
 
-# @receiver(post_save, sender=TourneyInvitation)
-# def tourney_invitation_created_handler(sender, instance, created, **kwargs):
-#     if created:
-#         send_event_notification_task.delay(
-#             instance.tourney.id,
-#             NotificationTypes.TOURNEY_INVITE
-#         )
+@receiver(post_save, sender=Tourney)
+def create_tourney_teams(sender, instance, created, **kwargs):
+    if created:
+        if instance.maximum_teams is None and instance.is_individual:
+            instance.maximum_teams = 1
+        for _ in range(instance.maximum_teams):
+            TourneyTeam.objects.create(tourney=instance)
