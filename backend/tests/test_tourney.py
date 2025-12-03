@@ -587,7 +587,7 @@ class TestTourneyFiltering:
             player_thailand
     ):
         archived = create_custom_tourney(
-            start_time=(now() - timedelta(weeks=52)))
+            end_time=(now() - timedelta(weeks=52)))
         assert Tourney.objects.count() == 2
         result = Tourney.objects.archive_games(player_thailand)
         assert len(result) == 1
@@ -619,13 +619,13 @@ class TestTourneyFiltering:
             player_thailand_female_pro
     ):
         assert Tourney.objects.count() == 2
-        upcomming_tourneys = Tourney.objects.upcomming_games(
+        upcomming_tourneys = Tourney.objects.upcoming_games(
             player_thailand_female_pro
         )
         assert not upcomming_tourneys
         team = tourney_thai_team.teams.last()
         team.players.add(player_thailand_female_pro)
-        upcomming_games = Tourney.objects.upcomming_games(
+        upcomming_games = Tourney.objects.upcoming_games(
             player_thailand_female_pro
         )
         assert len(upcomming_games) == 1

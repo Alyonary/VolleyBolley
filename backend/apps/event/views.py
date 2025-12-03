@@ -16,7 +16,8 @@ from rest_framework.viewsets import GenericViewSet
 from apps.core.serializers import EmptyBodySerializer
 from apps.event.enums import EventIntEnums
 from apps.event.models import Game, GameInvitation, Tourney, TourneyTeam
-from apps.event.permissions import IsHostOrReadOnly, IsPlayerOrReadOnly
+from apps.event.permissions import (
+    IsHostOrReadOnly, IsPlayerOrReadOnly, IsPlayerInEvent)
 from apps.event.serializers import (
     # EventListShortSerializer,
     GameDetailSerializer,
@@ -196,7 +197,7 @@ class RatePlayersMixin:
         methods=['get', 'post'],
         detail=True,
         url_path='rate-players',
-        permission_classes=[IsPlayerOrReadOnly]
+        permission_classes=[IsPlayerInEvent]
     )
     def rate_players(self, request, *args, **kwargs):
         """
@@ -222,11 +223,21 @@ class GameViewSet(GenericViewSet,
         player = getattr(self.request.user, 'player', None)
         if (player is None or
                 player.country is None or
-                self.action in ('joining_game', 'delete_invitation')):
-            return Game.objects.all().select_related(
-                'host', 'court').prefetch_related('players')
-        return Game.objects.player_located_games(player).select_related(
-            'host', 'court').prefetch_related('players')
+                self.action in (
+                    'joining_game',
+                    'delete_invitation',
+                    'rate_players'
+                    )):
+            return (Game.objects
+                    .all()
+                    .select_related('host', 'court')
+                    .prefetch_related('players')
+                    )
+        return (Game.objects
+                .player_located_games(player)
+                .select_related('host', 'court')
+                .prefetch_related('players')
+                )
 
     def get_serializer_class(self, *args, **kwargs):
         if self.action in (
@@ -399,8 +410,8 @@ class GameViewSet(GenericViewSet,
     def upcoming_games(self, request, *args, **kwargs):
         """Retrieving upcoming games that the player participates in."""
 
-        upcoming_games = Game.objects.upcomming_games(request.user.player)
-        upcoming_tourneys = Tourney.objects.upcomming_games(
+        upcoming_games = Game.objects.upcoming_games(request.user.player)
+        upcoming_tourneys = Tourney.objects.upcoming_games(
             request.user.player
         )
         combined_data = {

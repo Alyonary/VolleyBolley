@@ -108,5 +108,5 @@ def ended_tourney(player_thailand, bulk_create_registered_players):
 
 
 @pytest.fixture
-def tourney_for_args(tourney_thailand):
-    return (tourney_thailand.id,)
+def tourney_for_args(tourney_thai_ind):
+    return (tourney_thai_ind.id,)

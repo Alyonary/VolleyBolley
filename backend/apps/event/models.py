@@ -34,7 +34,7 @@ class GameQuerySet(m.query.QuerySet):
         return (
             self.player_located_games(player)
             .future_games()
-            .filter(game_invites__invited=player)
+            .filter(event_invites__invited=player)
         )
 
     def upcoming_games(self, player):
