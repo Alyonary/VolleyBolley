@@ -20,7 +20,7 @@ def game_levels_pro():
     return GameLevel.objects.create(name='PRO')
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def currency_type_thailand(country_thailand):
     return CurrencyType.objects.create(
         currency_name=CurrencyType.CurrencyNameChoices.THB,
@@ -29,7 +29,7 @@ def currency_type_thailand(country_thailand):
     )
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def currency_type_cyprus(country_cyprus):
     return CurrencyType.objects.create(
         currency_name=CurrencyType.CurrencyNameChoices.EUR,

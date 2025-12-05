@@ -7,16 +7,16 @@ from apps.players.models import Player
 User = get_user_model()
 
 pytest_plugins = [
-    'tests.fixtures.courts',
-    'tests.fixtures.locations',
-    'tests.fixtures.players',
-    'tests.fixtures.users',
-    'tests.fixtures.notifications',
-    'tests.fixtures.games',
-    'tests.fixtures.core',
     'tests.fixtures.auth',
+    'tests.fixtures.core',
+    'tests.fixtures.courts',
+    'tests.fixtures.games',
+    'tests.fixtures.locations',
+    'tests.fixtures.notifications',
+    'tests.fixtures.players',
     'tests.fixtures.push_service',
     'tests.fixtures.tourneys',
+    'tests.fixtures.users',
 ]
 
 

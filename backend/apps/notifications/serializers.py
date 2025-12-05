@@ -63,9 +63,7 @@ class NotificationSerializer(serializers.ModelSerializer):
         player = self.context.get('player')
         notification = attrs.get('id')
         if not notification:
-            raise ValidationError(
-                'Notification does not exist'
-            )
+            raise ValidationError('Notification does not exist')
         if notification.player != player:
             raise ValidationError(
                 f'Notification {notification.id} does not belong'
@@ -82,4 +80,5 @@ class NotificationListSerializer(serializers.Serializer):
 
     Verify, serialize and deserialize data.
     """
+
     notifications = serializers.ListField(child=NotificationSerializer())
