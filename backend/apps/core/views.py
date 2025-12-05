@@ -7,7 +7,7 @@ from rest_framework.views import APIView
 
 from apps.core.models import FAQ, CurrencyType
 from apps.core.permissions import IsRegisteredPlayer
-from apps.core.serializers import CurrencySerializer
+from apps.core.serializers import CurrencyListSerializer
 
 
 class FAQView(APIView):
@@ -75,12 +75,13 @@ class CurrenciesView(APIView):
         **Returns:** List of all available currency types.
         """,
         responses={
-            200: openapi.Response('Success', CurrencySerializer(many=True)),
+            200: openapi.Response('Success', CurrencyListSerializer()),
         },
     )
     def get(self, request, *args, **kwargs):
         """Retrieve all currency types."""
 
-        currencies = CurrencyType.objects.all()
-        serializer = CurrencySerializer(instance=currencies, many=True)
-        return Response({'currencies': serializer.data})
+        serializer = CurrencyListSerializer(
+            {'currencies': CurrencyType.objects.all()}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)

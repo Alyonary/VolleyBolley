@@ -207,7 +207,7 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
                 ),
             },
             anyOf=[{'required': ['access_token']}, {'required': ['id_token']}],
-            description="Either 'id_token' or 'access_token' must be provided."
+            description="'id_token' or 'access_token' must be provided.",
         ),
         responses={
             200: openapi.Response(
@@ -260,8 +260,10 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
                     'Location': openapi.Schema(
                         type=openapi.TYPE_STRING,
                         description='URL for Google authorization',
-                        example='https://accounts.google.com/o/oauth2/auth?'
-                        'response_type=code&client_id=...',
+                        example=(
+                            'https://accounts.google.com/o/oauth2/auth?'
+                            'response_type=code&client_id=...'
+                        ),
                     )
                 },
             ),
