@@ -1,5 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.db import models as m
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.enums import CoreFieldLength
@@ -181,6 +183,24 @@ class FAQ(m.Model):
         return cls.objects.filter(is_active=True).first()
 
 
+class DailyStatsQuerySet(m.QuerySet):
+    def get_stats_by_month(self, stat_type: str):
+        return (
+            self.annotate(month=TruncMonth('date'))
+            .values('month')
+            .annotate(total=Sum(stat_type))
+            .order_by('month')
+        )
+
+
+class DailyStatsManager(m.Manager):
+    def get_queryset(self):
+        return DailyStatsQuerySet(self.model, using=self._db)
+
+    def get_stats_by_month(self, stat_type: str):
+        return self.get_queryset().get_stats_by_month(stat_type)
+
+
 class DailyStats(m.Model):
     """
     Stores aggregated dashboard statistics for a specific date (per day).
@@ -191,6 +211,8 @@ class DailyStats(m.Model):
     players_registered = m.IntegerField()
     games_created = m.IntegerField()
     tourneys_created = m.IntegerField()
+
+    objects = DailyStatsManager()
 
     class Meta:
         verbose_name = _('Daily Stats')

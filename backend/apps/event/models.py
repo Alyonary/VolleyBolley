@@ -1,15 +1,15 @@
+from datetime import date
+
 from django.db import models as m
-from django.db.models import Count
-from django.db.models.functions import TruncMonth
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.event.enums import EventIntEnums
-from apps.event.mixins import EventMixin
+from apps.event.mixins import EventMixin, StatsQuerySetMixin
 
 
-class GameQuerySet(m.query.QuerySet):
+class GameQuerySet(m.query.QuerySet, StatsQuerySetMixin):
     def player_located_games(self, player):
         """Basic queryset for games."""
         country = getattr(player, 'country', None)
@@ -64,14 +64,9 @@ class GameQuerySet(m.query.QuerySet):
         """Returns recent past games in which the user is a host or player."""
         return self.archive_games(player).order_by('-start_time')[:limit]
 
-    def get_objs_by_month(self):
-        """Returns the number of games grouped by month."""
-        return (
-            self.annotate(month=TruncMonth('created_at'))
-            .values('month')
-            .annotate(count=Count('id'))
-            .order_by('month')
-        )
+    def get_stats_for_day(self, day: date) -> int:
+        """Returns number of games created on a specific day."""
+        return self.filter(created_at__date=day).count()
 
 
 class GameManager(m.Manager):
@@ -117,9 +112,22 @@ class GameManager(m.Manager):
     def recent_games(self, player, limit):
         return self.get_queryset().recent_games(player, limit)
 
-    def get_objs_by_month(self):
-        """Returns the number of games grouped by month."""
-        return self.get_queryset().get_objs_by_month()
+    def stats_for_day(self, day: date) -> int:
+        """Returns number of games created on a specific day."""
+        return self.get_queryset().get_stats_for_day(day)
+
+
+class TourneyQuerySet(m.query.QuerySet, StatsQuerySetMixin):
+    pass
+
+
+class TourneyManager(m.Manager):
+    def get_queryset(self):
+        return TourneyQuerySet(self.model, using=self._db)
+
+    def stats_for_day(self, day: date) -> int:
+        """Returns number of tournaments created on a specific day."""
+        return self.get_queryset().get_stats_for_day(day)
 
 
 class GameInvitation(m.Model):
@@ -201,6 +209,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
     maximum_teams = m.PositiveIntegerField(
         verbose_name=_('Maximum of teams'),
     )
+    objects = TourneyManager()
 
     class Meta:
         verbose_name = _('Tourney')

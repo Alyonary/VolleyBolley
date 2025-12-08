@@ -3,6 +3,7 @@ import logging
 import os
 from typing import Any, Dict, List
 
+import openpyxl
 from django.conf import settings
 from django.contrib.auth import get_user_model
 
@@ -52,7 +53,7 @@ class FileUploadService:
             'locations',
             'courts',
         )
-        self._supported_file_types: tuple[str] = ('json',)
+        self._supported_file_types: tuple[str] = ('json', 'excel')
         self._extended_model_access: bool = settings.DEBUG
 
     @property
@@ -83,17 +84,19 @@ class FileUploadService:
             return 'csv'
         if filename.endswith('.xlsx') or filename.endswith('.xls'):
             return 'excel'
-        return None
+        return filename.split('.')[-1]
 
-    def process_file(self, file, need_update: bool = False) -> Dict[str, Any]:
+    def process_file(self, file) -> Dict[str, Any]:
         """Process file based on its type."""
         file_type = self.detect_file_type(file)
-        if file_type not in self.supported_file_types:
-            message = f'Download failed. Unsupported file type: {file_type}.'
-            return {'success': False, 'error': message}
         if file_type == 'json':
-            return self.proccess_json_load(file, need_update)
-        return None
+            return self.proccess_json_load(file)
+        if file_type == 'excel':
+            return self._process_excel_file(file)
+        return {
+            'success': False,
+            'messages': 'Unsupported file type {file_type}',
+        }
 
     def download_file_by_path(self, file_path: str) -> bytes:
         """Download file from given path."""
@@ -103,7 +106,8 @@ class FileUploadService:
             return f.read()
 
     def proccess_json_load(
-        self, file, need_update: bool = False
+        self,
+        file,
     ) -> Dict[str, Any]:
         """Process JSON file with model data."""
         try:
@@ -122,7 +126,8 @@ class FileUploadService:
             for model_name in self.model_processing_order:
                 if model_name in data and data[model_name]:
                     result = self._process_model_data(
-                        model_name, data[model_name], need_update
+                        model_name,
+                        data[model_name],
                     )
                     messages.extend(result['messages'])
             return {
@@ -141,11 +146,8 @@ class FileUploadService:
         self,
         model_name: str,
         model_data: List[Dict],
-        need_update: bool = False,
     ) -> Dict[str, Any]:
         """Process data for specific model using serializer validation."""
-        if model_name not in self.model_mapping_class:
-            return {'messages': [f'{model_name}: Unknown model']}
         mapping_class: BaseModelMapping = self.model_mapping_class[model_name]
         messages = []
         for obj_data in model_data:
@@ -157,23 +159,8 @@ class FileUploadService:
                     obj, created = mapping_class.model.objects.get_or_create(
                         **validated_data
                     )
-                    if (
-                        not created
-                        and need_update
-                        and mapping_class.can_update
-                    ):
-                        for attr, value in validated_data.items():
-                            setattr(obj, attr, value)
-                        obj.save()
-                        status = 'Success (updated)'
-                        logger.info(f'Updated {model_name}: {obj_data}')
-                    else:
-                        status = (
-                            'Success (created)'
-                            if created
-                            else 'Skipped (exist)'
-                        )
-                    messages.append(f'{model_name}: {obj_data} — {status}')
+                    status = 'created' if created else 'skipped'
+                    messages.append(f'{status} - {model_name}: {obj_data}')
                 except Exception as e:
                     message = f'Error saving {model_name}: {str(e)}'
                     logger.error(message)
@@ -184,9 +171,53 @@ class FileUploadService:
                     for field, errors in serializer.errors.items()
                 )
                 messages.append(
-                    f'{model_name}: {obj_data} — Ошибка: {error_str}'
+                    f'error - {model_name}: {obj_data} - {error_str}'
                 )
         return {'messages': messages}
+
+    def _process_excel_file(
+        self,
+        file,
+    ) -> dict:
+        """
+        Process Excel file and load data into model.
+        Проверяет имя файла и соответствие полей через сериализатор.
+        """
+        filename = os.path.splitext(file.name)[0].lower()
+        mapping_class = self.model_mapping_class.get(filename)
+        if not mapping_class:
+            return {
+                'success': False,
+                'messages': [
+                    f'Unknown model mapping for file: {filename}',
+                ],
+            }
+        serializer_class = mapping_class.serializer
+        if serializer_class is None:
+            return {
+                'success': False,
+                'messages': [
+                    f'No serializer for model: {filename}',
+                ],
+            }
+        wb = openpyxl.load_workbook(file)
+        ws = wb.active
+        headers = [
+            cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))
+        ]
+        serializer_fields = set(serializer_class().get_fields().keys())
+        excel_fields = set(headers)
+        if not excel_fields <= serializer_fields:
+            missing = excel_fields - serializer_fields
+            return {
+                'success': False,
+                'messages': [f'Incorrect model attributes: {missing}'],
+            }
+        model_data = []
+        for row in ws.iter_rows(min_row=2, values_only=True):
+            obj_data = dict(zip(headers, row, strict=False))
+            model_data.append(obj_data)
+        return self._process_model_data(filename, model_data)
 
 
 class BaseModelMapping:
@@ -204,44 +235,44 @@ class BaseModelMapping:
         return self._serializer
 
     @property
-    def can_update(self):
-        return self._can_update
+    def name(self):
+        return self._name
 
 
 class CountryModelMapping(BaseModelMapping):
     """Model mapping for Country."""
 
     def __init__(self):
+        self._name = 'countries'
         self._model = Country
         self._serializer = CountryCreateSerializer
-        self._can_update = False
 
 
 class CityModelMapping(BaseModelMapping):
     """Model mapping for City."""
 
     def __init__(self):
+        self._name = 'cities'
         self._model = City
         self._serializer = CityCreateSerializer
-        self._can_update = False
 
 
 class CourtLocationModelMapping(BaseModelMapping):
     """Model mapping for CourtLocation."""
 
     def __init__(self):
+        self._name = 'locations'
         self._model = CourtLocation
         self._serializer = None
-        self._can_update = True
 
 
 class CourtModelMapping(BaseModelMapping):
     """Model mapping for Court."""
 
     def __init__(self):
+        self._name = 'courts'
         self._model = Court
         self._serializer = None
-        self._can_update = True
 
 
 class UserModelMapping(BaseModelMapping):
@@ -250,31 +281,30 @@ class UserModelMapping(BaseModelMapping):
     def __init__(self):
         self._model = get_user_model()
         self._serializer = None
-        self._can_update = True
 
 
 class PlayerModelMapping(BaseModelMapping):
     """Model mapping for Player."""
 
     def __init__(self):
+        self._name = 'players'
         self._model = Player
         self._serializer = None
-        self._can_update = True
 
 
 class GameModelMapping(BaseModelMapping):
     """Model mapping for Game."""
 
     def __init__(self):
+        self._name = 'games'
         self._model = Game
         self._serializer = None
-        self._can_update = True
 
 
 class TourneyModelMapping(BaseModelMapping):
     """Model mapping for Tourney."""
 
     def __init__(self):
+        self._name = 'tourneys'
         self._model = Tourney
         self._serializer = None
-        self._can_update = True

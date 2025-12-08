@@ -1,19 +1,34 @@
 import logging
 from datetime import datetime
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Sum
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
+from django.views.decorators.http import require_POST
 
 from apps.admin_panel.forms import FileUploadForm
 from apps.admin_panel.services import FileUploadService
 from apps.core.models import DailyStats
+from apps.core.task import collect_daily_stats, collect_full_stats
 from apps.event.models import Game, Tourney
+from apps.notifications.push_service import PushService
 from apps.players.models import Player
 
 logger = logging.getLogger(__name__)
+
+
+@require_POST
+def run_stats_task_view(request):
+    """View to trigger the daily stats collection task."""
+    if PushService():
+        collect_daily_stats.delay()
+        messages.success(request, 'Daily stats task has been started!')
+    else:
+        messages.error(request, 'Failed to collect stats: Celery unavailable.')
+    return redirect('admin_panel:admin_dashboard')
 
 
 @staff_member_required
@@ -27,85 +42,34 @@ def upload_file(request):
     else:
         form = FileUploadForm()
 
-    upload_stats = {
-        'total_uploads': 0,
-        'successful_uploads': 0,
-        'failed_uploads': 0,
-    }
+    supported_models = [
+        'countries',
+        'cities',
+        'locations',
+        'courts',
+    ]
+    if settings.DEBUG:
+        supported_models.extend(['players', 'games', 'tourneys'])
 
     context = {
         'title': _('Data File Upload'),
         'form': form,
+        'supported_models': supported_models,
         'page_header': _('Upload Data Files'),
-        'page_description': _(
-            'Import countries, cities, locations, courts from JSON files'
-        ),
-        'upload_stats': upload_stats,
+        'page_description': _('Import models data from JSON or Excel files.'),
     }
 
     return render(request, 'admin_panel/upload.html', context)
 
 
-def process_file_upload(request, form):
-    """Process uploaded file."""
-
-    file = form.cleaned_data['file']
-    need_update = form.cleaned_data.get('need_update', False)
-
-    try:
-        upload_service = FileUploadService()
-        result = upload_service.process_file(
-            file=file, need_update=need_update
-        )
-
-        if 'messages' in result:
-            request.session['upload_messages'] = result['messages']
-
-        if result['success']:
-            messages.success(
-                request,
-                _(
-                    '✅ File "%(filename)s" processed successfully! '
-                    'Total: %(count)d records.'
-                )
-                % {
-                    'filename': file.name,
-                    'count': len(result.get('messages', [])),
-                },
-            )
-        else:
-            for msg in result.get('messages', []):
-                if 'Success' in msg:
-                    messages.success(request, msg)
-                elif 'Skipped' in msg:
-                    messages.warning(request, msg)
-                else:
-                    messages.error(request, msg)
-            if 'error' in result:
-                messages.error(
-                    request,
-                    _('❌ Error processing file: %(error)s')
-                    % {'error': result['error']},
-                )
-
-    except Exception as e:
-        messages.error(
-            request, _('❌ Unexpected error: %(error)s') % {'error': str(e)}
-        )
-
-    return redirect('admin_panel:upload_file')
-
-
 @staff_member_required
 def dashboard_view(request):
     """Admin dashboard view showing key metrics."""
-    from apps.event.models import Game
 
-    # Актуальные значения на момент запроса
     active_games = Game.objects.filter(is_active=True).count()
     active_tourneys = Tourney.objects.filter(is_active=True).count()
 
-    # Последняя доступная статистика (например, за вчера)
+    collect_full_stats()
     stats = DailyStats.objects.all().order_by('-date')[:1]
     total_players = total_games = total_tourneys = 0
     if stats:
@@ -202,3 +166,35 @@ def get_stats_by_month(stat_type: str) -> tuple[list[str], list[int]]:
     stats_chart_labels = [m.strftime('%b %Y') for m in months]
     stats_chart_data = [stats_by_month_dict.get(m, 0) for m in months]
     return stats_chart_labels, stats_chart_data
+
+
+def process_file_upload(request, form):
+    """Process uploaded file."""
+
+    file = form.cleaned_data['file']
+
+    try:
+        upload_service = FileUploadService()
+        result = upload_service.process_file(
+            file=file,
+        )
+
+        if 'messages' in result:
+            request.session['upload_messages'] = result['messages']
+        for msg in result.get('messages', []):
+            msg_lower = msg.lower()
+            if 'updated' in msg_lower:
+                messages.warning(request, msg)
+            elif 'error' in msg_lower:
+                messages.error(request, msg)
+            elif 'created' in msg_lower:
+                messages.success(request, msg)
+            else:
+                messages.info(request, msg)
+
+    except Exception as e:
+        messages.error(
+            request, _('❌ Unexpected error: %(error)s') % {'error': str(e)}
+        )
+
+    return redirect('admin_panel:upload_file')

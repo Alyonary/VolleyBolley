@@ -46,3 +46,43 @@ def collect_daily_stats(
     except Exception as e:
         logger.error(f'Error collecting daily stats: {str(e)}')
         raise e
+
+
+def collect_full_stats():
+    """
+    Collects full statistics for all days.
+    This function aggregates data such as number of players registered,
+    games created, and tournaments created for each day present in the data.
+    """
+    player_dates = Player.objects.values_list(
+        'user__date_joined__date', flat=True
+    ).distinct()
+    game_dates = Game.objects.values_list(
+        'created_at__date', flat=True
+    ).distinct()
+    tourney_dates = Tourney.objects.values_list(
+        'created_at__date', flat=True
+    ).distinct()
+    print(
+        'Player dates:',
+        player_dates,
+        'Game dates:',
+        game_dates,
+        'Tourney dates:',
+        tourney_dates,
+    )
+    all_dates = set(player_dates) | set(game_dates) | set(tourney_dates)
+    all_dates = sorted([d for d in all_dates if d is not None])
+
+    for day in all_dates:
+        players_registered = Player.objects.stats_for_day(day)
+        games_created = Game.objects.stats_for_day(day)
+        tourneys_created = Tourney.objects.stats_for_day(day)
+        DailyStats.objects.update_or_create(
+            date=day,
+            defaults={
+                'players_registered': players_registered,
+                'games_created': games_created,
+                'tourneys_created': tourneys_created,
+            },
+        )

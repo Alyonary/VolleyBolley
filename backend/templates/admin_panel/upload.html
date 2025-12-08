@@ -29,39 +29,51 @@
     <div class="description-section">
         <h3>📄 How to Use</h3>
         <p>
-            On this page you can upload data from JSON files. The following models are available for import:
-            <strong>Countries</strong>, <strong>Cities</strong>, <strong>CourtLocations</strong>, and <strong>Courts</strong>.
+            You can upload data from <strong>JSON</strong> or <strong>Excel (XLSX)</strong> files.<br>
+            Supported models for import: 
+            {% for model in supported_models %}
+                <code>{{ model }}</code>{% if not forloop.last %}, {% endif %}
+            {% endfor %}
         </p>
-        
+
+        <h4>📁 Supported File Types</h4>
+        <ul>
+            <li><strong>JSON</strong> — any file name is allowed.</li>
+            <li><strong>Excel (XLSX)</strong> — file name must match the model name in plural form:<br>
+                <code>countries.xlsx</code>, <code>cities.xlsx</code>, <code>locations.xlsx</code>, <code>courts.xlsx</code>
+            </li>
+        </ul>
+
         <h4>📋 File Structure</h4>
-        <p>The JSON file should follow this structure: <code>{"model_name": [{"attribute": "value"}, ...]}</code></p>
-        <p>You can upload data for all models or partially in a single file.</p>
-        
-        <h4>💡 Example</h4>
-        <pre class="example-code">{
-  "countries": [
-    {
-      "name": "Thailand"
-    },
-    {
-      "name": "Cyprus"
-    }
-  ],
-  "cities": [
-    {
-      "name": "Bangkok",
-      "country": "Thailand"
-    },
-    {
-      "name": "Pattaya",
-      "country": "Thailand"
-    },
-    {
-      "name": "Limassol",
-      "country": "Cyprus"
-    }
-  ],
-}</pre>
+        <ul>
+            <li>
+                <strong>JSON:</strong>
+                <br>
+                The file should follow this structure:<br>
+                <code>{"model_name": [{"attribute": "value"}, ...]}</code>
+                <br>
+                You can upload data for all models or partially in a single file.
+            </li>
+            <li>
+                <strong>Excel (XLSX):</strong>
+                <br>
+                <ul>
+                    <li>File name must be the model name in plural (see above).</li>
+                    <li>The first row must contain model attribute names (headers).</li>
+                    <li>Each following row contains values for one record.</li>
+                </ul>
+                <br>
+                <strong>Example:</strong>
+                <pre>
+name    country
+Bangkok Thailand
+Pattaya Thailand
+Limassol Cyprus
+                </pre>
+            </li>
+        </ul>
+    </div>
+    
     <div class="main-form">
         <form method="post" enctype="multipart/form-data">
             {% csrf_token %}
@@ -89,34 +101,6 @@
                 </div>
             {% endif %}
 
-            <div class="form-section">
-                <h3>⚙️ {% trans 'Processing Options' %}</h3>
-                
-                <div class="checkbox-wrapper">
-                    <label for="{{ form.need_update.id_for_label }}" class="checkbox-container">
-                        <input type="checkbox" 
-                               name="{{ form.need_update.name }}" 
-                               id="{{ form.need_update.id_for_label }}"
-                               class="checkbox-input"
-                               {% if form.need_update.value %}checked{% endif %}>
-                        <div class="checkbox-content">
-                            <span class="checkbox-title">{{ form.need_update.label }}</span>
-                            <p class="checkbox-description">{{ form.need_update.help_text }}</p>
-                        </div>
-                    </label>
-                </div>
-                
-                {% if form.need_update.errors %}
-                    <div class="error-section">
-                        <h4>⚠️ {% trans 'Option Error' %}</h4>
-                        <ul>
-                            {% for error in form.need_update.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% endif %}
-            </div>
 
             <div style="text-align: center; margin-top: 30px;">
                 <button type="submit" class="btn-upload">

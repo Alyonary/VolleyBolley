@@ -1,8 +1,8 @@
 import logging
 
-from backend.apps.admin_panel.services import FileUploadService
 from django.db import connection, transaction
 
+from apps.admin_panel.services import FileUploadService
 from apps.core.constants import DEFAULT_FAQ
 from apps.core.models import FAQ
 from volleybolley.settings import BASE_DIR
