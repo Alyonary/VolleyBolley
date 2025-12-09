@@ -187,8 +187,14 @@ def process_file_upload(request, form):
             messages.error(
                 request,
                 _('❌ File processing failed: %(error)s')
-                % {'error': result.get('error', 'Unknown error')},
+                % {'error': result.get('error', 'Unknown error')}
             )
+            if result.get('messages'):
+                messages.info(
+                    request,
+                    _('Details: %(details)s')
+                    % {'details': '; '.join(result['messages'])}
+                )
             return redirect('admin_panel:upload_file')
         if 'messages' in result:
             request.session['upload_messages'] = result['messages']

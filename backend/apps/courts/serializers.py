@@ -95,9 +95,10 @@ class LocationsCreateSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         country_obj = Country.objects.get(name=validated_data.pop('country'))
         city_obj = City.objects.get(name=validated_data.pop('city'))
-        return CourtLocation.objects.create(
+        location_obj, _ = CourtLocation.objects.get_or_create(
             country=country_obj, city=city_obj, **validated_data
         )
+        return location_obj
 
 
 class CourtCreateSerializer(serializers.ModelSerializer):

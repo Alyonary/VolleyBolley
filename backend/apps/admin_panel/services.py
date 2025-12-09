@@ -287,6 +287,7 @@ class CourtModelMapping(BaseModelMapping):
             'court_name',
             'description',
             'working_hours',
+            'price_description',
         )
 
 
