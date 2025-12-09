@@ -58,13 +58,6 @@ class CourtSerializer(serializers.ModelSerializer):
         )
 
 
-# class LocationsCreateSerializer(LocationSerializer):
-#     """Serializer for creating CourtLocation."""
-
-#     class Meta:
-#         write_only_fields = ('latitude', 'longitude', 'court_name',)
-
-
 class LocationsCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating CourtLocation with country and city names."""
 

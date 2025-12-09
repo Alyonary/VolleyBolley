@@ -63,14 +63,36 @@
                     <li>Each following row contains values for one record.</li>
                 </ul>
                 <br>
-                <strong>Example:</strong>
-                <pre>
-name    country
-Bangkok Thailand
-Pattaya Thailand
-Limassol Cyprus
-                </pre>
-            </li>
+
+        <h4>📑 Expected Fields for Each Model</h4>
+        <ul>
+            {% for info in model_fields_info %}
+                <li>
+                    <strong>{{ info.model|capfirst }}</strong>
+                    <ul>
+                        {% if info.excel_fields %}
+                            <li>
+                                <span style="color: #0073aa;">Excel fields:</span>
+                                <code>{{ info.excel_fields|join:", " }}</code>
+                            </li>
+                        {% endif %}
+                        {% if info.json_fields %}
+                            <li>
+                                <span style="color: #009900;">JSON fields:</span>
+                                {% for field in info.json_fields %}
+                                    {% if field.items %}
+                                        {% for k, v in field.items %}
+                                            <code>{{ k }}: [{{ v|join:", " }}]</code>
+                                        {% endfor %}
+                                    {% else %}
+                                        <code>{{ field }}</code>
+                                    {% endif %}
+                                {% endfor %}
+                            </li>
+                        {% endif %}
+                    </ul>
+                </li>
+            {% endfor %}
         </ul>
     </div>
     

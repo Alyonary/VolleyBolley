@@ -203,16 +203,16 @@ class FileUploadService:
             cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))
         ]
         excel_fields = set(headers)
-        if excel_fields != set(mapping_class.expected_fields):
-            missing = set(mapping_class.expected_fields) - excel_fields
+        expected_fields = set(mapping_class.expected_fields)
+        if excel_fields != expected_fields:
+            missing = expected_fields - excel_fields
             return {
                 'success': False,
-                'messages': [f'Incorrect model attributes: {missing}'],
+                'messages': [f'Missing model fields: {missing}'],
             }
         model_data = []
         for row in ws.iter_rows(min_row=2, values_only=True):
             obj_data = dict(zip(headers, row, strict=False))
-            # unique handling for courts location data
             if filename == 'courts':
                 location_keys = [
                     'longitude',
@@ -249,7 +249,7 @@ class BaseModelMapping:
 
     @property
     def expected_fields(self):
-        return self._expected_fields
+        return self._expected_xlsx_fields
 
 
 class CountryModelMapping(BaseModelMapping):
@@ -259,7 +259,7 @@ class CountryModelMapping(BaseModelMapping):
         self._name = 'countries'
         self._model = Country
         self._serializer = CountryCreateSerializer
-        self._expected_fields = ('name',)
+        self._expected_xlsx_fields = ('name',)
 
 
 class CityModelMapping(BaseModelMapping):
@@ -269,16 +269,7 @@ class CityModelMapping(BaseModelMapping):
         self._name = 'cities'
         self._model = City
         self._serializer = CityCreateSerializer
-        self._expected_fields = ('name', 'country')
-
-
-# class CourtLocationModelMapping(BaseModelMapping):
-#     """Model mapping for CourtLocation."""
-
-#     def __init__(self):
-#         self._name = 'locations'
-#         self._model = CourtLocation
-#         self._serializer = None
+        self._expected_xlsx_fields = ('name', 'country')
 
 
 class CourtModelMapping(BaseModelMapping):
@@ -288,7 +279,7 @@ class CourtModelMapping(BaseModelMapping):
         self._name = 'courts'
         self._model = Court
         self._serializer = CourtCreateSerializer
-        self._expected_fields = (
+        self._expected_xlsx_fields = (
             'longitude',
             'latitude',
             'country',
@@ -299,15 +290,6 @@ class CourtModelMapping(BaseModelMapping):
         )
 
 
-# class UserModelMapping(BaseModelMapping):
-#     """Model mapping for User."""
-
-#     def __init__(self):
-#         self._name = 'users'
-#         self._model = get_user_model()
-#         self._serializer = None
-
-
 class PlayerModelMapping(BaseModelMapping):
     """Model mapping for Player."""
 
@@ -315,6 +297,7 @@ class PlayerModelMapping(BaseModelMapping):
         self._name = 'players'
         self._model = Player
         self._serializer = None
+        self.__expected_xlsx_fields = None
 
 
 class GameModelMapping(BaseModelMapping):
@@ -324,6 +307,7 @@ class GameModelMapping(BaseModelMapping):
         self._name = 'games'
         self._model = Game
         self._serializer = None
+        self._expected_xlsx_fields = None
 
 
 class TourneyModelMapping(BaseModelMapping):
@@ -333,3 +317,4 @@ class TourneyModelMapping(BaseModelMapping):
         self._name = 'tourneys'
         self._model = Tourney
         self._serializer = None
+        self._expected_xlsx_fields = None

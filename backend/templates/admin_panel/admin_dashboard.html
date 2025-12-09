@@ -7,14 +7,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="stats-task-btn-wrapper">
-    <form method="post" action="{% url 'admin_panel:run_stats_task' %}">
-        {% csrf_token %}
-        <button type="submit" class="stats-task-btn">
-            Run Daily Stats Task
-        </button>
-    </form>
-</div>
+
 <h1 style="margin-bottom: 24px;">Dashboard</h1>
 <div class="dashboard-cards">
     <div class="dashboard-card">

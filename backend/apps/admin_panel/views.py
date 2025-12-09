@@ -61,6 +61,7 @@ def upload_file(request):
         'form_description': form_description,
         'page_header': _('Upload Data Files'),
         'page_description': _('Import models data from JSON or Excel files.'),
+        'model_fields_info': get_model_expected_fields(),
     }
 
     return render(request, 'admin_panel/upload.html', context)
@@ -208,3 +209,29 @@ def process_file_upload(request, form):
         )
 
     return redirect('admin_panel:upload_file')
+
+
+def get_model_expected_fields():
+    """Get expected fields for each model in upload service."""
+
+    upload_service = FileUploadService()
+    result = []
+    for name, mapping in upload_service.model_mapping_class.items():
+        entry = {'model': name}
+        if getattr(mapping, 'serializer', None):
+            entry['excel_fields'] = list(
+                getattr(mapping, 'expected_fields', [])
+            )
+            serializer_class = mapping.serializer
+            if serializer_class:
+                serializer = serializer_class()
+                json_fields = []
+                for field_name, field in serializer.fields.items():
+                    if hasattr(field, 'fields'):
+                        nested = list(field.fields.keys())
+                        json_fields.append({field_name: nested})
+                    else:
+                        json_fields.append(field_name)
+                entry['json_fields'] = json_fields
+        result.append(entry)
+    return result
