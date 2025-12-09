@@ -61,6 +61,12 @@ class CourtLocation(models.Model):
         verbose_name_plural = _('Locations')
         default_related_name = 'locations'
         ordering = ('-court_name',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['latitude', 'longitude'],
+                name='unique_latitude_longitude',
+            ),
+        ]
 
     @property
     def location_name(self):

@@ -9,6 +9,7 @@ from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
+from apps.admin_panel.constants import MAX_FILE_SIZE, SUPPORTED_FILE_TYPES
 from apps.admin_panel.forms import FileUploadForm
 from apps.admin_panel.services import FileUploadService
 from apps.core.models import DailyStats
@@ -45,16 +46,19 @@ def upload_file(request):
     supported_models = [
         'countries',
         'cities',
-        'locations',
         'courts',
     ]
     if settings.DEBUG:
         supported_models.extend(['players', 'games', 'tourneys'])
-
+    form_description = (
+        ', '.join([ft.upper() for ft in SUPPORTED_FILE_TYPES])
+        + f' (max {MAX_FILE_SIZE // (1024 * 1024)}MB)'
+    )
     context = {
         'title': _('Data File Upload'),
         'form': form,
         'supported_models': supported_models,
+        'form_description': form_description,
         'page_header': _('Upload Data Files'),
         'page_description': _('Import models data from JSON or Excel files.'),
     }
@@ -178,7 +182,13 @@ def process_file_upload(request, form):
         result = upload_service.process_file(
             file=file,
         )
-
+        if not result.get('success', False):
+            messages.error(
+                request,
+                _('❌ File processing failed: %(error)s')
+                % {'error': result.get('error', 'Unknown error')},
+            )
+            return redirect('admin_panel:upload_file')
         if 'messages' in result:
             request.session['upload_messages'] = result['messages']
         for msg in result.get('messages', []):

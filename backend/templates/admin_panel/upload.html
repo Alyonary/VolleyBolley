@@ -84,7 +84,7 @@ Limassol Cyprus
                         <span class="upload-icon">📤</span>
                         <div class="upload-text">{% trans 'Choose a file to upload' %}</div>
                         <div class="upload-hint">{% trans 'Click to browse your files' %}</div>
-                        <div class="upload-formats">{% trans 'JSON, CSV, XLSX (max 10MB)' %}</div>
+                        <div class="upload-formats">{{ form_description }}</div>
                         {{ form.file }}
                     </label>
                 </div>

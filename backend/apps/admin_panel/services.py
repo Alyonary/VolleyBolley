@@ -5,9 +5,9 @@ from typing import Any, Dict, List
 
 import openpyxl
 from django.conf import settings
-from django.contrib.auth import get_user_model
 
-from apps.courts.models import Court, CourtLocation
+from apps.courts.models import Court
+from apps.courts.serializers import CourtCreateSerializer
 from apps.event.models import Game, Tourney
 from apps.locations.models import City, Country
 from apps.locations.serializers import (
@@ -44,16 +44,15 @@ class FileUploadService:
         self._model_mapping_class = {
             'countries': CountryModelMapping(),
             'cities': CityModelMapping(),
-            'locations': CourtLocationModelMapping(),
             'courts': CourtModelMapping(),
         }
         self._model_processing_order: tuple[str] = (
             'countries',
             'cities',
-            'locations',
             'courts',
         )
         self._supported_file_types: tuple[str] = ('json', 'excel')
+        self.max_file_size: int = 10 * 1024 * 1024  # 10 MB
         self._extended_model_access: bool = settings.DEBUG
 
     @property
@@ -64,7 +63,6 @@ class FileUploadService:
     def model_processing_order(self) -> tuple[str]:
         if self._extended_model_access:
             return self._model_processing_order + (
-                'users',
                 'players',
                 'games',
                 'tourneys',
@@ -154,12 +152,9 @@ class FileUploadService:
             serializer = mapping_class.serializer(data=obj_data)
             logger.info(f'Validating {model_name}: {obj_data}')
             if serializer.is_valid():
-                validated_data = serializer.validated_data
                 try:
-                    obj, created = mapping_class.model.objects.get_or_create(
-                        **validated_data
-                    )
-                    status = 'created' if created else 'skipped'
+                    serializer.save()
+                    status = 'created'
                     messages.append(f'{status} - {model_name}: {obj_data}')
                 except Exception as e:
                     message = f'Error saving {model_name}: {str(e)}'
@@ -173,15 +168,17 @@ class FileUploadService:
                 messages.append(
                     f'error - {model_name}: {obj_data} - {error_str}'
                 )
-        return {'messages': messages}
+        return {'success': True, 'messages': messages}
 
     def _process_excel_file(
         self,
         file,
     ) -> dict:
         """
-        Process Excel file and load data into model.
-        Проверяет имя файла и соответствие полей через сериализатор.
+        Process Excel file with model data.
+        Checks for correct model mapping and required fields.
+        Then processes data using serializers.
+        Turn execel data into list of dicts and call _process_model_data.
         """
         filename = os.path.splitext(file.name)[0].lower()
         mapping_class = self.model_mapping_class.get(filename)
@@ -205,10 +202,9 @@ class FileUploadService:
         headers = [
             cell.value for cell in next(ws.iter_rows(min_row=1, max_row=1))
         ]
-        serializer_fields = set(serializer_class().get_fields().keys())
         excel_fields = set(headers)
-        if not excel_fields <= serializer_fields:
-            missing = excel_fields - serializer_fields
+        if excel_fields != set(mapping_class.expected_fields):
+            missing = set(mapping_class.expected_fields) - excel_fields
             return {
                 'success': False,
                 'messages': [f'Incorrect model attributes: {missing}'],
@@ -216,6 +212,19 @@ class FileUploadService:
         model_data = []
         for row in ws.iter_rows(min_row=2, values_only=True):
             obj_data = dict(zip(headers, row, strict=False))
+            # unique handling for courts location data
+            if filename == 'courts':
+                location_keys = [
+                    'longitude',
+                    'latitude',
+                    'court_name',
+                    'country',
+                    'city',
+                ]
+                location_data = {
+                    k: obj_data.pop(k) for k in location_keys if k in obj_data
+                }
+                obj_data['location'] = location_data
             model_data.append(obj_data)
         return self._process_model_data(filename, model_data)
 
@@ -238,6 +247,10 @@ class BaseModelMapping:
     def name(self):
         return self._name
 
+    @property
+    def expected_fields(self):
+        return self._expected_fields
+
 
 class CountryModelMapping(BaseModelMapping):
     """Model mapping for Country."""
@@ -246,6 +259,7 @@ class CountryModelMapping(BaseModelMapping):
         self._name = 'countries'
         self._model = Country
         self._serializer = CountryCreateSerializer
+        self._expected_fields = ('name',)
 
 
 class CityModelMapping(BaseModelMapping):
@@ -255,15 +269,16 @@ class CityModelMapping(BaseModelMapping):
         self._name = 'cities'
         self._model = City
         self._serializer = CityCreateSerializer
+        self._expected_fields = ('name', 'country')
 
 
-class CourtLocationModelMapping(BaseModelMapping):
-    """Model mapping for CourtLocation."""
+# class CourtLocationModelMapping(BaseModelMapping):
+#     """Model mapping for CourtLocation."""
 
-    def __init__(self):
-        self._name = 'locations'
-        self._model = CourtLocation
-        self._serializer = None
+#     def __init__(self):
+#         self._name = 'locations'
+#         self._model = CourtLocation
+#         self._serializer = None
 
 
 class CourtModelMapping(BaseModelMapping):
@@ -272,15 +287,25 @@ class CourtModelMapping(BaseModelMapping):
     def __init__(self):
         self._name = 'courts'
         self._model = Court
-        self._serializer = None
+        self._serializer = CourtCreateSerializer
+        self._expected_fields = (
+            'longitude',
+            'latitude',
+            'country',
+            'city',
+            'court_name',
+            'description',
+            'working_hours',
+        )
 
 
-class UserModelMapping(BaseModelMapping):
-    """Model mapping for User."""
+# class UserModelMapping(BaseModelMapping):
+#     """Model mapping for User."""
 
-    def __init__(self):
-        self._model = get_user_model()
-        self._serializer = None
+#     def __init__(self):
+#         self._name = 'users'
+#         self._model = get_user_model()
+#         self._serializer = None
 
 
 class PlayerModelMapping(BaseModelMapping):
