@@ -5,13 +5,16 @@ from celery import shared_task
 from celery.signals import worker_ready
 from django.utils import timezone
 
-from apps.core.models import NotificationsTime
 from apps.notifications.constants import (
     MAX_RETRIES,
     RETRY_PUSH_TIME,
     NotificationTypes,
 )
-from apps.notifications.models import Device, NotificationsBase
+from apps.notifications.models import (
+    Device,
+    NotificationsBase,
+    NotificationsTime,
+)
 from apps.notifications.push_service import PushService
 from apps.notifications.utils import delete_old_devices
 

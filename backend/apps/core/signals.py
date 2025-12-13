@@ -2,11 +2,12 @@ from django.db import connection
 from django.db.models.signals import post_migrate, post_save
 from django.dispatch import receiver
 
-from apps.core.models import FAQ, NotificationsTime
+from apps.core.models import FAQ
 from apps.core.utils import (
     initialize_faq,
-    initialize_notification_time_settings,
 )
+from apps.notifications.models import NotificationsTime
+from apps.notifications.utils import initialize_notification_time_settings
 
 
 def table_exists(table_name):
@@ -27,7 +28,7 @@ def create_notification_time_settings(sender, **kwargs):
     Ensure only one NotificationTime instance exists.
     If a new instance is created, delete all other instances.
     """
-    if table_exists('core_notificationstime'):
+    if table_exists('notifications_notificationstime'):
         initialize_notification_time_settings()
 
 

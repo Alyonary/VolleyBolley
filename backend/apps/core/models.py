@@ -1,5 +1,3 @@
-from datetime import timedelta
-
 from django.contrib.auth import get_user_model
 from django.db import models as m
 from django.utils.translation import gettext_lazy as _
@@ -181,54 +179,3 @@ class FAQ(m.Model):
     def get_active(cls):
         """Get the active FAQ instance."""
         return cls.objects.filter(is_active=True).first()
-
-
-class NotificationsTime(m.Model):
-    """Notification time model."""
-
-    name = m.CharField(
-        max_length=CoreFieldLength.NAME.value,
-        unique=True,
-        default='Develop Notifications Time Settings',
-    )
-    closed_event_notification = m.DurationField(
-        verbose_name=_('Notifications time after events are closed'),
-        default=timedelta(hours=1),
-    )
-    pre_event_notification = m.DurationField(
-        verbose_name=_('Notifications time before events start'),
-        default=timedelta(hours=1),
-    )
-    advance_notification = m.DurationField(
-        verbose_name=_('Notifications time in advance of the event'),
-        default=timedelta(hours=24),
-    )
-    is_active = m.BooleanField(default=True)
-
-    def __str__(self):
-        return self.name
-
-    class Meta:
-        verbose_name = _('Notifications time settings')
-        verbose_name_plural = _('Notification times')
-        default_related_name = 'notification_times'
-
-    @classmethod
-    def get_active(cls) -> 'NotificationsTime':
-        """Get the active NotificationsTime instance."""
-        return cls.objects.filter(is_active=True).first()
-
-    @classmethod
-    def get_pre_event_time(cls) -> timedelta:
-        """Get the pre-event notification time."""
-        return cls.get_active().pre_event_notification
-
-    @classmethod
-    def get_closed_event_notification_time(cls) -> timedelta:
-        """Get the active NotificationsTime instance."""
-        return cls.get_active().closed_event_notification
-
-    @classmethod
-    def get_advance_notification_time(cls) -> timedelta:
-        """Get advance notification time."""
-        return cls.get_active().advance_notification

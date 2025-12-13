@@ -9,7 +9,6 @@ from apps.core.models import (
     GameLevel,
     InfoPage,
     InfoSection,
-    NotificationsTime,
     Tag,
 )
 
@@ -114,30 +113,4 @@ class FAQAdmin(admin.ModelAdmin):
         """Ensure only one FAQ is active at a time."""
         if obj.is_active:
             FAQ.objects.exclude(id=obj.id).update(is_active=False)
-        super().save_model(request, obj, form, change)
-
-
-@admin.register(NotificationsTime)
-class NotificationsTimeAdmin(admin.ModelAdmin):
-    list_display = (
-        'id',
-        'name',
-        'advance_notification',
-        'closed_event_notification',
-        'pre_event_notification',
-        'is_active',
-    )
-    list_display_links = ('id', 'name')
-    search_fields = ('name',)
-    list_filter = ('is_active',)
-    ordering = ('-is_active', 'name')
-    empty_value_display = _('Not defined')
-    list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
-
-    def save_model(self, request, obj, form, change):
-        """Ensure only one NotificationsTime is active at a time."""
-        if obj.is_active:
-            NotificationsTime.objects.exclude(id=obj.id).update(
-                is_active=False
-            )
         super().save_model(request, obj, form, change)

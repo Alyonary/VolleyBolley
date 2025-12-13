@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import pytest
 
-from apps.core.models import NotificationsTime
+from apps.notifications.models import NotificationsTime
 
 
 @pytest.mark.django_db
