@@ -25,6 +25,12 @@
     {"name": "Deryneia", "country": "Cyprus"},
     {"name": "Polis", "country": "Cyprus"}
   ],
+  "currency_types": [
+    {"currency_type": "THB", "currency_name": "THB", "country": "Thailand"},
+    {"currency_type": "Euro", "currency_name": "Euro", "country": "Cyprus"}
+
+  ],
+
   "courts": [
     {
       "location": {

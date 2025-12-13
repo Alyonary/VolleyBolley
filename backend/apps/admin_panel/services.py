@@ -15,6 +15,7 @@ from apps.locations.serializers import (
     CountryCreateSerializer,
 )
 from apps.players.models import Player
+from backend.apps.core.models import CurrencyType
 
 logger = logging.getLogger(__name__)
 
@@ -308,7 +309,14 @@ class GameModelMapping(BaseModelMapping):
         self._name = 'games'
         self._model = Game
         self._serializer = None
-        self._expected_xlsx_fields = None
+        self._expected_xlsx_fields = (
+            'message',
+            'start_time',
+            'end_time',
+            'court_id',
+            'levels',
+            
+        )
 
 
 class TourneyModelMapping(BaseModelMapping):
@@ -318,4 +326,14 @@ class TourneyModelMapping(BaseModelMapping):
         self._name = 'tourneys'
         self._model = Tourney
         self._serializer = None
+        self._expected_xlsx_fields = None
+
+
+class CurrencyTypeModelMapping(BaseModelMapping):
+    """Model mapping for CurrencyType."""
+
+    def __init__(self):
+        self._name = 'currency_types'
+        self._model = CurrencyType
+        self._serializer = None # 'CurrencyTypeCreateSerializer'
         self._expected_xlsx_fields = None

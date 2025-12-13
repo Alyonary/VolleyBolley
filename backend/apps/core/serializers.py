@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from apps.core.models import Contact, Tag
+from apps.core.models import Contact, CurrencyType, Tag
+from backend.apps.locations.models import Country
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -19,5 +20,31 @@ class ContactSerializer(serializers.ModelSerializer):
         model = Contact
 
 
+class CurrencyTypeCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating CurrencyType."""
+
+    currency_type = serializers.ChoiceField(
+        choices=CurrencyType.CurrencyTypeChoices.choices
+    )
+    currency_name = serializers.ChoiceField(
+        choices=CurrencyType.CurrencyNameChoices.choices
+    )
+    class Meta:
+        model = CurrencyType
+        fields = ['currency_type', 'currency_name', 'country']
+
+    def validate_country(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Country is required.')
+        try:
+            Country.objects.get(name=value)
+        except Country.DoesNotExist as e:
+            raise serializers.ValidationError(
+                f'Country "{value}" does not exist.'
+            ) from e
+        return value
+
 class EmptyBodySerializer(serializers.Serializer):
     pass
+
