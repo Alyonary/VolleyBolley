@@ -3,7 +3,7 @@ import logging
 from celery import shared_task
 
 from apps.notifications.constants import MAX_RETRIES, RETRY_PUSH_TIME
-from apps.players.rating import GradeSystem
+from apps.players.rating import PlayerRatingManager
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 )
 def downgrade_inactive_players_task(self):
     try:
-        downgraded_count = GradeSystem.downgrade_inactive_players()
+        downgraded_count = PlayerRatingManager().downgrade_inactive_players()
         logger.info(f'Downgraded {downgraded_count} inactive players.')
         return downgraded_count
     except Exception as e:

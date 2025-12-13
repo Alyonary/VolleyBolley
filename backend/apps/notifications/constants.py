@@ -1,3 +1,6 @@
+from datetime import timedelta
+
+from django.conf import settings
 from django.db import models
 
 
@@ -83,3 +86,31 @@ NOTIFICATION_INIT_DATA = {
 }
 
 RETRY_PUSH_TIME: int = 60
+
+
+class NotificationTimePreset:
+    """Preset for notification time settings."""
+
+    def __init__(self, name, closed_event, pre_event, advance, is_active):
+        self.name: str = name
+        self.closed_event: timedelta = closed_event
+        self.pre_event: timedelta = pre_event
+        self.advance: timedelta = advance
+        self.is_active: bool = is_active
+
+
+DEV_NOTIFICATION_TIME = NotificationTimePreset(
+    name='Develop Notification Time Settings',
+    closed_event=timedelta(minutes=2),
+    pre_event=timedelta(minutes=5),
+    advance=timedelta(minutes=10),
+    is_active=settings.DEBUG,
+)
+
+PROD_NOTIFICATION_TIME = NotificationTimePreset(
+    name='Production Notification Time Settings',
+    closed_event=timedelta(hours=1),
+    pre_event=timedelta(hours=1),
+    advance=timedelta(hours=24),
+    is_active=not settings.DEBUG,
+)

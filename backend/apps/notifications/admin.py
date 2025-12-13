@@ -1,7 +1,12 @@
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 
-from apps.notifications.models import Device, NotificationsBase
+from apps.core.enums import CoreFieldLength
+from apps.notifications.models import (
+    Device,
+    NotificationsBase,
+    NotificationsTime,
+)
 
 
 @admin.register(Device)
@@ -79,3 +84,29 @@ class NotificationsBaseAdmin(admin.ModelAdmin):
     empty_value_display = _('-empty-')
     list_display_links = ['id', 'type']
     fields = ['type', 'title', 'body', 'screen', 'id']
+
+
+@admin.register(NotificationsTime)
+class NotificationsTimeAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'name',
+        'advance_notification',
+        'closed_event_notification',
+        'pre_event_notification',
+        'is_active',
+    )
+    list_display_links = ('id', 'name')
+    search_fields = ('name',)
+    list_filter = ('is_active',)
+    ordering = ('-is_active', 'name')
+    empty_value_display = _('Not defined')
+    list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
+
+    def save_model(self, request, obj, form, change):
+        """Ensure only one NotificationsTime is active at a time."""
+        if obj.is_active:
+            NotificationsTime.objects.exclude(id=obj.id).update(
+                is_active=False
+            )
+        super().save_model(request, obj, form, change)
