@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+import sys
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
@@ -18,7 +19,7 @@ else:
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
-
+TESTING = "pytest" in sys.modules or "test" in sys.argv
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
 if not ALLOWED_HOSTS:
@@ -459,3 +460,13 @@ from apps.admin_panel.settings import jazzmin_settings, jazzmin_ui_tweaks
 
 JAZZMIN_SETTINGS = jazzmin_settings
 JAZZMIN_UI_TWEAKS = jazzmin_ui_tweaks
+
+DEBUG_TOOLBAR_ENABLED = DEBUG and not TESTING
+
+if DEBUG_TOOLBAR_ENABLED:
+    INSTALLED_APPS += ['debug_toolbar']
+    MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
+    INTERNAL_IPS = ['127.0.0.1']
+    DEBUG_TOOLBAR_CONFIG = {
+    'SHOW_TOOLBAR_CALLBACK': lambda request: True,
+}

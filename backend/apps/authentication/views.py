@@ -260,8 +260,10 @@ class GoogleLogin(APIView, AuthIdTokenMixin):
                     'Location': openapi.Schema(
                         type=openapi.TYPE_STRING,
                         description='URL for Google authorization',
-                        example='https://accounts.google.com/o/oauth2/auth?'
-                        'response_type=code&client_id=...',
+                        example=(
+                            'https://accounts.google.com/o/oauth2/auth?'
+                            'response_type=code&client_id=...'
+                        ),
                     )
                 },
             ),

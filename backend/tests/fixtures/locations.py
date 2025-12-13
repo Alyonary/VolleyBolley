@@ -38,3 +38,8 @@ def thailand_bangkok(countries_cities):
     city = City.objects.filter(name='Bangkok')
 
     return country, city
+
+
+@pytest.fixture
+def countries(countries_cities):
+    return Country.objects.all()

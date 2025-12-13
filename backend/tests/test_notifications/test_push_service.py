@@ -8,6 +8,7 @@ from apps.notifications.models import Notifications
 from apps.notifications.push_service import PushService
 
 
+@pytest.mark.django_db
 class TestPushServiceSingleton:
     """Test PushService singleton behavior."""
 
@@ -34,6 +35,7 @@ class TestPushServiceSingleton:
             assert instance is first_instance
 
 
+@pytest.mark.django_db
 class TestPushServiceInitialization:
     """Test PushService initialization scenarios."""
 
@@ -90,6 +92,7 @@ class TestPushServiceInitialization:
         assert service._initialized is True
 
 
+@pytest.mark.django_db
 class TestPushServiceStatusMethods:
     """Test PushService status and checking methods."""
 
