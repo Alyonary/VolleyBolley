@@ -6,6 +6,12 @@ from typing import Any, Dict, List
 import openpyxl
 from django.conf import settings
 
+from apps.admin_panel.constants import MAX_FILE_SIZE
+from apps.core.models import CurrencyType, GameLevel
+from apps.core.serializers import (
+    CurrencyCreateSerializer,
+    GameLevelSerializer,
+)
 from apps.courts.models import Court
 from apps.courts.serializers import CourtCreateSerializer
 from apps.event.models import Game, Tourney
@@ -15,7 +21,6 @@ from apps.locations.serializers import (
     CountryCreateSerializer,
 )
 from apps.players.models import Player
-from backend.apps.core.models import CurrencyType
 
 logger = logging.getLogger(__name__)
 
@@ -46,27 +51,39 @@ class FileUploadService:
             'countries': CountryModelMapping(),
             'cities': CityModelMapping(),
             'courts': CourtModelMapping(),
+            'currencies': CurrencyTypeModelMapping(),
+            'levels': LevelsModelMapping(),
+        }
+        self._private_models_mapping_class = {
+            'players': PlayerModelMapping(),
+            'games': GameModelMapping(),
+            'tourneys': TourneyModelMapping(),
         }
         self._model_processing_order: tuple[str] = (
+            'currencies',
+            'levels',
             'countries',
             'cities',
             'courts',
         )
         self._supported_file_types: tuple[str] = ('json', 'excel')
-        self.max_file_size: int = 10 * 1024 * 1024  # 10 MB
+        self.max_file_size: int = MAX_FILE_SIZE
         self._extended_model_access: bool = settings.DEBUG
 
     @property
     def model_mapping_class(self) -> Dict[str, Any]:
+        if self._extended_model_access:
+            return {
+                **self._model_mapping_class,
+                **self._private_models_mapping_class,
+            }
         return self._model_mapping_class
 
     @property
     def model_processing_order(self) -> tuple[str]:
         if self._extended_model_access:
-            return self._model_processing_order + (
-                'players',
-                'games',
-                'tourneys',
+            return self._model_processing_order + tuple(
+                self._private_models_mapping_class.keys()
             )
         return self._model_processing_order
 
@@ -229,6 +246,23 @@ class FileUploadService:
             model_data.append(obj_data)
         return self._process_model_data(filename, model_data)
 
+    def summarize_results(self, result: dict) -> dict:
+        """Summarize results by counting created, and error messages."""
+        messages = result.get('messages', [])
+        summary = {'created': 0, 'errors': 0}
+        for msg in messages:
+            msg_lower = msg.lower()
+            if 'created' in msg_lower:
+                summary['created'] += 1
+            elif 'error' in msg_lower:
+                summary['errors'] += 1
+        summary_messages = [
+            f'Created: {summary["created"]} db objects',
+            f'Errors(skipped): {summary["errors"]}',
+        ]
+        result['messages'] = summary_messages
+        return result
+
 
 class BaseModelMapping:
     """
@@ -260,7 +294,7 @@ class CountryModelMapping(BaseModelMapping):
         self._name = 'countries'
         self._model = Country
         self._serializer = CountryCreateSerializer
-        self._expected_xlsx_fields = ('name',)
+        self._expected_xlsx_fields = self.serializer.Meta.fields
 
 
 class CityModelMapping(BaseModelMapping):
@@ -270,7 +304,7 @@ class CityModelMapping(BaseModelMapping):
         self._name = 'cities'
         self._model = City
         self._serializer = CityCreateSerializer
-        self._expected_xlsx_fields = ('name', 'country')
+        self._expected_xlsx_fields = self.serializer.Meta.fields
 
 
 class CourtModelMapping(BaseModelMapping):
@@ -299,7 +333,7 @@ class PlayerModelMapping(BaseModelMapping):
         self._name = 'players'
         self._model = Player
         self._serializer = None
-        self.__expected_xlsx_fields = None
+        self._expected_xlsx_fields = None
 
 
 class GameModelMapping(BaseModelMapping):
@@ -309,14 +343,7 @@ class GameModelMapping(BaseModelMapping):
         self._name = 'games'
         self._model = Game
         self._serializer = None
-        self._expected_xlsx_fields = (
-            'message',
-            'start_time',
-            'end_time',
-            'court_id',
-            'levels',
-            
-        )
+        self._expected_xlsx_fields = None
 
 
 class TourneyModelMapping(BaseModelMapping):
@@ -333,7 +360,17 @@ class CurrencyTypeModelMapping(BaseModelMapping):
     """Model mapping for CurrencyType."""
 
     def __init__(self):
-        self._name = 'currency_types'
+        self._name = 'currencies'
         self._model = CurrencyType
-        self._serializer = None # 'CurrencyTypeCreateSerializer'
-        self._expected_xlsx_fields = None
+        self._serializer = CurrencyCreateSerializer
+        self._expected_xlsx_fields = self.serializer.Meta.fields
+
+
+class LevelsModelMapping(BaseModelMapping):
+    """Model mapping for Levels."""
+
+    def __init__(self):
+        self._name = 'levels'
+        self._model = GameLevel
+        self._serializer = GameLevelSerializer
+        self._expected_xlsx_fields = self.serializer.Meta.fields

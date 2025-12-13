@@ -25,12 +25,17 @@
     {"name": "Deryneia", "country": "Cyprus"},
     {"name": "Polis", "country": "Cyprus"}
   ],
-  "currency_types": [
+  "currencies": [
     {"currency_type": "THB", "currency_name": "THB", "country": "Thailand"},
     {"currency_type": "Euro", "currency_name": "Euro", "country": "Cyprus"}
 
   ],
-
+  "levels": [
+    {"name": "Beginner"},
+    {"name": "Intermediate"},
+    {"name": "Advanced"},
+    {"name": "Professional"}
+  ],
   "courts": [
     {
       "location": {

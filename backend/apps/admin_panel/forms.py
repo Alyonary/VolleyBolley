@@ -23,6 +23,12 @@ class FileUploadForm(forms.Form):
             }
         ),
     )
+    stats_detail = forms.BooleanField(
+        label=_('Detailed statistics'),
+        required=False,
+        help_text=_('Enable detailed statistics for the uploaded data.'),
+        widget=forms.CheckboxInput(attrs={'class': 'checkbox-input'}),
+    )
 
     def clean_file(self):
         """Validate uploaded file."""

@@ -22,7 +22,7 @@ def load_faq_from_file(file_path) -> bool:
     """
     if not check_is_db_table_exists(FAQ._meta.db_table):
         logger.warning('FAQ table does not exist in the database.')
-        return False
+        return
 
     content = FileUploadService().download_file_by_path(file_path)
 

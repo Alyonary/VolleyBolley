@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from apps.core.models import Contact, CurrencyType, Tag
+from apps.core.models import Contact, CurrencyType, GameLevel, Tag
+from apps.locations.models import Country
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -19,7 +20,7 @@ class ContactSerializer(serializers.ModelSerializer):
         model = Contact
 
 
-class CurrencyTypeCreateSerializer(serializers.ModelSerializer):
+class CurrencyCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating CurrencyType."""
 
     currency_type = serializers.ChoiceField(
@@ -28,6 +29,8 @@ class CurrencyTypeCreateSerializer(serializers.ModelSerializer):
     currency_name = serializers.ChoiceField(
         choices=CurrencyType.CurrencyNameChoices.choices
     )
+    country = serializers.CharField()
+
     class Meta:
         model = CurrencyType
         fields = ['currency_type', 'currency_name', 'country']
@@ -37,12 +40,12 @@ class CurrencyTypeCreateSerializer(serializers.ModelSerializer):
         if not value:
             raise serializers.ValidationError('Country is required.')
         try:
-            Country.objects.get(name=value)
+            return Country.objects.get(name=value)
         except Country.DoesNotExist as e:
             raise serializers.ValidationError(
                 f'Country "{value}" does not exist.'
             ) from e
-        return value
+
 
 class EmptyBodySerializer(serializers.Serializer):
     pass
@@ -72,3 +75,15 @@ class CurrencyListSerializer(serializers.Serializer):
     """Serializer for list of CurrencyType objects."""
 
     currencies = CurrencySerializer(many=True)
+
+
+class GameLevelSerializer(serializers.ModelSerializer):
+    """Serializer for GameLevel model."""
+
+    name = serializers.ChoiceField(choices=GameLevel.GameLevelChoices.choices)
+
+    class Meta:
+        model = GameLevel
+        fields = [
+            'name',
+        ]

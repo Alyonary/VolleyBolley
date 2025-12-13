@@ -30,10 +30,12 @@
         <h3>📄 How to Use</h3>
         <p>
             You can upload data from <strong>JSON</strong> or <strong>Excel (XLSX)</strong> files.<br>
-            Supported models for import: 
-            {% for model in supported_models %}
-                <code>{{ model }}</code>{% if not forloop.last %}, {% endif %}
-            {% endfor %}
+            <span style="font-size: 1.15em; font-weight: 600;">
+    Supported models for import:
+    {% for model in supported_models %}
+        <code style="font-size: 1.1em;">{{ model|capfirst }}</code>{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+</span>
         </p>
 
         <h4>📁 Supported File Types</h4>
@@ -63,6 +65,14 @@
                     <li>Each following row contains values for one record.</li>
                 </ul>
                 <br>
+                <strong>Example:</strong>
+                <pre style="background:#f8f8f8; border-radius:6px; padding:10px; margin-top:8px;">
+longitude   latitude   court_name         country    city        price_description   description               working_hours
+100.5018    13.7563    Bangkok Arena      Thailand   Bangkok     Premium             Main arena in Bangkok     08:00-22:00
+98.9817     18.7961    Chiang Mai Stadium Thailand   Chiang Mai  Standard            Stadium in Chiang Mai     09:00-21:00
+                </pre>
+            </li>
+        </ul>
 
         <h4>📑 Expected Fields for Each Model</h4>
         <ul>
@@ -90,6 +100,11 @@
                                 {% endfor %}
                             </li>
                         {% endif %}
+                        {% if not info.json_fields and not info.excel_fields %}
+                            <li style="color: #b00;">
+                                Data upload is not supported for this model.
+                            </li>
+                        {% endif %}
                     </ul>
                 </li>
             {% endfor %}
@@ -111,7 +126,15 @@
                     </label>
                 </div>
             </div>
-            
+            <div class="checkbox-wrapper">
+    <label for="{{ form.stats_detail.id_for_label }}" class="checkbox-container">
+        {{ form.stats_detail }}
+        <div class="checkbox-content">
+            <span class="checkbox-title">{{ form.stats_detail.label }}</span>
+            <p class="checkbox-description">{{ form.stats_detail.help_text }}</p>
+        </div>
+    </label>
+</div>
             {% if form.file.errors %}
                 <div class="error-section">
                     <h4>⚠️ {% trans 'Validation Error' %}</h4>
