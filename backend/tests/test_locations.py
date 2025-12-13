@@ -5,36 +5,26 @@ from rest_framework import status
 from apps.locations.models import Country
 
 
+@pytest.fixture
+def setup_test_data():
+    """Fixture to set up test data."""
+    Country.objects.get_or_create(name='Cyprus')
+    Country.objects.get_or_create(name='Thailand')
+
+
 @pytest.mark.django_db
 class TestCountriesAPI:
     """Tests for Countries API endpoint."""
 
-    def test_endpoint_accessibility(self, api_client):
+    def test_endpoint_accessibility(self, api_client, setup_test_data):
         """Test that countries endpoint is accessible - status 200."""
         url = reverse('api:countries')
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
 
-    def test_response_structure(self, api_client):
-        """Test response has correct JSON structure.
-
-        Expected structure:
-        {
-            "countries": [
-                {
-                    "country_id": 0,
-                    "country_name": "country_name",
-                    "cities": [
-                        {
-                            "city_id": 0,
-                            "city_name": "city_name"
-                        }
-                    ]
-                }
-            ]
-        }
-        """
+    def test_response_structure(self, api_client, setup_test_data):
+        """Test response has correct JSON structure."""
         url = reverse('api:countries')
         response = api_client.get(url)
 
@@ -57,13 +47,19 @@ class TestCountriesAPI:
 
     def test_empty_database(self, api_client):
         """Test API with empty database."""
+        # Очистка базы данных только для этого теста
+        Country.objects.all().delete()
+
         url = reverse('api:countries')
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data['countries'] == []
 
-    def test_country_without_cities(self, api_client):
+        Country.objects.get_or_create(name='Cyprus')
+        Country.objects.get_or_create(name='Thailand')
+
+    def test_country_without_cities(self, api_client, setup_test_data):
         """Test country that has no cities."""
         Country.objects.create(name='Empty Country')
 
@@ -84,7 +80,7 @@ class TestCountriesAPI:
         assert empty_country is not None
         assert empty_country['cities'] == []
 
-    def test_http_methods(self, api_client):
+    def test_http_methods(self, api_client, setup_test_data):
         """Test that only GET method is allowed."""
         url = reverse('api:countries')
 
@@ -103,9 +99,7 @@ class TestCountriesAPI:
         response = api_client.delete(url)
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
-    def test_countries_alphabetical_sorting(
-        self, api_client, countries_cities
-    ):
+    def test_countries_alphabetical_sorting(self, api_client, setup_test_data):
         """Test that countries are sorted alphabetically."""
         Country.objects.create(name='Vietnam')
         Country.objects.create(name='Malaysia')

@@ -109,8 +109,9 @@ class GameViewSet(
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary='Get number of active invitations and'
-        ' time of next game',
+        operation_summary=(
+            'Get number of active invitations and time of next game'
+        ),
         operation_description="""
         Get number of active invitations and time of next game
 
@@ -164,8 +165,10 @@ class GameViewSet(
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary='Get lists of upcoming games and tournaments'
-        ' created by current player',
+        operation_summary=(
+            'Get lists of upcoming games and tournaments'
+            ' created by current player'
+        ),
         operation_description="""
         Get two lists of the upcoming games and the upcoming tournaments
         created by the current player.
@@ -193,8 +196,9 @@ class GameViewSet(
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary='Get lists of players archived games'
-        ' and tournaments',
+        operation_summary=(
+            'Get lists of players archived games and tournaments'
+        ),
         operation_description="""
         Get two lists of the archived games and tournaments
         related to the current player.
@@ -221,8 +225,10 @@ class GameViewSet(
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary='Get lists of games and tournaments'
-        ' to which player has been invited',
+        operation_summary=(
+            'Get lists of games and tournaments'
+            ' to which player has been invited'
+        ),
         operation_description="""
         Get two lists of the games and the tournaments
         to which the current player has been invited.
@@ -250,8 +256,10 @@ class GameViewSet(
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary='Get lists of upcoming games and tournaments'
-        ' in which player will participate',
+        operation_summary=(
+            'Get lists of upcoming games and tournaments'
+            ' in which player will participate'
+        ),
         operation_description="""
         Get two lists of the upcoming games and the upcoming tournaments
         in which the current player will participate.
