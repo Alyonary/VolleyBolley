@@ -117,7 +117,7 @@ class FileUploadService:
     def download_file_by_path(self, file_path: str) -> bytes:
         """Download file from given path."""
         if not os.path.exists(file_path):
-            raise FileNotFoundError(f'FAQ file not found at {file_path}')
+            raise FileNotFoundError(f'file not found at {file_path}')
         with open(file_path, 'r', encoding='utf-8') as f:
             return f.read()
 

@@ -26,15 +26,15 @@
     {"name": "Polis", "country": "Cyprus"}
   ],
   "currencies": [
-    {"currency_type": "THB", "currency_name": "THB", "country": "Thailand"},
-    {"currency_type": "Euro", "currency_name": "Euro", "country": "Cyprus"}
+    {"currency_type": "THB", "currency_name": "฿", "country": "Thailand"},
+    {"currency_type": "EUR", "currency_name": "€", "country": "Cyprus"}
 
   ],
   "levels": [
-    {"name": "Beginner"},
-    {"name": "Intermediate"},
-    {"name": "Advanced"},
-    {"name": "Professional"}
+    {"name": "LIGHT"},
+    {"name": "MEDIUM"},
+    {"name": "HARD"},
+    {"name": "PRO"}
   ],
   "courts": [
     {

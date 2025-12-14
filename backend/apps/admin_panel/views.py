@@ -1,9 +1,7 @@
 import logging
-from datetime import datetime
 
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Sum
 from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
@@ -11,9 +9,7 @@ from django.views.decorators.http import require_POST
 from apps.admin_panel.constants import MAX_FILE_SIZE, SUPPORTED_FILE_TYPES
 from apps.admin_panel.forms import FileUploadForm
 from apps.admin_panel.services import FileUploadService
-from apps.core.models import DailyStats
 from apps.core.task import collect_daily_stats
-from apps.event.models import Game, Tourney
 from apps.notifications.push_service import PushService
 
 logger = logging.getLogger(__name__)
@@ -60,12 +56,9 @@ def process_file_upload(request, form: FileUploadForm, stats_detail: bool):
     """Process uploaded file."""
 
     file = form.cleaned_data['file']
-
     try:
         upload_service = FileUploadService()
-        result = upload_service.process_file(
-            file=file,
-        )
+        result = upload_service.process_file(file=file)
         if not stats_detail:
             result = upload_service.summarize_results(result)
         if not result.get('success', False):
@@ -141,73 +134,43 @@ def run_stats_task_view(request):
 def dashboard_view(request):
     """Admin dashboard view showing key metrics."""
 
-    active_games = Game.objects.filter(is_active=True).count()
-    active_tourneys = Tourney.objects.filter(is_active=True).count()
-    stats = DailyStats.objects.all().order_by('-date')[:1]
-    total_players = total_games = total_tourneys = 0
-    if stats:
-        total_players = (
-            DailyStats.objects.aggregate(total=Sum('players_registered'))[
-                'total'
-            ]
-            or 0
-        )
-        total_games = (
-            DailyStats.objects.aggregate(total=Sum('games_created'))['total']
-            or 0
-        )
-        total_tourneys = (
-            DailyStats.objects.aggregate(total=Sum('tourneys_created'))[
-                'total'
-            ]
-            or 0
-        )
-
-    players_chart_labels, players_chart_data = get_stats_by_month(
-        'players_registered'
-    )
-    games_chart_labels, games_chart_data = get_stats_by_month('games_created')
+    # временно
+    # Тестовые данные для демонстрации дашборда
+    dashboard_test_data = {
+        'players_chart_labels': [
+            '2025-07',
+            '2025-08',
+            '2025-09',
+            '2025-10',
+            '2025-11',
+            '2025-12',
+        ],
+        'players_chart_data': [120, 150, 180, 210, 250, 300],
+        'games_chart_labels': [
+            '2025-07',
+            '2025-08',
+            '2025-09',
+            '2025-10',
+            '2025-11',
+            '2025-12',
+        ],
+        'games_chart_data': [45, 60, 80, 100, 130, 170],
+        'total_players': 300,
+        'total_games': 170,
+        'total_tourneys': 25,
+        'active_games': 7,
+        'active_tourneys': 2,
+    }
 
     context = {
-        'total_players': total_players,
-        'total_games': total_games,
-        'total_tourneys': total_tourneys,
-        'active_games': active_games,
-        'active_tourneys': active_tourneys,
-        'players_chart_labels': players_chart_labels,
-        'players_chart_data': players_chart_data,
-        'games_chart_labels': games_chart_labels,
-        'games_chart_data': games_chart_data,
+        'total_players': dashboard_test_data['total_players'],
+        'total_games': dashboard_test_data['total_games'],
+        'total_tourneys': dashboard_test_data['total_tourneys'],
+        'active_games': dashboard_test_data['active_games'],
+        'active_tourneys': dashboard_test_data['active_tourneys'],
+        'players_chart_labels': dashboard_test_data['players_chart_labels'],
+        'players_chart_data': dashboard_test_data['players_chart_data'],
+        'games_chart_labels': dashboard_test_data['games_chart_labels'],
+        'games_chart_data': dashboard_test_data['games_chart_data'],
     }
     return render(request, 'admin_panel/admin_dashboard.html', context)
-
-
-def get_stats_by_month(stat_type: str) -> tuple[list[str], list[int]]:
-    """Returns the statistics data grouped by month.
-    Args:
-        stat_type (str): The type of statistic to query
-            (e.g., 'players_registered').
-    Returns:
-        tuple: A tuple containing two lists - labels and data.
-    """
-    stats_by_month = DailyStats.objects.get_stats_by_month(stat_type)
-    stats_by_month_dict = {
-        stat['month']: stat['total']
-        for stat in stats_by_month
-        if stat['month']
-    }
-    if stats_by_month_dict:
-        first_month = min(stats_by_month_dict)
-        last_month = max(stats_by_month_dict)
-    else:
-        first_month = last_month = datetime.today().replace(day=1)
-    months = []
-    current = first_month
-    while current <= last_month:
-        months.append(current)
-        year = current.year + (current.month // 12)
-        month = (current.month % 12) + 1
-        current = current.replace(year=year, month=month)
-    stats_chart_labels = [m.strftime('%b %Y') for m in months]
-    stats_chart_data = [stats_by_month_dict.get(m, 0) for m in months]
-    return stats_chart_labels, stats_chart_data
