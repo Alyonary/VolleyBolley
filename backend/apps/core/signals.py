@@ -7,7 +7,6 @@ from apps.core.utils import (
     initialize_faq,
 )
 from apps.notifications.models import NotificationsTime
-from apps.notifications.utils import initialize_notification_time_settings
 
 
 def table_exists(table_name):
@@ -20,16 +19,6 @@ def load_faq(sender, **kwargs):
     """Initialize FAQ data after migrations are applied."""
     if table_exists('core_faq'):
         initialize_faq()
-
-
-@receiver(post_migrate)
-def create_notification_time_settings(sender, **kwargs):
-    """
-    Ensure only one NotificationTime instance exists.
-    If a new instance is created, delete all other instances.
-    """
-    if table_exists('notifications_notificationstime'):
-        initialize_notification_time_settings()
 
 
 @receiver(post_save, sender=NotificationsTime)
