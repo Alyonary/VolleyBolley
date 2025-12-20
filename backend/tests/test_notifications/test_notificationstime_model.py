@@ -2,6 +2,10 @@ from datetime import timedelta
 
 import pytest
 
+from apps.notifications.constants import (
+    DEV_NOTIFICATION_TIME,
+    PROD_NOTIFICATION_TIME,
+)
 from apps.notifications.models import NotificationsTime
 
 
@@ -15,14 +19,15 @@ class TestNotificationsTime:
         assert notifications.count() == 2
 
         develop_settings = NotificationsTime.objects.get(
-            name='Develop Notification Time Settings'
+            name=DEV_NOTIFICATION_TIME.name
         )
         production_settings = NotificationsTime.objects.get(
-            name='Production Notification Time Settings'
+            name=PROD_NOTIFICATION_TIME.name
         )
-
-        assert develop_settings.is_active is True
-        assert production_settings.is_active is False
+        assert develop_settings.is_active is DEV_NOTIFICATION_TIME.is_active
+        assert (
+            production_settings.is_active is PROD_NOTIFICATION_TIME.is_active
+        )
 
     def test_create_notifications_time(self):
         """Test creating a NotificationsTime instance."""
