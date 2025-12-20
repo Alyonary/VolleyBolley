@@ -1,6 +1,9 @@
+from datetime import timedelta
+
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.enums import CoreFieldLength
 from apps.notifications.constants import (
     DEVICE_PLATFORM_LENGTH,
     DEVICE_TOKEN_MAX_LENGTH,
@@ -8,6 +11,7 @@ from apps.notifications.constants import (
     NOTIFICATION_SCREEN_MAX_LENGTH,
     NOTIFICATION_TITLE_MAX_LENGTH,
     NOTIFICATION_TYPE_MAX_LENGTH,
+    PROD_NOTIFICATION_TIME,
     DeviceType,
     NotificationTypes,
 )
@@ -209,3 +213,54 @@ class Notifications(models.Model):
             f'Notification {self.notification_type} '
             f'for {self.player.user.username}'
         )
+
+
+class NotificationsTime(models.Model):
+    """Notification time model."""
+
+    name = models.CharField(
+        max_length=CoreFieldLength.NAME.value,
+        unique=True,
+        default='Develop Notifications Time Settings',
+    )
+    closed_event_notification = models.DurationField(
+        verbose_name=_('Notifications time after events are closed'),
+        default=PROD_NOTIFICATION_TIME.closed_event,
+    )
+    pre_event_notification = models.DurationField(
+        verbose_name=_('Notifications time before events start'),
+        default=PROD_NOTIFICATION_TIME.pre_event,
+    )
+    advance_notification = models.DurationField(
+        verbose_name=_('Notifications time in advance of the event'),
+        default=PROD_NOTIFICATION_TIME.advance,
+    )
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = _('Notifications setting')
+        verbose_name_plural = _('Notifications settings')
+        default_related_name = 'notification_times'
+
+    @classmethod
+    def get_active(cls) -> 'NotificationsTime':
+        """Get the active NotificationsTime instance."""
+        return cls.objects.filter(is_active=True).first()
+
+    @classmethod
+    def get_pre_event_time(cls) -> timedelta:
+        """Get the pre-event notification time."""
+        return cls.get_active().pre_event_notification
+
+    @classmethod
+    def get_closed_event_notification_time(cls) -> timedelta:
+        """Get the active NotificationsTime instance."""
+        return cls.get_active().closed_event_notification
+
+    @classmethod
+    def get_advance_notification_time(cls) -> timedelta:
+        """Get advance notification time."""
+        return cls.get_active().advance_notification
