@@ -68,10 +68,6 @@ class EventMixin(m.Model):
         verbose_name=_('Active'),
         default=True,
     )
-    created_at = m.DateTimeField(
-        verbose_name=_('Created at'),
-        auto_now_add=True,
-    )
 
     class Meta:
         abstract = True

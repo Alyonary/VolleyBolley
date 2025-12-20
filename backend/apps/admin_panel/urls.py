@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.admin_panel.views import (
     dashboard_view,
+    run_stats_task_view,
     upload_file,
 )
 
@@ -14,4 +15,5 @@ urlpatterns = [
         name='upload_file',
     ),
     path('dashboard/', dashboard_view, name='admin_dashboard'),
+    path('run-stats-task/', run_stats_task_view, name='run_stats_task'),
 ]

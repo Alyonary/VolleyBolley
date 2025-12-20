@@ -1,3 +1,4 @@
+from django.db import connection
 from django.db.models.signals import post_migrate, post_save
 from django.dispatch import receiver
 
@@ -5,10 +6,16 @@ from apps.core.models import FAQ
 from apps.core.utils import initialize_faq
 
 
+def table_exists(table_name: str) -> bool:
+    """Check if a table exists in the database using ORM."""
+    return table_name in connection.introspection.table_names()
+
+
 @receiver(post_migrate)
 def load_faq(sender, **kwargs):
     """Initialize FAQ data after migrations are applied."""
-    initialize_faq()
+    if table_exists('core_faq'):
+        initialize_faq()
 
 
 @receiver(post_save, sender=FAQ)

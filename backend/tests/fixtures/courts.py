@@ -15,6 +15,15 @@ def location_for_court_data():
 
 
 @pytest.fixture
+def cyprus_location_court_data():
+    return {
+        'longitude': 34.567,
+        'latitude': -12.345,
+        'court_name': 'Test court in Cyprus',
+    }
+
+
+@pytest.fixture
 def location_for_court_thailand(
     location_for_court_data, country_thailand, city_in_thailand
 ):
@@ -31,9 +40,9 @@ def location_for_court_thailand(
 
 @pytest.fixture
 def location_for_court_cyprus(
-    location_for_court_data, country_cyprus, city_in_cyprus
+    cyprus_location_court_data, country_cyprus, city_in_cyprus
 ):
-    cyprus_court_data = location_for_court_data.copy()
+    cyprus_court_data = cyprus_location_court_data.copy()
     another_country = {
         'country': country_cyprus,
         'city': city_in_cyprus,

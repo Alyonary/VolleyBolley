@@ -7,6 +7,13 @@
 {% endblock %}
 
 {% block content %}
+<form method="post" action="{% url 'admin_panel:run_stats_task' %}">
+    {% csrf_token %}
+    <div class="stats-task-btn-wrapper">
+        <button type="submit" class="stats-task-btn">Collect statistics</button>
+    </div>
+</form>
+<br>
 
 <div class="dashboard-cards">
     <div class="dashboard-card">

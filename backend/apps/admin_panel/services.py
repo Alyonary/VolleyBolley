@@ -15,6 +15,7 @@ from apps.core.serializers import (
 from apps.courts.models import Court
 from apps.courts.serializers import CourtCreateSerializer
 from apps.event.models import Game, Tourney
+from apps.event.serializers import GameCreateSerializer
 from apps.locations.models import City, Country
 from apps.locations.serializers import (
     CityCreateSerializer,
@@ -35,6 +36,9 @@ class FileUploadService:
             handlers.
         _model_processing_order (tuple[str]): Order in which models should be
             processed.
+        _private_models_mapping_class (Dict[str, Any]): Mapping for private
+            models only accessible in debug mode.
+        max_file_size (int): Maximum allowed file size for upload.
         _supported_file_types (tuple[str]): Supported file types for upload.
         _extended_model_access (bool): Enable extended model processing.
     """
@@ -224,6 +228,7 @@ class FileUploadService:
         expected_fields = set(mapping_class.expected_fields)
         if excel_fields != expected_fields:
             missing = expected_fields - excel_fields
+            print(excel_fields, expected_fields)
             return {
                 'success': False,
                 'messages': [f'Missing model fields: {missing}'],
@@ -243,6 +248,12 @@ class FileUploadService:
                     k: obj_data.pop(k) for k in location_keys if k in obj_data
                 }
                 obj_data['location'] = location_data
+            if filename == 'games' and isinstance(obj_data.get('levels'), str):
+                obj_data['levels'] = [
+                    v.strip()
+                    for v in obj_data['levels'].split(',')
+                    if v.strip()
+                ]
             model_data.append(obj_data)
         return self._process_model_data(filename, model_data)
 
@@ -270,6 +281,12 @@ class BaseModelMapping:
     Subclasses must set self.model, self.serializer, self.can_update.
     """
 
+    def __init__(self):
+        self._model = None
+        self._serializer = None
+        self._name = ''
+        self._expected_xlsx_fields = ()
+
     @property
     def model(self):
         return self._model
@@ -286,6 +303,17 @@ class BaseModelMapping:
     def expected_fields(self):
         return self._expected_xlsx_fields
 
+    def get_serializer_fields(self) -> List[str]:
+        """Get non-read-only fields from the serializer."""
+
+        if not self.serializer:
+            return []
+        return tuple(
+            name
+            for name, field in self._serializer().get_fields().items()
+            if not field.read_only
+        )
+
 
 class CountryModelMapping(BaseModelMapping):
     """Model mapping for Country."""
@@ -294,7 +322,7 @@ class CountryModelMapping(BaseModelMapping):
         self._name = 'countries'
         self._model = Country
         self._serializer = CountryCreateSerializer
-        self._expected_xlsx_fields = self.serializer.Meta.fields
+        self._expected_xlsx_fields = self.get_serializer_fields()
 
 
 class CityModelMapping(BaseModelMapping):
@@ -304,7 +332,7 @@ class CityModelMapping(BaseModelMapping):
         self._name = 'cities'
         self._model = City
         self._serializer = CityCreateSerializer
-        self._expected_xlsx_fields = self.serializer.Meta.fields
+        self._expected_xlsx_fields = self.get_serializer_fields()
 
 
 class CourtModelMapping(BaseModelMapping):
@@ -342,8 +370,8 @@ class GameModelMapping(BaseModelMapping):
     def __init__(self):
         self._name = 'games'
         self._model = Game
-        self._serializer = None
-        self._expected_xlsx_fields = None
+        self._serializer = GameCreateSerializer
+        self._expected_xlsx_fields = self.get_serializer_fields()
 
 
 class TourneyModelMapping(BaseModelMapping):
@@ -363,7 +391,7 @@ class CurrencyTypeModelMapping(BaseModelMapping):
         self._name = 'currencies'
         self._model = CurrencyType
         self._serializer = CurrencyCreateSerializer
-        self._expected_xlsx_fields = self.serializer.Meta.fields
+        self._expected_xlsx_fields = self.get_serializer_fields()
 
 
 class LevelsModelMapping(BaseModelMapping):
@@ -373,4 +401,4 @@ class LevelsModelMapping(BaseModelMapping):
         self._name = 'levels'
         self._model = GameLevel
         self._serializer = GameLevelSerializer
-        self._expected_xlsx_fields = self.serializer.Meta.fields
+        self._expected_xlsx_fields = self.get_serializer_fields()

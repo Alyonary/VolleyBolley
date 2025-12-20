@@ -1,3 +1,4 @@
+
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from rest_framework import serializers
@@ -14,11 +15,8 @@ from apps.players.serializers import PlayerGameSerializer
 
 class BaseGameSerializer(serializers.ModelSerializer):
     game_id = serializers.IntegerField(source='pk', read_only=True)
-
     start_time = serializers.DateTimeField(format='iso-8601')
-
     end_time = serializers.DateTimeField(format='iso-8601')
-
     levels = serializers.SlugRelatedField(
         slug_field='name',
         queryset=GameLevel.objects.all(),
@@ -27,11 +25,8 @@ class BaseGameSerializer(serializers.ModelSerializer):
     )
 
     gender = serializers.ChoiceField(choices=GenderChoices.choices)
-
     currency_type = serializers.CharField(required=False)
-
     payment_account = serializers.CharField(required=False)
-
     maximum_players = serializers.IntegerField(source='max_players')
 
     class Meta:
@@ -65,7 +60,7 @@ class BaseGameSerializer(serializers.ModelSerializer):
         end_time = value.get('end_time')
         if start_time < timezone.now():
             raise serializers.ValidationError(
-                'Game start time can be in future.'
+                'Game start time have to be in future.'
             )
         if end_time < start_time:
             raise serializers.ValidationError(
@@ -163,9 +158,7 @@ class GameDetailSerializer(BaseGameSerializer):
     """Game serializer uses for retrieve requests."""
 
     host = PlayerGameSerializer()
-
     court_location = LocationSerializer(source='court.location')
-
     players = PlayerGameSerializer(many=True)
 
     class Meta(BaseGameSerializer.Meta):
@@ -227,13 +220,9 @@ class TourneyShortSerializer(serializers.ModelSerializer):
 
 class GameShortSerializer(serializers.ModelSerializer):
     game_id = serializers.IntegerField(source='pk')
-
     host = PlayerGameSerializer()
-
     court_location = LocationSerializer(source='court.location')
-
     start_time = serializers.DateTimeField(format='iso-8601')
-
     end_time = serializers.DateTimeField(format='iso-8601')
 
     class Meta:
@@ -276,3 +265,46 @@ class EventListShortSerializer(serializers.Serializer):
     tournaments = serializers.ListSerializer(
         child=TourneyShortSerializer(), read_only=True
     )
+
+
+class GameCreateSerializer(BaseGameSerializer):
+    """Serializer for creating Game instances."""
+
+    court_id = serializers.PrimaryKeyRelatedField(
+        source='court', queryset=Court.objects.all()
+    )
+    host_id = serializers.PrimaryKeyRelatedField(
+        source='host',
+        queryset=Player.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+
+    class Meta(BaseGameSerializer.Meta):
+        model = BaseGameSerializer.Meta.model
+        fields = BaseGameSerializer.Meta.fields + [
+            'court_id',
+            'host_id',
+        ]
+
+    def validate_currency_type(self, value):
+        """Validates that the provided currency type exists."""
+        try:
+            instance = CurrencyType.objects.get(currency_type=value)
+        except CurrencyType.DoesNotExist as e:
+            raise serializers.ValidationError(
+                f'CurrencyType with id {value.id} does not exist.'
+            ) from e
+        return instance
+
+    def validate(self, data):
+        """Validates that end_time is after start_time and sets fields."""
+        start_time = data.get('start_time')
+        end_time = data.get('end_time')
+        if end_time < start_time:
+            raise serializers.ValidationError(
+                'The end time of the game must be later than the start time.'
+            )
+        data['is_active'] = False
+        # data['created_at'] = start_time - timedelta(hours=3)
+        return data
