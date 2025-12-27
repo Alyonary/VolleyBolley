@@ -14,7 +14,7 @@ from apps.admin_panel.constants import (
 from apps.admin_panel.forms import FileUploadForm
 from apps.admin_panel.services import FileUploadService
 from apps.core.models import DailyStats
-from apps.core.task import collect_full_stats
+from apps.core.task import collect_full_project_stats
 from apps.notifications.push_service import PushService
 
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 def run_stats_task_view(request):
     """View to trigger the daily stats collection task."""
     if PushService():
-        collect_full_stats.delay()
+        collect_full_project_stats.delay()
         messages.success(request, 'Daily stats task has been started!')
     else:
         messages.error(request, 'Failed to collect stats: Celery unavailable.')

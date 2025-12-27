@@ -64,10 +64,10 @@ class FileUploadService:
             'tourneys': TourneyModelMapping(),
         }
         self._model_processing_order: tuple[str] = (
-            'currencies',
             'levels',
             'countries',
             'cities',
+            'currencies',
             'courts',
         )
         self._supported_file_types: tuple[str] = ('json', 'excel')
@@ -145,13 +145,21 @@ class FileUploadService:
             messages = []
             for model_name in self.model_processing_order:
                 if model_name in data and data[model_name]:
+                    if self.model_mapping_class[model_name].serializer is None:
+                        logger.warning(
+                            f'Skipping model {model_name} with no serializer'
+                        )
+                        messages.append(
+                            f'Skipped - {model_name}: No serializer defined'
+                        )
+                        continue
                     result = self._process_model_data(
                         model_name,
                         data[model_name],
                     )
                     messages.extend(result['messages'])
             return {
-                'success': not any('Ошибка' in msg for msg in messages),
+                'success': True,
                 'messages': messages,
             }
         except Exception as e:

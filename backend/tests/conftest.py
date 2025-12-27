@@ -2,6 +2,7 @@ import pytest
 from django.contrib.auth import get_user_model
 from rest_framework.test import APIClient
 
+from apps.admin_panel.services import FileUploadService
 from apps.players.models import Player
 
 User = get_user_model()
@@ -17,6 +18,7 @@ pytest_plugins = [
     'tests.fixtures.push_service',
     'tests.fixtures.tourneys',
     'tests.fixtures.users',
+    'tests.fixtures.fileupload_service',
 ]
 
 
@@ -52,3 +54,15 @@ def authenticated_client(api_client):
     Player.objects.create(user=user, is_registered=True)
     api_client.force_authenticate(user=user)
     return api_client, user
+
+
+@pytest.fixture
+def fileupload_service_debug(monkeypatch):
+    monkeypatch.setattr('django.conf.settings.DEBUG', True)
+    return FileUploadService()
+
+
+@pytest.fixture
+def fileupload_service_production(monkeypatch):
+    monkeypatch.setattr('django.conf.settings.DEBUG', False)
+    return FileUploadService()
