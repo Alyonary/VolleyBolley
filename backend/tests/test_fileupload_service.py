@@ -2,6 +2,7 @@ import io
 import json
 import os
 import tempfile
+from random import choice
 from typing import Any, Dict, List, Type, TypeVar, Union
 
 import openpyxl
@@ -32,6 +33,48 @@ DbModel = TypeVar(
 DATA_DIR = os.path.join(os.path.dirname(__file__), '..', 'data')
 
 
+def insert_fk_in_file(
+    file_name: str, fk_field_names: List[str], data_dir=DATA_DIR
+):
+    """
+    Insert random FK values into the specified fields in the Excel file.
+    Args:
+        file_name: Name of the Excel file (without extension).
+        fk_field_names: List of FK field names to populate.
+        data_dir: Directory where the Excel file is located.
+    Uses on test setup to prepare Excel files with FK references.
+    """
+    excel_path = os.path.join(data_dir, f'{file_name}.xlsx')
+    if not os.path.isfile(excel_path):
+        raise FileNotFoundError(f'{excel_path} not found or is not a file')
+    wb = openpyxl.load_workbook(excel_path)
+    ws = wb.active
+    header_row = next(ws.iter_rows(min_row=1, max_row=1, values_only=True))
+    header = list(header_row)
+    for fk_field in fk_field_names:
+        fk_model = {
+            'host_id': Player,
+            'court_id': CourtLocation,
+        }
+        fk_values = fk_model[fk_field].objects.values_list('id', flat=True)
+        try:
+            col_idx = header.index(fk_field)
+        except ValueError as e:
+            raise ValueError(
+                f'Field {fk_field} not found in {file_name}.xlsx'
+            ) from e
+        for row in ws.iter_rows(
+            min_row=2,
+            max_row=ws.max_row,
+            min_col=col_idx + 1,
+            max_col=col_idx + 1,
+        ):
+            for cell in row:
+                cell.value = choice(fk_values)
+        wb.save(excel_path)
+    return
+
+
 def clear_models(*models: List[Type[DbModel]]):
     """
     Delete all objects for the given models to avoid FK conflicts.
@@ -60,7 +103,10 @@ def create_countries_and_cities(valid_country_data, valid_city_data):
 
 
 def process_excel_file(
-    fileupload_service, model, excel_content_type, data_dir=DATA_DIR
+    fileupload_service: FileUploadService,
+    model: str,
+    excel_content_type: str,
+    data_dir=DATA_DIR,
 ):
     """
     Upload an Excel file via the service and return result and row count.
@@ -90,18 +136,7 @@ def process_excel_file(
     return result, len(rows)
 
 
-def assert_model_count(model_class, expected_count):
-    """
-    Assert that the model has at least the expected number of objects.
-
-    Args:
-        model_class: Django model class.
-        expected_count: Expected minimum count.
-    """
-    assert model_class.objects.count() >= expected_count
-
-
-def get_model_create_result(
+def get_model_create_result_json(
     f_service: FileUploadService, model: Type[DbModel], model_name, model_data
 ):
     """
@@ -170,7 +205,7 @@ class TestFileUploadServiceJSON:
         fileupload_service_debug: FileUploadService,
         valid_country_data: List[Dict[str, Any]],
     ) -> None:
-        result, objs_count = get_model_create_result(
+        result, objs_count = get_model_create_result_json(
             fileupload_service_debug,
             Country,
             'countries',
@@ -186,7 +221,7 @@ class TestFileUploadServiceJSON:
         valid_city_data: List[Dict[str, Any]],
     ) -> None:
         create_countries_and_cities(valid_country_data, valid_city_data)
-        result, objs_count = get_model_create_result(
+        result, objs_count = get_model_create_result_json(
             fileupload_service_debug,
             City,
             'cities',
@@ -200,7 +235,7 @@ class TestFileUploadServiceJSON:
         fileupload_service_debug: FileUploadService,
         valid_currency_data: List[Dict[str, Any]],
     ) -> None:
-        result, objs_count = get_model_create_result(
+        result, objs_count = get_model_create_result_json(
             fileupload_service_debug,
             CurrencyType,
             'currencies',
@@ -214,7 +249,7 @@ class TestFileUploadServiceJSON:
         fileupload_service_debug: FileUploadService,
         valid_level_data: List[Dict[str, Any]],
     ) -> None:
-        result, objs_count = get_model_create_result(
+        result, objs_count = get_model_create_result_json(
             fileupload_service_debug,
             GameLevel,
             'levels',
@@ -231,7 +266,7 @@ class TestFileUploadServiceJSON:
         valid_city_data: List[Dict[str, Any]],
     ) -> None:
         create_countries_and_cities(valid_country_data, valid_city_data)
-        result, objs_count = get_model_create_result(
+        result, objs_count = get_model_create_result_json(
             fileupload_service_debug,
             Court,
             'courts',
@@ -250,14 +285,14 @@ class TestFileUploadServiceJSON:
         result: dict = fileupload_service_debug.process_file(file)
         for m in result.get('messages', []):
             assert 'Skipped' in m or 'no serializer' in m.lower()
-        assert result['success'] is True
+        assert result['success'] is False
 
     def test_process_json_file_invalid_country_attr(
         self,
         fileupload_service_debug: FileUploadService,
         invalid_country_data_wrong_attr: List[Dict[str, Any]],
     ) -> None:
-        result, _ = get_model_create_result(
+        result, _ = get_model_create_result_json(
             fileupload_service_debug,
             Country,
             'countries',
@@ -272,17 +307,24 @@ class TestFileUploadServiceJSON:
         fileupload_service_debug: FileUploadService,
         invalid_country_data_wrong_format: List[Dict[str, Any]],
     ) -> None:
-        result, countries_after_test = get_model_create_result(
+        result, countries_after_test = get_model_create_result_json(
             fileupload_service_debug,
             Country,
             'countries',
             invalid_country_data_wrong_format,
         )
         assert countries_after_test == 0
-        assert result['success'] is True
+        assert result['success'] is False
         assert 'error' in ''.join(
             m.lower() for m in result.get('messages', [])
         )
+
+    def test_model_mapping_class_in_prod_mode(
+        self,
+        fileupload_service_prod: FileUploadService,
+    ) -> None:
+        for m in ('games', 'tourneys', 'players'):
+            assert m not in fileupload_service_prod.model_mapping_class.keys()
 
 
 @pytest.mark.django_db
@@ -291,7 +333,6 @@ class TestFileUploadServiceExcel:
         self,
         fileupload_service_debug: FileUploadService,
         valid_currency_data: List[Dict[str, Any]],
-        valid_country_data: List[Dict[str, Any]],
         excel_content_type: str,
     ) -> None:
         clear_models(CurrencyType)
@@ -449,7 +490,7 @@ class TestFileUploadServiceRealFiles:
             ('levels', GameLevel),
             ('currencies', CurrencyType),
             ('courts', Court),
-            # ('games', Game),
+            ('games', Game),
         ]
         clear_models(
             Court,
@@ -459,15 +500,30 @@ class TestFileUploadServiceRealFiles:
         )
 
         for model, model_class in models:
-            if not Player.objects.filter(id=1).exists():
-                p = user_with_registered_player.player
-                p.id = 1
-                p.save()
+            if model == 'games':
+                insert_fk_in_file('games', ['host_id', 'court_id'])
             result, row_count = process_excel_file(
                 fileupload_service_debug, model, excel_content_type
             )
-            print(result)
             if result is None:
                 continue
             assert result['success'] is True
-            assert_model_count(model_class, row_count)
+            assert row_count == len(model_class.objects.all())
+
+    def test_private_models_in_prod_mode(
+        self,
+        fileupload_service_prod: FileUploadService,
+        excel_content_type: str,
+    ) -> None:
+        models = [
+            'games',
+        ]
+        for model in models:
+            result, _ = process_excel_file(
+                fileupload_service_prod, model, excel_content_type
+            )
+            assert result['success'] is False
+            assert any(
+                'restricted in production mode' in m.lower()
+                for m in result.get('messages', [])
+            )

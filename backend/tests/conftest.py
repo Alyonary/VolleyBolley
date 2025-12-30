@@ -63,6 +63,6 @@ def fileupload_service_debug(monkeypatch):
 
 
 @pytest.fixture
-def fileupload_service_production(monkeypatch):
+def fileupload_service_prod(monkeypatch):
     monkeypatch.setattr('django.conf.settings.DEBUG', False)
     return FileUploadService()

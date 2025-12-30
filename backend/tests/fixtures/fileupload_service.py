@@ -137,3 +137,12 @@ def invalid_court_data_wrong_format() -> List[Dict[str, Any]]:
             'price_description': 0.5,
         }
     ]
+
+
+@pytest.fixture
+def json_models_data() -> Dict[str, Any]:
+    return {
+        'games': [],
+        'tourneys': [],
+        'players': [],
+    }

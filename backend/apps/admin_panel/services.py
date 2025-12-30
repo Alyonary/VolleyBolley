@@ -92,6 +92,10 @@ class FileUploadService:
         return self._model_processing_order
 
     @property
+    def private_models_mapping_class(self) -> Dict[str, Any]:
+        return self._private_models_mapping_class
+
+    @property
     def supported_file_types(self) -> tuple[str]:
         return self._supported_file_types
 
@@ -146,12 +150,14 @@ class FileUploadService:
             for model_name in self.model_processing_order:
                 if model_name in data and data[model_name]:
                     if self.model_mapping_class[model_name].serializer is None:
-                        logger.warning(
-                            f'Skipping model {model_name} with no serializer'
-                        )
-                        messages.append(
-                            f'Skipped - {model_name}: No serializer defined'
-                        )
+                        m = f'Skipped - {model_name} with no serializer'
+                        if model_name in self.private_models_mapping_class:
+                            m = (
+                                f'Skipped - {model_name} private model'
+                                'in production mode'
+                            )
+                        logger.warning(m)
+                        messages.append(m)
                         continue
                     result = self._process_model_data(
                         model_name,
@@ -159,7 +165,7 @@ class FileUploadService:
                     )
                     messages.extend(result['messages'])
             return {
-                'success': True,
+                'success': any('created' in msg.lower() for msg in messages),
                 'messages': messages,
             }
         except Exception as e:
@@ -213,6 +219,14 @@ class FileUploadService:
         filename = os.path.splitext(file.name)[0].lower()
         mapping_class = self.model_mapping_class.get(filename)
         if not mapping_class:
+            if filename in self.private_models_mapping_class:
+                return {
+                    'success': False,
+                    'messages': [
+                        f'Model {filename} upload is restricted in '
+                        'production mode.',
+                    ],
+                }
             return {
                 'success': False,
                 'messages': [
