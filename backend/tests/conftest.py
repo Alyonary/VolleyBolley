@@ -19,6 +19,7 @@ pytest_plugins = [
     'tests.fixtures.tourneys',
     'tests.fixtures.users',
     'tests.fixtures.fileupload_service',
+    'tests.fixtures.dailystats',
 ]
 
 
