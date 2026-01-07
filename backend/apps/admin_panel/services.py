@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 import openpyxl
 from django.conf import settings
 
-from apps.admin_panel.constants import MAX_FILE_SIZE
+from apps.admin_panel.constants import MAX_FILE_SIZE, SUPPORTED_FILE_TYPES
 from apps.core.models import CurrencyType, GameLevel
 from apps.core.serializers import (
     CurrencyCreateSerializer,
@@ -70,7 +70,7 @@ class FileUploadService:
             'currencies',
             'courts',
         )
-        self._supported_file_types: tuple[str] = ('json', 'excel')
+        self._supported_file_types: tuple[str] = SUPPORTED_FILE_TYPES
         self.max_file_size: int = MAX_FILE_SIZE
         self._extended_model_access: bool = settings.DEBUG
 
@@ -119,7 +119,7 @@ class FileUploadService:
             return self._process_excel_file(file)
         return {
             'success': False,
-            'messages': 'Unsupported file type {file_type}',
+            'messages': ['Unsupported file type {file_type}'],
         }
 
     def download_file_by_path(self, file_path: str) -> bytes:

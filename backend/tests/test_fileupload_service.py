@@ -326,6 +326,18 @@ class TestFileUploadServiceJSON:
         for m in ('games', 'tourneys', 'players'):
             assert m not in fileupload_service_prod.model_mapping_class.keys()
 
+    def test_unsupported_file_type(
+        self,
+        fileupload_service_debug: FileUploadService,
+    ) -> None:
+        file: io.BytesIO = io.BytesIO(b'This is a test.')
+        file.name = 'test.txt'
+        result: dict = fileupload_service_debug.process_file(file)
+        assert result['success'] is False
+        assert any(
+            'unsupported file type' in m.lower()
+            for m in result.get('messages', [])
+        )
 
 @pytest.mark.django_db
 class TestFileUploadServiceExcel:
