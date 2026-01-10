@@ -2,7 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 
-from apps.event.models import Game, GameInvitation, Tourney
+from apps.event.models import Game, Tourney
 from apps.notifications.constants import NotificationTypes
 from apps.notifications.models import NotificationsTime
 from apps.notifications.tasks import send_event_notification_task
@@ -60,12 +60,12 @@ def tourney_created_handler(sender, instance, created, **kwargs):
         schedule_event_notifications(instance, event_type='tourney')
 
 
-@receiver(post_save, sender=GameInvitation)
-def game_invitation_created_handler(sender, instance, created, **kwargs):
-    if created:
-        send_event_notification_task.delay(
-            instance.game.id, NotificationTypes.GAME_INVITE
-        )
+# @receiver(post_save, sender=GameInvitation)
+# def game_invitation_created_handler(sender, instance, created, **kwargs):
+#     if created:
+#         send_invite_to_player.delay(
+#             instance.invited.id, NotificationTypes.GAME_INVITE
+#         )
 
 
 # @receiver(post_save, sender=TourneyInvitation)
