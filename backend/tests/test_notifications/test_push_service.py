@@ -1,38 +1,10 @@
-from threading import Thread
 
 import pytest
 from pyfcm.errors import FCMError
 
-from apps.notifications.constants import NotificationTypes
-from apps.notifications.models import Notifications
+from apps.event.models import Game
+from apps.notifications.models import Device, Notifications, NotificationsBase
 from apps.notifications.push_service import PushService
-
-
-@pytest.mark.django_db
-class TestPushServiceSingleton:
-    """Test PushService singleton behavior."""
-
-    def test_singleton_creates_only_one_instance(self):
-        """Test that PushService creates only one instance."""
-        service1 = PushService()
-        service2 = PushService()
-        assert service1 is service2
-
-    def test_singleton_thread_safety(self, reset_push_service):
-        """Test singleton is thread-safe."""
-        instances = []
-
-        def create_instance():
-            instances.append(PushService())
-
-        threads = [Thread(target=create_instance) for _ in range(10)]
-        for thread in threads:
-            thread.start()
-        for thread in threads:
-            thread.join()
-        first_instance = instances[0]
-        for instance in instances[1:]:
-            assert instance is first_instance
 
 
 @pytest.mark.django_db
@@ -40,82 +12,92 @@ class TestPushServiceInitialization:
     """Test PushService initialization scenarios."""
 
     def test_successful_initialization_both_services_available(
-        self, push_service_enabled
+        self, push_service_enabled: PushService
     ):
         """Test success initialization when FCM and Celery are available."""
-        service = push_service_enabled
+        service: PushService = push_service_enabled
+        assert service.connector.enable is True
+        assert service.connector.celery_available is True
+        assert service.connector._initialized is True
+        assert hasattr(service.connector, 'push_service')
 
-        assert service.enable is True
-        assert service.celery_available is True
-        assert service._initialized is True
-        assert hasattr(service, 'push_service')
-
-    def test_initialization_no_services_available(self, push_service_disabled):
+    def test_initialization_no_services_available(
+        self, push_service_disabled: PushService
+    ):
         """Test initialization when no services are available."""
-        service = push_service_disabled
+        service: PushService = push_service_disabled
+        assert service.connector.enable is False
+        assert service.connector.celery_available is False
+        assert service.connector._initialized is True
 
-        assert service.enable is False
-        assert service.celery_available is False
-        assert service._initialized is True
-
-    def test_initialization_fcm_only_available(self, push_service_fcm_only):
+    def test_initialization_fcm_only_available(
+        self, push_service_fcm_only: PushService
+    ):
         """Test initialization when FCM is available but Celery is not."""
-        service = push_service_fcm_only
-
-        assert service.enable is False
-        assert service.celery_available is False
-        assert service._initialized is True
+        service: PushService = push_service_fcm_only
+        assert service.connector.enable is False
+        assert service.connector.celery_available is False
+        assert service.connector._initialized is True
 
     def test_initialization_with_fcm_error(
-        self, reset_push_service, monkeypatch
+        self,
+        monkeypatch,
+        mock_fcm_service_fail,
     ):
         """Test initialization when FCM throws an error."""
 
         def mock_initialize_firebase(self):
+            self.push_service = mock_fcm_service_fail
             return False
 
         def mock_check_celery_availability(self):
             return True
 
         monkeypatch.setattr(
-            PushService, '_initialize_firebase', mock_initialize_firebase
+            'apps.notifications.push_service.PushServiceConnector._initialize_firebase',
+            mock_initialize_firebase,
         )
         monkeypatch.setattr(
-            PushService,
-            '_check_celery_availability',
+            'apps.notifications.push_service.PushServiceConnector._check_celery_availability',
             mock_check_celery_availability,
         )
 
-        service = PushService()
-        assert service.celery_available is True
-        assert service.enable is False
-        assert service._initialized is True
+        service: PushService = PushService()
+        assert service.connector.celery_available is True
+        assert service.connector.enable is False
+        assert service.connector._initialized is True
 
 
 @pytest.mark.django_db
 class TestPushServiceStatusMethods:
     """Test PushService status and checking methods."""
 
-    def test_bool_method_all_services_available(self, push_service_enabled):
+    def test_bool_method_all_services_available(
+        self, push_service_enabled: PushService
+    ):
         """Test __bool__ method when all services are available."""
-        service = push_service_enabled
-        assert service.enable is True
-        assert service.celery_available is True
-        assert service._initialized is True
-        assert bool(service) is True
+        service: PushService = push_service_enabled
+        assert service.connector.enable is True
+        assert service.connector.celery_available is True
+        assert service.connector._initialized is True
+        assert bool(service.connector) is True
 
-    def test_bool_method_services_unavailable(self, push_service_disabled):
+    def test_bool_method_services_unavailable(
+        self, push_service_disabled: PushService
+    ):
         """Test __bool__ method when services are unavailable."""
-        service = push_service_disabled
-        assert service.enable is False
-        assert service.celery_available is False
-        assert service._initialized is True
-        assert bool(service) is False
+        service: PushService = push_service_disabled
+        assert service.connector.enable is False
+        assert service.connector.celery_available is False
+        assert service.connector._initialized is True
+        assert bool(service.connector) is False
 
-    def test_get_status_returns_correct_dict(self, push_service_enabled):
+    def test_get_status_returns_correct_dict(
+        self, push_service_enabled: PushService
+    ):
         """Test get_status returns correct status dictionary."""
-        service = push_service_enabled
-        status = service.get_status()
+        service: PushService = push_service_enabled
+        status: dict = service.connector.get_status()
 
         expected_keys = {
             'notifications_enabled',
@@ -129,10 +111,12 @@ class TestPushServiceStatusMethods:
         assert status['celery_available'] is True
         assert status['initialized'] is True
 
-    def test_get_status_disabled_service(self, push_service_disabled):
+    def test_get_status_disabled_service(
+        self, push_service_disabled: PushService
+    ):
         """Test get_status for disabled service."""
-        service = push_service_disabled
-        status = service.get_status()
+        service: PushService = push_service_disabled
+        status: dict = service.connector.get_status()
 
         assert status['notifications_enabled'] is False
         assert status['fcm_available'] is False
@@ -145,41 +129,40 @@ class TestPushServiceNotificationMethods:
     """Test notification sending methods."""
 
     def test_send_notification_by_device_success(
-        self, push_service_enabled, sample_notification, sample_device
+        self,
+        push_service_enabled: PushService,
+        sample_notification: NotificationsBase,
+        sample_device: Device,
     ):
         """Test successful single device notification."""
         service: PushService = push_service_enabled
-        result = service.send_notification_by_device(
+        result: dict = service.sender.send_notification_by_device(
             sample_device,
             sample_notification,
         )
-
-        assert result is True
+        assert result['success'] is True
 
     def test_send_notification_by_device_with_game_id(
         self,
-        push_service_enabled,
-        in_game_notification_type,
-        sample_device,
-        game_for_notification,
+        push_service_enabled: PushService,
+        in_game_notification_type: NotificationsBase,
+        sample_device: Device,
+        game_for_notification: Game,
     ):
         """Test single device notification with game_id."""
-
-        service = push_service_enabled
+        service: PushService = push_service_enabled
         assert game_for_notification is not None
         notif_in_db = Notifications.objects.filter(
             player=sample_device.player,
             game=game_for_notification,
         ).first()
         assert notif_in_db is None
-
-        result = service.send_notification_by_device(
-            sample_device,
-            in_game_notification_type,
+        result: dict = service.send_to_device(
+            player_id=sample_device.player.id,
+            notification_type=in_game_notification_type.type,
             event_id=game_for_notification.id,
         )
-        assert result is True
-        # check that notification was created in DB
+        assert result['success'] is True
         notif_in_db = Notifications.objects.filter(
             player=sample_device.player,
             game=game_for_notification,
@@ -187,55 +170,66 @@ class TestPushServiceNotificationMethods:
         assert notif_in_db is not None
 
     def test_send_notification_by_device_service_disabled(
-        self, push_service_disabled, sample_notification, sample_device
+        self,
+        push_service_disabled: PushService,
+        sample_notification: NotificationsBase,
+        sample_device: Device,
     ):
         """Test notification when service is disabled."""
-        service = push_service_disabled
-        result = service.send_notification_by_device(
+        service: PushService = push_service_disabled
+        result: dict = service.send_to_device(
             sample_device,
             sample_notification,
         )
-        assert result is None
+        assert result['success'] is False
+        assert result['message'] == 'Push service is disabled.'
 
     def test_send_notification_by_device_fcm_error(
         self,
-        push_service_enabled,
+        push_service_enabled: PushService,
         mock_fcm_service_fail,
-        sample_notification,
+        sample_notification: NotificationsBase,
         mock_tasks_import,
-        sample_device,
+        sample_device: Device,
     ):
         """Test notification with FCM error."""
-        service = push_service_enabled
-        service.push_service = mock_fcm_service_fail
-
-        result = service.send_notification_by_device(
-            sample_device,
-            sample_notification,
+        service: PushService = push_service_enabled
+        # Patch notify method to raise FCMError
+        service.connector.push_service.notify = mock_fcm_service_fail.notify
+        result: dict = service.send_to_device(
+            player_id=sample_device.player.id,
+            notification_type=sample_notification.type,
+            event_id=None,
         )
-        assert result is False
+        assert result['success'] is False
 
     def test_send_push_notifications_multiple_devices(
         self,
-        push_service_enabled,
-        sample_notification,
+        game_for_notification: Game,
+        push_service_enabled: PushService,
+        sample_notification: NotificationsBase,
         mock_fcm_service_fail,
         mock_tasks_import,
-        devices,
+        devices: dict[str, list[Device]],
     ):
         """Test sending to multiple devices."""
-        service = push_service_enabled
-        devices = devices['active_devices']
-        result = service.send_push_notifications(devices, sample_notification)
-
+        service: PushService = push_service_enabled
+        devices_list: list[Device] = devices['active_devices']
+        result: dict = service.sender.send_push_bulk(
+            devices=devices_list,
+            notification_type=sample_notification.type,
+            event_id=game_for_notification.id,
+        )
         assert isinstance(result, dict)
         assert result['total_devices'] == 3
         assert result['successful'] == 3
         assert result['failed'] == 0
 
-        service.push_service = mock_fcm_service_fail
-        result_with_errors = service.send_push_notifications(
-            devices, sample_notification
+        service.connector.push_service.notify = mock_fcm_service_fail.notify
+        result_with_errors: dict = service.sender.send_push_bulk(
+            devices=devices_list,
+            notification_type=sample_notification.type,
+            event_id=game_for_notification.id,
         )
         assert isinstance(result_with_errors, dict)
         assert result_with_errors['total_devices'] == 3
@@ -244,15 +238,18 @@ class TestPushServiceNotificationMethods:
 
     def test_send_push_notifications_empty_tokens_list(
         self,
-        push_service_enabled,
-        sample_notification,
+        push_service_enabled: PushService,
+        sample_notification: NotificationsBase,
+        game_for_notification: Game,
     ):
         """Test sending to empty devices list."""
-        service = push_service_enabled
-        devices = []
-
-        result = service.send_push_notifications(devices, sample_notification)
-
+        service: PushService = push_service_enabled
+        devices: list[Device] = []
+        result: dict = service.sender.send_push_bulk(
+            devices=devices,
+            notification_type=sample_notification.type,
+            event_id=game_for_notification.id,
+        )
         assert isinstance(result, dict)
         assert result['total_devices'] == 0
         assert result['successful'] == 0
@@ -264,11 +261,14 @@ class TestPushServiceInternalMethods:
     """Test internal helper methods."""
 
     def test_send_notification_by_device_internal_success(
-        self, push_service_enabled, sample_notification, sample_device
+        self,
+        push_service_enabled: PushService,
+        sample_notification: NotificationsBase,
+        sample_device: Device,
     ):
         """Test internal notification method success."""
-        service = push_service_enabled
-        result = service._send_notification_by_device_internal(
+        service: PushService = push_service_enabled
+        result: bool = service.sender._send_notification_by_device_internal(
             sample_device,
             sample_notification,
         )
@@ -276,16 +276,16 @@ class TestPushServiceInternalMethods:
 
     def test_send_notification_by_device_internal_fcm_error(
         self,
-        push_service_enabled,
+        push_service_enabled: PushService,
         mock_fcm_service_token_fail,
-        sample_notification,
-        sample_device,
+        sample_notification: NotificationsBase,
+        sample_device: Device,
         mock_tasks_import,
     ):
         """Test internal notification method with FCM error."""
-        service = push_service_enabled
-        service.push_service = mock_fcm_service_token_fail
-        result = service._send_notification_by_device_internal(
+        service: PushService = push_service_enabled
+        service.connector.push_service = mock_fcm_service_token_fail
+        result: bool = service.sender._send_notification_by_device_internal(
             sample_device,
             sample_notification,
         )
@@ -298,40 +298,20 @@ class TestPushServiceErrorHandling:
 
     def test_retry_task_scheduling_on_error(
         self,
-        push_service_enabled,
+        push_service_enabled: PushService,
         mock_fcm_service_token_fail,
-        sample_notification,
+        sample_notification: NotificationsBase,
         mock_tasks_import,
-        sample_device,
+        sample_device: Device,
     ):
         """Test that retry tasks are scheduled on FCM errors."""
-        service = push_service_enabled
-        service.push_service = mock_fcm_service_token_fail
-        result = service._send_notification_by_device_internal(
+        service: PushService = push_service_enabled
+        service.connector.push_service = mock_fcm_service_token_fail
+        result: bool = service.sender._send_notification_by_device_internal(
             sample_device,
             sample_notification,
         )
         assert result is False
-
-    def test_exception_handling_in_process_notifications(
-        self, push_service_enabled, monkeypatch
-    ):
-        """Test exception handling in process_notifications_by_type."""
-        service = push_service_enabled
-
-        def mock_send_push_notifications(*args, **kwargs):
-            raise Exception('Notification creation failed')
-
-        monkeypatch.setattr(
-            service, 'send_push_notifications', mock_send_push_notifications
-        )
-
-        result = service.process_notifications_by_type(
-            NotificationTypes.GAME_REMINDER, event_id=1
-        )
-
-        assert result['status'] is False
-        assert 'Notification creation failed' in result['message']
 
 
 @pytest.mark.django_db
@@ -340,36 +320,36 @@ class TestPushServiceEdgeCases:
 
     def test_send_notification_with_invalid_token(
         self,
-        push_service_enabled,
-        sample_notification,
+        push_service_enabled: PushService,
+        sample_notification: NotificationsBase,
         mock_tasks_import,
-        sample_device,
+        sample_device: Device,
     ):
         """Test sending notification with an invalid token."""
-        service = push_service_enabled
+        service: PushService = push_service_enabled
         sample_device.token = ''
-        result = service.send_notification_by_device(
+        result: dict = service.sender.send_notification_by_device(
             sample_device,
             sample_notification,
         )
-        assert result is False
+        assert result['success'] is False
 
     def test_send_notification_with_none_token(
         self,
-        push_service_enabled,
-        sample_notification,
+        push_service_enabled: PushService,
+        sample_notification: NotificationsBase,
         mock_tasks_import,
-        sample_device,
+        sample_device: Device,
     ):
         """Test sending notification with a None token."""
-        service = push_service_enabled
+        service: PushService = push_service_enabled
         sample_device.token = None
 
-        result = service.send_notification_by_device(
+        result: dict = service.sender.send_notification_by_device(
             sample_device,
             sample_notification,
         )
-        assert result is False
+        assert result['success'] is False
 
 
 @pytest.mark.django_db
@@ -378,16 +358,16 @@ class TestPushServiceWithTasksIntegration:
 
     def test_send_notification_success(
         self,
-        push_service_enabled,
-        sample_notification,
-        sample_device,
+        push_service_enabled: PushService,
+        sample_notification: NotificationsBase,
+        sample_device: Device,
         mock_tasks_import,
     ):
         """Test successful FCM notification does not create retry task."""
-        service = push_service_enabled
-        service.push_service.notify.return_value = None
+        service: PushService = push_service_enabled
+        service.connector.push_service.notify.return_value = None
 
-        result = service._send_notification_by_device_internal(
+        result: bool = service.sender._send_notification_by_device_internal(
             sample_device, sample_notification
         )
         assert result is True
@@ -395,16 +375,18 @@ class TestPushServiceWithTasksIntegration:
 
     def test_send_notification_fcm_error(
         self,
-        push_service_enabled,
-        sample_notification,
-        sample_device,
+        push_service_enabled: PushService,
+        sample_notification: NotificationsBase,
+        sample_device: Device,
         mock_tasks_import,
     ):
         """Test FCMError triggers retry_notification_task creation."""
-        service = push_service_enabled
-        service.push_service.notify.side_effect = FCMError('FCM fail')
+        service: PushService = push_service_enabled
+        service.connector.push_service.notify.side_effect = FCMError(
+            'FCM fail'
+        )
 
-        result = service._send_notification_by_device_internal(
+        result: bool = service.sender._send_notification_by_device_internal(
             sample_device, sample_notification
         )
         assert result is False

@@ -5,13 +5,10 @@ from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
 from apps.core.permissions import IsRegisteredPlayer
-from apps.notifications.constants import NotificationTypes
-from apps.notifications.models import Device, Notifications, NotificationsBase
-from apps.notifications.push_service import PushService
+from apps.notifications.models import Device, Notifications
 from apps.notifications.serializers import (
     FCMTokenSerializer,
     NotificationListSerializer,
@@ -158,58 +155,3 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             serializer.is_valid(raise_exception=True)
             serializer.save()
         return Response(status=status.HTTP_200_OK)
-
-    # TEST ACTION VIEW - DELETE IN PROD
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='fcm-test',
-        permission_classes=[AllowAny],
-    )
-    def fcm_test(self, request):
-        """
-        Test view to send all notification types for game ID 1.
-        Just creates notification tasks and returns response.
-        """
-        push_service = PushService()
-        if not push_service:
-            push_service.reconnect()
-            if not push_service:
-                return Response(
-                    {'error': 'Push service not available.'},
-                    status=status.HTTP_503_SERVICE_UNAVAILABLE,
-                )
-        all_tokens = list(
-            Device.objects.filter(is_active=True).values_list(
-                'token', flat=True
-            )
-        )
-        if not all_tokens:
-            return Response(
-                {'error': 'No active devices found.'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-        for notification_type in NotificationTypes.CHOICES:
-            if notification_type in [
-                NotificationTypes.GAME_REMINDER,
-                NotificationTypes.TOURNEY_REMINDER,
-            ]:
-                continue
-            notification = NotificationsBase(
-                notification_type=notification_type
-            )
-            if notification_type == NotificationTypes.GAME_REMINDER:
-                push_service.send_push_notifications(
-                    tokens=all_tokens, notification=notification, game_id=1
-                )
-            else:
-                push_service.send_push_notifications(
-                    tokens=all_tokens,
-                    notification=notification,
-                )
-        return Response(
-            {
-                'status': 'Notification tasks created',
-                'devices_count': len(all_tokens),
-            }
-        )

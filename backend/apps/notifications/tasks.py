@@ -11,7 +11,6 @@ from apps.notifications.constants import (
     NotificationTypes,
 )
 from apps.notifications.models import (
-    Device,
     NotificationsBase,
     NotificationsTime,
 )
@@ -19,6 +18,20 @@ from apps.notifications.push_service import PushService
 from apps.notifications.utils import delete_old_devices
 
 logger = logging.getLogger('django.notifications')
+
+
+@shared_task
+def send_invite_to_player_task(player_id: int, n_type: str):
+    """
+    Sends an invitation notification to a player for a Game or Tourney.
+    """
+    push_service = PushService()
+    if not push_service:
+        logger.error('Push service is not enabled. Check configuration.')
+        return False
+    return push_service.send_to_device(
+        player_id=player_id, notification_type=n_type
+    )
 
 
 @shared_task
@@ -57,16 +70,15 @@ def send_event_notification_task(self, event_id: int, notification_type: str):
                 'status': False,
                 'message': 'Push service is not available',
             }
-
-    return push_service.process_notifications_by_type(
-        notification_type, event_id
-    )
+    return push_service.send_to_many(notification_type, event_id)
 
 
 @shared_task(bind=True)
-def retry_notification_task(self, token, notification_type, event_id=None):
+def retry_notification_task(
+    self, player_id: int, notification_type: str, event_id=None
+):
     """
-    Retry sending notification to a specific token.
+    Retry sending notification to a specific player.
 
     Args:
         token: Device token to retry
@@ -74,17 +86,16 @@ def retry_notification_task(self, token, notification_type, event_id=None):
         event_id: Game ID if applicable
     """
     try:
-        logger.info(f'Retrying notification to token {token[:8]}...')
-        notification = NotificationsBase.objects.get(type=notification_type)
         push_service = PushService()
-        device = Device.objects.filter(token=token).first()
-        result = push_service.send_notification_by_device(
-            device=device, notification=notification, event_id=event_id
+        result = push_service.send_to_device(
+            player_id=player_id,
+            notification_type=notification_type,
+            event_id=event_id,
         )
-        if result:
-            logger.info(f'Retry successful for token {token[:8]}...')
+        if result.get('status', False):
+            logger.info(f'Retry successful for player ID {player_id}')
         else:
-            logger.warning(f'Retry failed for token {token[:8]}...')
+            logger.warning(f'Retry failed for player ID {player_id}')
         return result
     except Exception as e:
         logger.error(f'Error in retry task: {str(e)}', exc_info=True)
@@ -111,7 +122,7 @@ def inform_removed_players_task(
     if not push_service:
         logger.error('Push service is not enabled. Check configuration.')
         return False
-    return push_service.process_notifications_by_type(
+    return push_service.send_to_device(
         notification_type=notification_type,
         player_id=player_id,
         event_id=event_id,

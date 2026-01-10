@@ -33,18 +33,18 @@ def service_required(func):
     """
 
     @wraps(func)
-    def wrapper(self: PushNotificationSender, *args, **kwargs):
-        if not self.enable:
+    def wrapper(self: 'PushNotificationSender', *args, **kwargs):
+        if not self.main_service.enable:
             logger.info(
                 f'Service not available for {func.__name__}, '
                 f'attempting reconnection'
             )
-            if not self.reconnect():
+            if not self.main_service.reconnect():
                 logger.warning(
                     f'Service unavailable, skipping {func.__name__}'
                 )
                 return None
-        if not self.enable:
+        if not self.main_service.enable:
             logger.error(
                 f'Service still unavailable after reconnection attempt '
                 f'for {func.__name__}'
@@ -56,10 +56,16 @@ def service_required(func):
 
 
 class PushServiceConnector:
+    """
+    Singleton class for managing connections to Firebase Cloud Messaging (FCM)
+    and Celery services. Handles initialization, status checking, and
+    reconnection logic for push notification infrastructure.
+    """
+
     _instance = None
     _lock = Lock()
 
-    def __new__(cls):
+    def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -79,6 +85,7 @@ class PushServiceConnector:
 
     def _initialize_services(self):
         """Initialize FCM and Celery services."""
+        self.enable = False
         error_msg: str = ''
         try:
             self.fb_available = self._initialize_firebase()
@@ -209,10 +216,15 @@ class PushServiceConnector:
 
 
 class NotificationRepository:
+    """
+    Repository for notification-related database models. Provides methods to
+    retrieve devices, notification templates, and create notification records.
+    """
+
     def __init__(self, main_service: 'PushService'):
         self.main_service = main_service
-        self.device = Device
-        self.notification_base = NotificationsBase
+        self.device_model = Device
+        self.notification_type = NotificationsBase
 
     def get_device_by_player(self, player_id: int) -> Device | None:
         """
@@ -220,7 +232,7 @@ class NotificationRepository:
         Args:
             player_id (int): Player ID to get the device for.
         """
-        return self.device.objects.by_player(player_id).first()
+        return self.device_model.objects.by_player(player_id).first()
 
     def get_devices(
         self,
@@ -240,12 +252,12 @@ class NotificationRepository:
             notification_type == NotificationTypes.GAME_REMINDER
             or notification_type == NotificationTypes.GAME_RATE
         ):
-            devices = self.device.objects.in_game(event_id)
+            devices = self.device_model.objects.in_game(event_id)
         elif notification_type in [
             NotificationTypes.TOURNEY_REMINDER,
             NotificationTypes.TOURNEY_RATE,
         ]:
-            devices = self.objects.in_tourney(event_id)
+            devices = self.device_model.objects.in_tourney(event_id)
         else:
             devices = []
             logger.warning(f'Unknown notification type: {notification_type}')
@@ -262,7 +274,11 @@ class NotificationRepository:
         Returns:
             Notification: NotificationsBase object with title, body, screen.
         """
-        return self.notification_base.objects.get(type=notification_type)
+        try:
+            return self.notification_type.objects.get(type=notification_type)
+        except self.notification_type.DoesNotExist:
+            logger.error(f'Notification type {notification_type} not found')
+            return None
 
     def create_notification_record(
         self,
@@ -277,7 +293,10 @@ class NotificationRepository:
             notification_type (str): Type of notification sent.
             event_id (int, optional): Game ID for the notification data.
         """
-        data = {'player': device.player, 'notification_type': notification}
+        data = {
+            'player': device.player,
+            'notification_type': notification,
+        }
         if event_id:
             if 'game' in notification.type:
                 game_obj = Game.objects.filter(id=event_id).first()
@@ -288,6 +307,7 @@ class NotificationRepository:
                 if tourney_obj:
                     data['tourney'] = tourney_obj
         try:
+            print('Creating notification record with data:', data)
             Notifications.objects.create(**data)
             logger.debug(
                 f'Notification DB model created for player '
@@ -304,11 +324,17 @@ class NotificationRepository:
 
 
 class PushNotificationSender:
-    def __init__(self, push_service: 'PushService'):
+    """
+    Service for sending push notifications to devices using FCM. Provides
+    methods for sending notifications to single devices or in bulk, and
+    handles error processing and retry logic.
+    """
+
+    def __init__(self, main_service: 'PushService'):
         self.push_service: FCMNotification = (
-            push_service.connector.push_service
+            main_service.connector.push_service
         )
-        self.main_service = push_service
+        self.main_service = main_service
 
     @service_required
     def send_push_bulk(
@@ -321,17 +347,27 @@ class PushNotificationSender:
             'total_devices': len(devices),
             'successful': 0,
             'failed': 0,
+            'message': 'success',
         }
+        notification: NotificationsBase = (
+            self.main_service.repository.get_notification_object(
+                notification_type=notification_type
+            )
+        )
+        if not notification:
+            logger.error(f'Notification type {notification_type} not found')
+            result['message'] = 'Notification type not found'
+            return result
         for d in devices:
             status = self._send_notification_by_device_internal(
                 device=d,
-                notification_type=notification_type,
+                notification=notification,
                 event_id=event_id,
             )
             if status:
                 self.main_service.repository.create_notification_record(
                     device=d,
-                    notification_type=notification_type,
+                    notification=notification,
                     event_id=event_id,
                 )
                 result['successful'] += 1
@@ -342,6 +378,8 @@ class PushNotificationSender:
             f'{result["successful"]}/{result["total_devices"]} successful, '
             f'{result["failed"]} failed'
         )
+        if result['successful'] == 0:
+            result['message'] = 'All notifications failed'
         return result
 
     @service_required
@@ -424,7 +462,7 @@ class PushNotificationSender:
                     )
 
                     retry_notification_task.apply_async(
-                        args=[device.token, notification.type, event_id],
+                        args=[device.player.id, notification.type, event_id],
                         countdown=RETRY_PUSH_TIME,
                     )
                     logger.info(
@@ -439,34 +477,39 @@ class PushNotificationSender:
 
 
 class PushService:
+    """
+    Facade for push notification system. Manages repository, connector, and
+    sender components. Exposes high-level methods for sending notifications
+    to devices or groups.
+    """
+
     def __init__(self):
         self.repository = NotificationRepository(main_service=self)
-        self.sender = PushNotificationSender(main_service=self)
         self.connector = PushServiceConnector(main_service=self)
+        self.sender = PushNotificationSender(main_service=self)
 
     def send_to_device(
         self,
         player_id: int,
-        notification_type: NotificationsBase,
+        notification_type: str,
         event_id: int | None = None,
     ) -> dict | bool:
-        status = {'success': False}
+        result = {'success': False}
         device = self.repository.get_device_by_player(player_id)
         if not device:
             logger.error(f'No device found for player ID {player_id}')
-            return status
+            return result
         notification = self.repository.get_notification_object(
             notification_type=notification_type
         )
         if not notification:
             logger.error(f'Notification type {notification_type} not found')
-            return status
-        status = self.sender.send_notification_by_device(
+            return result
+        return self.sender.send_notification_by_device(
             device=device, notification=notification, event_id=event_id
         )
-        return {'success': status}
 
-    def send_to_many(
+    def send_push_for_event(
         self,
         notification_type: str,
         event_id: int | None = None,
@@ -483,12 +526,15 @@ class PushService:
             }
         devices = self.repository.get_devices(
             notification_type=notification_type,
-            player_id=None,
             event_id=event_id,
         )
         return self.sender.send_push_bulk(
             devices=devices, notification=notification, event_id=event_id
         )
+
+    def reconnect(self) -> bool:
+        """Reconnect to push notification services."""
+        return self.connector.reconnect()
 
     @property
     def enable(self) -> bool:

@@ -31,11 +31,6 @@ class PlayerRatingManager:
             the grade). Returns the number of downgraded players.
     """
 
-    def __new__(cls):
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(PlayerRatingManager, cls).__new__(cls)
-        return cls.instance
-
     def __init__(self):
         self.grade_system = GradeSystem
 

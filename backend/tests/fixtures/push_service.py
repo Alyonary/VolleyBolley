@@ -8,22 +8,14 @@ from apps.notifications.push_service import PushService
 
 
 @pytest.fixture
-def reset_push_service(auto_use=True):
-    """Reset PushService singleton before and after each test."""
-    original_instance = PushService._instance
-    PushService._instance = None
-    yield
-    PushService._instance = original_instance
-
-
-@pytest.fixture
-def push_service_enabled(reset_push_service, mock_fcm_service_ok, monkeypatch):
+def push_service_enabled(mock_fcm_service_ok, monkeypatch):
     """
     Create real PushService instance with mocked connection checks.
     All services are available and working.
     """
 
     def mock_initialize_firebase(self):
+        self.push_service = mock_fcm_service_ok
         return True
 
     def mock_check_fcm(self):
@@ -33,29 +25,35 @@ def push_service_enabled(reset_push_service, mock_fcm_service_ok, monkeypatch):
         return True
 
     monkeypatch.setattr(
-        PushService, '_initialize_firebase', mock_initialize_firebase
+        'apps.notifications.push_service.PushServiceConnector._initialize_firebase',
+        mock_initialize_firebase,
     )
-    monkeypatch.setattr(PushService, '_check_fcm', mock_check_fcm)
     monkeypatch.setattr(
-        PushService,
-        '_check_celery_availability',
+        'apps.notifications.push_service.PushServiceConnector._check_fcm',
+        mock_check_fcm,
+    )
+    monkeypatch.setattr(
+        'apps.notifications.push_service.PushServiceConnector._check_celery_availability',
         mock_check_celery_availability,
     )
 
     service = PushService()
-    service.push_service = mock_fcm_service_ok
-    assert service.push_service is mock_fcm_service_ok
+    # Теперь push_service уже создан, можно мокать notify
+    monkeypatch.setattr(
+        service.connector.push_service, 'notify', lambda *a, **kw: True
+    )
     return service
 
 
 @pytest.fixture
-def push_service_disabled(reset_push_service, monkeypatch):
+def push_service_disabled(monkeypatch, mock_fcm_service_fail):
     """
     Create real PushService instance with mocked connection checks.
     All services are unavailable.
     """
-
+    service = Mock()
     def mock_initialize_firebase(self):
+        self.push_service = mock_fcm_service_fail
         return False
 
     def mock_check_fcm(self):
@@ -65,25 +63,34 @@ def push_service_disabled(reset_push_service, monkeypatch):
         return False
 
     monkeypatch.setattr(
-        PushService, '_initialize_firebase', mock_initialize_firebase
+        'apps.notifications.push_service.PushServiceConnector._initialize_firebase',
+        mock_initialize_firebase,
     )
-    monkeypatch.setattr(PushService, '_check_fcm', mock_check_fcm)
     monkeypatch.setattr(
-        PushService,
-        '_check_celery_availability',
+        'apps.notifications.push_service.PushServiceConnector._check_fcm',
+        mock_check_fcm,
+    )
+    monkeypatch.setattr(
+        'apps.notifications.push_service.PushServiceConnector._check_celery_availability',
         mock_check_celery_availability,
     )
-
-    return PushService()
+    monkeypatch.setattr(
+        service.connector.push_service, 'notify', lambda *a, **kw: False
+    )
+    service = PushService()
+    assert service.connector.fb_available is False
+    assert service.connector.celery_available is False
+    return service
 
 
 @pytest.fixture
-def push_service_fcm_only(reset_push_service, monkeypatch):
+def push_service_fcm_only(monkeypatch, mock_fcm_service_ok):
     """
     Create real PushService with FCM available but Celery unavailable.
     """
 
     def mock_initialize_firebase(self):
+        self.push_service = mock_fcm_service_ok
         return True
 
     def mock_check_fcm(self):
@@ -92,26 +99,26 @@ def push_service_fcm_only(reset_push_service, monkeypatch):
     def mock_check_celery_availability(self):
         return False
 
-    mock_fcm_instance = Mock()
-    mock_fcm_instance.notify.return_value = None
-
-    def mock_fcm_notification(*args, **kwargs):
-        return mock_fcm_instance
-
     monkeypatch.setattr(
-        PushService, '_initialize_firebase', mock_initialize_firebase
+        'apps.notifications.push_service.PushServiceConnector._initialize_firebase',
+        mock_initialize_firebase,
     )
-    monkeypatch.setattr(PushService, '_check_fcm', mock_check_fcm)
     monkeypatch.setattr(
-        PushService,
-        '_check_celery_availability',
+        'apps.notifications.push_service.PushServiceConnector._check_fcm',
+        mock_check_fcm,
+    )
+    monkeypatch.setattr(
+        'apps.notifications.push_service.PushServiceConnector._check_celery_availability',
         mock_check_celery_availability,
     )
+
+    service = PushService()
     monkeypatch.setattr(
-        'apps.notifications.push_service.FCMNotification',
-        mock_fcm_notification,
+        service.connector.push_service, 'notify', lambda *a, **kw: True
     )
-    return PushService()
+    assert service.connector.fb_available is True
+    assert service.connector.celery_available is False
+    return service
 
 
 @pytest.fixture
@@ -132,39 +139,10 @@ def mock_fcm_service_fail():
 
 @pytest.fixture
 def mock_fcm_service_token_fail():
-    """Mock FCM service that always fails."""
+    """Mock FCM service that always fails with token error."""
     mock_fcm = Mock()
     mock_fcm.notify.side_effect = FCMError('Invalid token')
     return mock_fcm
-
-
-@pytest.fixture
-def mock_celery_inspector_active():
-    """Mock active Celery inspector."""
-    mock_inspector = Mock()
-    mock_inspector.active.return_value = {
-        'worker1@hostname': [],
-        'worker2@hostname': [],
-    }
-    return mock_inspector
-
-
-@pytest.fixture
-def mock_celery_inspector_inactive():
-    """Mock inactive Celery inspector."""
-    mock_inspector = Mock()
-    mock_inspector.active.return_value = {}
-    return mock_inspector
-
-
-@pytest.fixture
-def push_service_mock(monkeypatch):
-    """Mock PushService for tasks."""
-    mock_service = Mock()
-    monkeypatch.setattr(
-        'apps.notifications.tasks.PushService', lambda: mock_service
-    )
-    return mock_service
 
 
 @pytest.fixture

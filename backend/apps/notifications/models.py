@@ -4,6 +4,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.enums import CoreFieldLength
+from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.notifications.constants import (
     DEVICE_PLATFORM_LENGTH,
     DEVICE_TOKEN_MAX_LENGTH,
@@ -162,7 +163,7 @@ class NotificationsBase(models.Model):
             )
 
 
-class Notifications(models.Model):
+class Notifications(CreatedUpdatedMixin):
     """Model for storing notification messages."""
 
     player = models.ForeignKey(
@@ -177,9 +178,6 @@ class Notifications(models.Model):
         verbose_name=_('Notification type'),
     )
     is_read = models.BooleanField(default=False, verbose_name=_('Is read'))
-    created_at = models.DateTimeField(
-        auto_now_add=True, verbose_name=_('Created at')
-    )
     game = models.ForeignKey(
         'event.Game',
         related_name='notifications',
