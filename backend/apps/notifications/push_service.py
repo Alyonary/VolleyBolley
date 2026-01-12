@@ -229,13 +229,13 @@ class NotificationRepository:
         self.device_model = Device
         self.notification_type = NotificationsBase
 
-    def get_device_by_player(self, player_id: int) -> Device | None:
+    def get_devices_by_player(self, player_id: int) -> Device | None:
         """
         Get device for a specific player.
         Args:
             player_id (int): Player ID to get the device for.
         """
-        return self.device_model.objects.by_player(player_id).first()
+        return self.device_model.objects.by_player(player_id)
 
     def get_devices(
         self,
@@ -498,16 +498,16 @@ class PushService:
         """Return True if push service is enabled."""
         return bool(self.connector)
 
-    def send_to_device(
+    def send_to_player(
         self,
         player_id: int,
         notification_type: str,
         event_id: int | None = None,
     ) -> dict | bool:
         result = {'success': False}
-        device = self.repository.get_device_by_player(player_id)
-        if not device:
-            logger.error(f'No device found for player ID {player_id}')
+        devices = self.repository.get_devices_by_player(player_id)
+        if not devices:
+            logger.error(f'No devices found for player ID {player_id}')
             return result
         notification = self.repository.get_notification_object(
             notification_type=notification_type
@@ -515,8 +515,8 @@ class PushService:
         if not notification:
             logger.error(f'Notification type {notification_type} not found')
             return result
-        return self.sender.send_notification_by_device(
-            device=device, notification=notification, event_id=event_id
+        return self.sender.send_push_bulk(
+            devices=devices, notification=notification, event_id=event_id
         )
 
     def send_push_for_event(

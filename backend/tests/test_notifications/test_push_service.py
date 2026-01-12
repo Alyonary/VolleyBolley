@@ -140,7 +140,7 @@ class TestPushServiceNotificationMethods:
             game=game_for_notification,
         ).first()
         assert notif_in_db is None
-        result: dict = service.send_to_device(
+        result: dict = service.send_to_player(
             player_id=sample_device.player.id,
             notification_type=in_game_notification_type.type,
             event_id=game_for_notification.id,
@@ -160,7 +160,7 @@ class TestPushServiceNotificationMethods:
     ):
         """Test notification when service is disabled."""
         service: PushService = push_service_disabled
-        result: dict = service.send_to_device(
+        result: dict = service.send_to_player(
             sample_device.player.id,
             sample_notification.type,
         )

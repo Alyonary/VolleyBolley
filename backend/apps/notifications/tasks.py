@@ -85,7 +85,7 @@ def _send_invite_to_player(player_id: int, n_type: str):
     if not push_service:
         logger.error('Push service is not enabled. Check configuration.')
         return False
-    return push_service.send_to_device(
+    return push_service.send_to_player(
         player_id=player_id, notification_type=n_type
     )
 
@@ -133,7 +133,7 @@ def _retry_notification(
     """
     try:
         push_service = PushService()
-        result = push_service.send_to_device(
+        result = push_service.send_to_player(
             player_id=player_id,
             notification_type=notification_type,
             event_id=event_id,
@@ -165,7 +165,7 @@ def _inform_removed_players(event_id: int, player_id: int, event_type: str):
     if not push_service:
         logger.error('Push service is not enabled. Check configuration.')
         return False
-    return push_service.send_to_device(
+    return push_service.send_to_player(
         notification_type=notification_type,
         player_id=player_id,
         event_id=event_id,
