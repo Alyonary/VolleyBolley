@@ -6,13 +6,62 @@ from django.shortcuts import redirect, render
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
-from apps.admin_panel.constants import MAX_FILE_SIZE, SUPPORTED_FILE_TYPES
-from apps.admin_panel.forms import FileUploadForm
+from apps.admin_panel.constants import (
+    MAX_FILE_SIZE,
+    SUPPORTED_FILE_TYPES,
+    SendType,
+)
+from apps.admin_panel.forms import FileUploadForm, NotificationSendForm
 from apps.admin_panel.services import FileUploadService
 from apps.core.task import collect_daily_stats
 from apps.notifications.push_service import PushService
 
 logger = logging.getLogger(__name__)
+
+
+@staff_member_required
+def notifications_view(request):
+    """Admin view for managing notifications."""
+    push_service = PushService()
+    if request.method == 'POST':
+        form = NotificationSendForm(request.POST)
+        if form.is_valid():
+            send_type = form.cleaned_data['send_type']
+            if send_type == SendType.SEND_TO_PLAYER.value:
+                player_id = form.cleaned_data['player_id']
+                result = push_service.send_to_player(
+                    player_id=player_id,
+                    notification_type=form.cleaned_data['notification_type'],
+                )
+            elif send_type == SendType.SEND_TO_EVENT.value:
+                event_id = form.cleaned_data['event_id']
+                result = push_service.send_push_for_event(
+                    event_id=event_id,
+                    notification_type=form.cleaned_data['notification_type'],
+                )
+            if result.get('success'):
+                messages.success(
+                    request, _('✅ Notification sent successfully.')
+                )
+            else:
+                messages.error(
+                    request,
+                    _('❌ Failed to send notification: %(error)s')
+                    % {'error': result.get('error', 'Unknown error')},
+                )
+
+    else:
+        form = NotificationSendForm()
+    context = {
+        'title': _('Notifications Management'),
+        'page_header': _('Manage Notifications'),
+        'page_description': _(
+            'View and manage push notifications sent to users.'
+        ),
+        'push_service_enabled': push_service.enable,
+        'form': form,
+    }
+    return render(request, 'admin_panel/notifications.html', context)
 
 
 @staff_member_required

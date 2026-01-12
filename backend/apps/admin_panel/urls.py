@@ -2,6 +2,7 @@ from django.urls import path
 
 from apps.admin_panel.views import (
     dashboard_view,
+    notifications_view,
     upload_file,
 )
 
@@ -14,4 +15,7 @@ urlpatterns = [
         name='upload_file',
     ),
     path('dashboard/', dashboard_view, name='admin_dashboard'),
+    path(
+        'notifications/', notifications_view, name='notifications_management'
+    ),
 ]

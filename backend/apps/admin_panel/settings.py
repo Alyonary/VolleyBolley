@@ -31,6 +31,12 @@ jazzmin_settings = {
             'url': '/api/swagger/',
             'new_window': True,
         },
+        {
+            'name': _('🔔 Notifications'),
+            'url': '/admin/notifications/',
+            'icon': 'fas fa-bell',
+            'permissions': ['auth.view_user'],
+        }
     ],
     'usermenu_links': [
         {
