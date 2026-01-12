@@ -22,6 +22,62 @@ logger = logging.getLogger('django.notifications')
 
 @shared_task
 def send_invite_to_player_task(player_id: int, n_type: str):
+    return _send_invite_to_player(player_id, n_type)
+
+
+@shared_task
+def init_push_service():
+    return _init_push_service()
+
+
+@shared_task(
+    bind=True, max_retries=MAX_RETRIES, default_retry_delay=RETRY_PUSH_TIME
+)
+def send_event_notification_task(self, event_id: int, notification_type: str):
+    return _send_event_notification(self, event_id, notification_type)
+
+
+@shared_task(bind=True)
+def retry_notification_task(
+    self, player_id: int, notification_type: str, event_id=None
+):
+    return _retry_notification(self, player_id, notification_type, event_id)
+
+
+@shared_task(bind=True)
+def inform_removed_players_task(
+    self, event_id: int, player_id: int, event_type: str
+):
+    return _inform_removed_players(event_id, player_id, event_type)
+
+
+@shared_task
+def send_rate_notification_task():
+    return _process_rate_notifications_for_recent_events()
+
+
+@shared_task
+def delete_old_devices_task():
+    return _delete_old_devices()
+
+
+@shared_task
+def create_notification_type_tables_task():
+    return _create_notification_type_tables()
+
+
+@worker_ready.connect
+def at_start(**kwargs):
+    init_push_service.apply_async()
+    create_notification_type_tables_task.apply_async()
+
+
+# =========================
+# Internal task implementations
+# =========================
+
+
+def _send_invite_to_player(player_id: int, n_type: str):
     """
     Sends an invitation notification to a player for a Game or Tourney.
     """
@@ -34,8 +90,7 @@ def send_invite_to_player_task(player_id: int, n_type: str):
     )
 
 
-@shared_task
-def init_push_service():
+def _init_push_service():
     """
     Initialize the push service to ensure Firebase Admin SDK is set up.
     """
@@ -53,10 +108,7 @@ def init_push_service():
         return False
 
 
-@shared_task(
-    bind=True, max_retries=MAX_RETRIES, default_retry_delay=RETRY_PUSH_TIME
-)
-def send_event_notification_task(self, event_id: int, notification_type: str):
+def _send_event_notification(self, event_id: int, notification_type: str):
     """
     Sends notification to users about an upcoming event (Game or Tourney).
     notification_type: 'InGame' or 'InTourney'
@@ -70,20 +122,14 @@ def send_event_notification_task(self, event_id: int, notification_type: str):
                 'status': False,
                 'message': 'Push service is not available',
             }
-    return push_service.send_to_many(notification_type, event_id)
+    return push_service.send_push_for_event(notification_type, event_id)
 
 
-@shared_task(bind=True)
-def retry_notification_task(
+def _retry_notification(
     self, player_id: int, notification_type: str, event_id=None
 ):
     """
     Retry sending notification to a specific player.
-
-    Args:
-        token: Device token to retry
-        notification_type: Type of notification
-        event_id: Game ID if applicable
     """
     try:
         push_service = PushService()
@@ -104,10 +150,7 @@ def retry_notification_task(
         )
 
 
-@shared_task(bind=True)
-def inform_removed_players_task(
-    self, event_id: int, player_id: int, event_type: str
-):
+def _inform_removed_players(event_id: int, player_id: int, event_type: str):
     """
     Inform players that they have been removed from an event.
     """
@@ -129,7 +172,7 @@ def inform_removed_players_task(
     )
 
 
-def process_rate_notifications_for_recent_events():
+def _process_rate_notifications_for_recent_events():
     """
     Find all games and tourneys ended a specific time ago.
     Send rate notifications.
@@ -139,11 +182,11 @@ def process_rate_notifications_for_recent_events():
     closed_event_time = (
         timezone.now() - NotificationsTime.get_closed_event_notification_time()
     )
-    send_rate_notification_for_events(Game, closed_event_time)
-    send_rate_notification_for_events(Tourney, closed_event_time)
+    _send_rate_notification_for_events(Game, closed_event_time)
+    _send_rate_notification_for_events(Tourney, closed_event_time)
 
 
-def send_rate_notification_for_events(
+def _send_rate_notification_for_events(
     event_type: type, closed_event_time: datetime
 ) -> bool:
     """
@@ -170,22 +213,14 @@ def send_rate_notification_for_events(
     return True
 
 
-@shared_task
-def send_rate_notification_task():
-    """Wrapper task for scheduled rate notifications."""
-    return process_rate_notifications_for_recent_events()
-
-
-@shared_task
-def delete_old_devices_task():
+def _delete_old_devices():
     """
     Delete device records created more than 270 days ago.
     """
     return delete_old_devices()
 
 
-@shared_task
-def create_notification_type_tables_task():
+def _create_notification_type_tables():
     """
     Create initial notification types in the database if they do not exist.
     """
@@ -198,10 +233,3 @@ def create_notification_type_tables_task():
             f'Error initializing notification types: {str(e)}', exc_info=True
         )
         return False
-
-
-@worker_ready.connect
-def at_start(**kwargs):
-    """Start the push service initialization task when the worker is ready."""
-    init_push_service.apply_async()
-    create_notification_type_tables_task.apply_async()

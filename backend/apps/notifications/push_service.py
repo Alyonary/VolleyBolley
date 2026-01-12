@@ -43,13 +43,16 @@ def service_required(func):
                 logger.warning(
                     f'Service unavailable, skipping {func.__name__}'
                 )
-                return None
+                return {
+                    'success': False,
+                    'message': 'Push service unavailable',
+                }
         if not self.main_service.enable:
             logger.error(
                 f'Service still unavailable after reconnection attempt '
                 f'for {func.__name__}'
             )
-            return None
+            return {'success': False, 'message': 'Push service unavailable'}
         return func(self, *args, **kwargs)
 
     return wrapper
@@ -307,7 +310,6 @@ class NotificationRepository:
                 if tourney_obj:
                     data['tourney'] = tourney_obj
         try:
-            print('Creating notification record with data:', data)
             Notifications.objects.create(**data)
             logger.debug(
                 f'Notification DB model created for player '
@@ -340,26 +342,22 @@ class PushNotificationSender:
     def send_push_bulk(
         self,
         devices: list[Device],
-        notification_type: str,
+        notification: NotificationsBase,
         event_id: int | None = None,
     ):
         result = {
+            'success': False,
             'total_devices': len(devices),
-            'successful': 0,
+            'delivered': 0,
             'failed': 0,
-            'message': 'success',
+            'message': 'sucess',
         }
-        notification: NotificationsBase = (
-            self.main_service.repository.get_notification_object(
-                notification_type=notification_type
-            )
-        )
-        if not notification:
-            logger.error(f'Notification type {notification_type} not found')
-            result['message'] = 'Notification type not found'
+        if not devices:
+            logger.info('No devices to send notifications to')
+            result['message'] = 'Not found any devices to send message'
             return result
         for d in devices:
-            status = self._send_notification_by_device_internal(
+            status, message = self._send_notification_by_device_internal(
                 device=d,
                 notification=notification,
                 event_id=event_id,
@@ -370,15 +368,15 @@ class PushNotificationSender:
                     notification=notification,
                     event_id=event_id,
                 )
-                result['successful'] += 1
+                result['delivered'] += 1
                 continue
             result['failed'] += 1
         logger.info(
-            f'Push notification "{notification_type}" results: '
-            f'{result["successful"]}/{result["total_devices"]} successful, '
+            f'Push notification "{notification.type}" results: '
+            f'{result["delivered"]}/{result["total_devices"]} successful, '
             f'{result["failed"]} failed'
         )
-        if result['successful'] == 0:
+        if result['delivered'] == 0:
             result['message'] = 'All notifications failed'
         return result
 
@@ -401,16 +399,23 @@ class PushNotificationSender:
         status = {'success': False}
         if not device.token:
             logger.warning('Empty token provided, skipping notification')
+            status['message'] = 'Empty device token'
             return status
-        if self._send_notification_by_device_internal(
+        result, message = self._send_notification_by_device_internal(
             device, notification, event_id
-        ):
+        )
+        if result:
             self.main_service.repository.create_notification_record(
                 device=device,
                 notification=notification,
                 event_id=event_id,
             )
-            status = {'success': True}
+            status = {
+                'success': True,
+                'message': 'Notification sent successfully',
+            }
+        else:
+            status = {'success': False, 'message': message}
         return status
 
     def _send_notification_by_device_internal(
@@ -418,7 +423,7 @@ class PushNotificationSender:
         device: Device,
         notification: NotificationsBase,
         event_id: int | None = None,
-    ) -> bool | None:
+    ) -> tuple[bool, str]:
         """
         Internal method to send push notification to a single device.
         This method is NOT decorated with @service_required
@@ -426,8 +431,9 @@ class PushNotificationSender:
         """
         error_occurred = False
         if not device.token:
-            logger.warning('Empty device token, skipping notification')
-            return False
+            m = 'Empty device token, skipping notification'
+            logger.warning(m)
+            return False, m
         data_message = {'screen': notification.screen}
         if event_id:
             data_message['gameId'] = str(event_id)
@@ -443,17 +449,17 @@ class PushNotificationSender:
             logger.debug(
                 f'Notification sent successfully to device {masked_token}'
             )
-            return True
+            return True, 'success'
         except FCMError as e:
             error_occurred = True
-            logger.warning(f'FCM Error for token {masked_token}: {str(e)}')
-            return False
+            m = f'FCM Error sending to {masked_token}: {str(e)}'
+            logger.warning(m, exc_info=True)
+            return False, m
         except Exception as e:
             error_occurred = True
-            logger.error(
-                f'Unexpected error sending to {masked_token}: {str(e)}'
-            )
-            return False
+            m = f'Unexpected error sending to {masked_token}: {str(e)}'
+            logger.error(m, exc_info=True)
+            return False, m
         finally:
             if error_occurred:
                 try:
@@ -488,6 +494,10 @@ class PushService:
         self.connector = PushServiceConnector(main_service=self)
         self.sender = PushNotificationSender(main_service=self)
 
+    def __bool__(self):
+        """Return True if push service is enabled."""
+        return bool(self.connector)
+
     def send_to_device(
         self,
         player_id: int,
@@ -520,8 +530,9 @@ class PushService:
         if not notification:
             logger.error(f'Notification type {notification_type} not found')
             return {
+                'success': False,
                 'total_devices': 0,
-                'successful': 0,
+                'delivered': 0,
                 'failed': 0,
             }
         devices = self.repository.get_devices(

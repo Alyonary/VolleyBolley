@@ -2,147 +2,121 @@ import builtins
 from unittest.mock import Mock
 
 import pytest
-from pyfcm.errors import FCMError
 
+from apps.notifications import push_service as push_service_module
 from apps.notifications.push_service import PushService
 
 
-@pytest.fixture
-def push_service_enabled(mock_fcm_service_ok, monkeypatch):
-    """
-    Create real PushService instance with mocked connection checks.
-    All services are available and working.
-    """
+class MockPushServiceConnector:
+    def __init__(
+        self,
+        main_service=None,
+        fb_available=True,
+        celery_available=True,
+    ):
+        self.main_service = main_service
+        self.fb_available = fb_available
+        self.celery_available = celery_available
+        self.enable = fb_available and celery_available
+        self._initialized = True
+        self.fb_admin = Mock() if fb_available else None
+        self.push_service = Mock()
+        self.push_service.notify = Mock()
 
-    def mock_initialize_firebase(self):
-        self.push_service = mock_fcm_service_ok
-        return True
+    def __bool__(self):
+        return all(self.get_status().values())
 
-    def mock_check_fcm(self):
-        return True
+    def get_status(self):
+        return {
+            'notifications_enabled': self.enable,
+            'fcm_available': self.fb_available,
+            'celery_available': self.celery_available,
+            'initialized': self._initialized,
+        }
 
-    def mock_check_celery_availability(self):
-        return True
+    def reconnect(self):
+        return self.enable
 
-    monkeypatch.setattr(
-        'apps.notifications.push_service.PushServiceConnector._initialize_firebase',
-        mock_initialize_firebase,
-    )
-    monkeypatch.setattr(
-        'apps.notifications.push_service.PushServiceConnector._check_fcm',
-        mock_check_fcm,
-    )
-    monkeypatch.setattr(
-        'apps.notifications.push_service.PushServiceConnector._check_celery_availability',
-        mock_check_celery_availability,
-    )
+    def _check_fcm(self):
+        return self.fb_available
 
-    service = PushService()
-    # Теперь push_service уже создан, можно мокать notify
-    monkeypatch.setattr(
-        service.connector.push_service, 'notify', lambda *a, **kw: True
-    )
-    return service
+    def _check_celery_availability(self):
+        return self.celery_available
 
+    def _initialize_firebase(self):
+        return self.fb_available
 
-@pytest.fixture
-def push_service_disabled(monkeypatch, mock_fcm_service_fail):
-    """
-    Create real PushService instance with mocked connection checks.
-    All services are unavailable.
-    """
-    service = Mock()
-    def mock_initialize_firebase(self):
-        self.push_service = mock_fcm_service_fail
-        return False
-
-    def mock_check_fcm(self):
-        return False
-
-    def mock_check_celery_availability(self):
-        return False
-
-    monkeypatch.setattr(
-        'apps.notifications.push_service.PushServiceConnector._initialize_firebase',
-        mock_initialize_firebase,
-    )
-    monkeypatch.setattr(
-        'apps.notifications.push_service.PushServiceConnector._check_fcm',
-        mock_check_fcm,
-    )
-    monkeypatch.setattr(
-        'apps.notifications.push_service.PushServiceConnector._check_celery_availability',
-        mock_check_celery_availability,
-    )
-    monkeypatch.setattr(
-        service.connector.push_service, 'notify', lambda *a, **kw: False
-    )
-    service = PushService()
-    assert service.connector.fb_available is False
-    assert service.connector.celery_available is False
-    return service
+    def _initialize_services(self):
+        self.enable = self.fb_available and self.celery_available
+        self._initialized = True
 
 
 @pytest.fixture
-def push_service_fcm_only(monkeypatch, mock_fcm_service_ok):
+def push_service_enabled(monkeypatch):
     """
-    Create real PushService with FCM available but Celery unavailable.
+    PushService с мок-коннектором: оба сервиса доступны.
     """
 
-    def mock_initialize_firebase(self):
-        self.push_service = mock_fcm_service_ok
-        return True
-
-    def mock_check_fcm(self):
-        return True
-
-    def mock_check_celery_availability(self):
-        return False
+    def connector_factory(main_service):
+        return MockPushServiceConnector(
+            main_service, fb_available=True, celery_available=True
+        )
 
     monkeypatch.setattr(
-        'apps.notifications.push_service.PushServiceConnector._initialize_firebase',
-        mock_initialize_firebase,
+        push_service_module, 'PushServiceConnector', connector_factory
     )
-    monkeypatch.setattr(
-        'apps.notifications.push_service.PushServiceConnector._check_fcm',
-        mock_check_fcm,
-    )
-    monkeypatch.setattr(
-        'apps.notifications.push_service.PushServiceConnector._check_celery_availability',
-        mock_check_celery_availability,
-    )
-
-    service = PushService()
-    monkeypatch.setattr(
-        service.connector.push_service, 'notify', lambda *a, **kw: True
-    )
-    assert service.connector.fb_available is True
-    assert service.connector.celery_available is False
-    return service
+    return PushService()
 
 
 @pytest.fixture
-def mock_fcm_service_ok():
-    """Mock FCM service that always succeeds."""
-    mock_fcm = Mock()
-    mock_fcm.notify.return_value = True
-    return mock_fcm
+def push_service_disabled(monkeypatch):
+    """
+    PushService с мок-коннектором: оба сервиса недоступны.
+    """
+
+    def connector_factory(main_service):
+        return MockPushServiceConnector(
+            main_service, fb_available=False, celery_available=False
+        )
+
+    monkeypatch.setattr(
+        push_service_module, 'PushServiceConnector', connector_factory
+    )
+    return PushService()
 
 
 @pytest.fixture
-def mock_fcm_service_fail():
-    """Mock FCM service that always fails."""
-    mock_fcm = Mock()
-    mock_fcm.notify.side_effect = Exception('FCM service error')
-    return mock_fcm
+def push_service_fcm_only(monkeypatch):
+    """
+    PushService с мок-коннектором: только FCM доступен.
+    """
+
+    def connector_factory(main_service):
+        return MockPushServiceConnector(
+            main_service, fb_available=True, celery_available=False
+        )
+
+    monkeypatch.setattr(
+        push_service_module, 'PushServiceConnector', connector_factory
+    )
+    return PushService()
 
 
 @pytest.fixture
-def mock_fcm_service_token_fail():
-    """Mock FCM service that always fails with token error."""
-    mock_fcm = Mock()
-    mock_fcm.notify.side_effect = FCMError('Invalid token')
-    return mock_fcm
+def push_service_with_celery_only(monkeypatch):
+    """
+    PushService с мок-коннектором: только Celery доступен.
+    """
+
+    def connector_factory(main_service):
+        return MockPushServiceConnector(
+            main_service, fb_available=False, celery_available=True
+        )
+
+    monkeypatch.setattr(
+        push_service_module, 'PushServiceConnector', connector_factory
+    )
+    return PushService()
 
 
 @pytest.fixture
@@ -162,3 +136,48 @@ def mock_tasks_import(monkeypatch):
 
     monkeypatch.setattr(builtins, '__import__', mock_import_func)
     return mock_retry_task
+
+
+@pytest.fixture
+def push_service_connector_all_ok(monkeypatch):
+    """PushService с мок-коннектором: оба сервиса доступны."""
+
+    def connector_factory(main_service):
+        return MockPushServiceConnector(
+            main_service, fb_available=True, celery_available=True
+        )
+
+    monkeypatch.setattr(
+        push_service_module, 'PushServiceConnector', connector_factory
+    )
+    return push_service_module.PushService()
+
+
+@pytest.fixture
+def push_service_connector_fcm_only(monkeypatch):
+    """PushService с мок-коннектором: только FCM доступен."""
+
+    def connector_factory(main_service):
+        return MockPushServiceConnector(
+            main_service, fb_available=True, celery_available=False
+        )
+
+    monkeypatch.setattr(
+        push_service_module, 'PushServiceConnector', connector_factory
+    )
+    return push_service_module.PushService()
+
+
+@pytest.fixture
+def push_service_connector_none(monkeypatch):
+    """PushService с мок-коннектором: оба сервиса недоступны."""
+
+    def connector_factory(main_service):
+        return MockPushServiceConnector(
+            main_service, fb_available=False, celery_available=False
+        )
+
+    monkeypatch.setattr(
+        push_service_module, 'PushServiceConnector', connector_factory
+    )
+    return push_service_module.PushService()
