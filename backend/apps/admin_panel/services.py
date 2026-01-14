@@ -317,12 +317,15 @@ class CourtModelMapping(BaseModelMapping):
         self._expected_xlsx_fields = (
             'longitude',
             'latitude',
+            'court_name',
             'country',
             'city',
-            'court_name',
             'description',
-            'working_hours',
             'price_description',
+            'working_hours',
+            'tags',
+            'contact_type',
+            'contact',
         )
 
 

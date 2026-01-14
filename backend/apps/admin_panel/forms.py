@@ -1,12 +1,12 @@
 import json
 import os
 
-from backend.apps.notifications.constants import NotificationTypes
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
 from apps.admin_panel.constants import MAX_FILE_SIZE, SEND_TYPE_CHOICES
+from apps.notifications.constants import NotificationTypes
 
 
 class FileUploadForm(forms.Form):

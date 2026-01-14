@@ -1,6 +1,10 @@
+
+from django.db import transaction
 from rest_framework import serializers
 
-from apps.core.serializers import ContactSerializer
+from apps.core.constants import ContactTypes
+from apps.core.models import Tag
+from apps.core.serializers import ContactCreateSerializer, ContactSerializer
 from apps.courts.models import Court, CourtLocation
 from apps.locations.models import City, Country
 
@@ -20,7 +24,7 @@ class LocationSerializer(serializers.ModelSerializer):
             'location_name',
         )
 
-    def get_location_name(self, obj):
+    def get_location_name(self, obj: CourtLocation) -> str:
         return obj.location_name
 
 
@@ -105,6 +109,9 @@ class CourtCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating Court."""
 
     location = LocationsCreateSerializer()
+    tags = serializers.CharField()
+    contact_type = serializers.ChoiceField(choices=ContactTypes.choices)
+    contact = serializers.CharField()
 
     class Meta:
         model = Court
@@ -114,11 +121,36 @@ class CourtCreateSerializer(serializers.ModelSerializer):
             'description',
             'photo_url',
             'working_hours',
+            'tags',
+            'contact_type',
+            'contact',
         ]
 
+    def validate_tags(self, data):
+        tags = [tag.strip() for tag in data.split(',')]
+        if not tags:
+            raise serializers.ValidationError('At least one tag is required.')
+        return tags
+
     def create(self, validated_data):
-        location_data = validated_data.pop('location')
-        location_serializer = LocationsCreateSerializer(data=location_data)
-        location_serializer.is_valid(raise_exception=True)
-        location = location_serializer.save()
-        return Court.objects.create(location=location, **validated_data)
+        with transaction.atomic():
+            contact_data = {
+                'contact': validated_data.pop('contact'),
+                'contact_type': validated_data.pop('contact_type'),
+            }
+            location_data = validated_data.pop('location')
+            location_serializer = LocationsCreateSerializer(data=location_data)
+            location_serializer.is_valid(raise_exception=True)
+            location = location_serializer.save()
+            tags = validated_data.pop('tags')
+            tags_objs = []
+            for tag in tags:
+                tag_obj, _ = Tag.objects.get_or_create(name=tag)
+                tags_objs.append(tag_obj)
+            court = Court.objects.create(location=location, **validated_data)
+            court.tag_list.set(tags_objs)
+            contact_data['court'] = court.pk
+            contact_serializer = ContactCreateSerializer(data=contact_data)
+            contact_serializer.is_valid(raise_exception=True)
+            contact_serializer.save()
+            return court
