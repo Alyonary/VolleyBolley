@@ -104,7 +104,7 @@ def court_api_response_data():
     return {
         'price_description': '1$/hour',
         'description': 'Test court description',
-        'contacts_list': [
+        'contact_list': [
             {'contact_type': 'TEST Phone', 'contact': '+79999999999'}
         ],
         'photo_url': None,

@@ -107,7 +107,7 @@ class TestCourtApiModel:
         answer = response.data[0]
         assert answer.keys() == court_api_response_data.keys()
         assert (
-            answer['contacts_list'] == court_api_response_data['contacts_list']
+            answer['contact_list'] == court_api_response_data['contact_list']
         )
         assert answer['tags'] == court_api_response_data['tags']
         assert (
