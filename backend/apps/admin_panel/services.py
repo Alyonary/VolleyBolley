@@ -6,21 +6,18 @@ from typing import Any, Dict, List
 import openpyxl
 from django.conf import settings
 
-from apps.admin_panel.constants import MAX_FILE_SIZE
-from apps.core.models import CurrencyType, GameLevel
-from apps.core.serializers import (
-    CurrencyCreateSerializer,
-    GameLevelSerializer,
+from apps.admin_panel.constants import MAX_FILE_SIZE, SUPPORTED_FILE_TYPES
+from apps.admin_panel.model_mappings import (
+    BaseModelMapping,
+    CityModelMapping,
+    CountryModelMapping,
+    CourtModelMapping,
+    CurrencyTypeModelMapping,
+    GameModelMapping,
+    LevelsModelMapping,
+    PlayerModelMapping,
+    TourneyModelMapping,
 )
-from apps.courts.models import Court
-from apps.courts.serializers import CourtCreateSerializer
-from apps.event.models import Game, Tourney
-from apps.locations.models import City, Country
-from apps.locations.serializers import (
-    CityCreateSerializer,
-    CountryCreateSerializer,
-)
-from apps.players.models import Player
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +63,7 @@ class FileUploadService:
             'cities',
             'courts',
         )
-        self._supported_file_types: tuple[str] = ('json', 'excel')
+        self._supported_file_types: tuple[str] = SUPPORTED_FILE_TYPES
         self.max_file_size: int = MAX_FILE_SIZE
         self._extended_model_access: bool = settings.DEBUG
 
@@ -245,135 +242,3 @@ class FileUploadService:
                 obj_data['location'] = location_data
             model_data.append(obj_data)
         return self._process_model_data(filename, model_data)
-
-    def summarize_results(self, result: dict) -> dict:
-        """Summarize results by counting created, and error messages."""
-        messages = result.get('messages', [])
-        summary = {'created': 0, 'errors': 0}
-        for msg in messages:
-            msg_lower = msg.lower()
-            if 'created' in msg_lower:
-                summary['created'] += 1
-            elif 'error' in msg_lower:
-                summary['errors'] += 1
-        summary_messages = [
-            f'Created: {summary["created"]} db objects',
-            f'Errors(skipped): {summary["errors"]}',
-        ]
-        result['messages'] = summary_messages
-        return result
-
-
-class BaseModelMapping:
-    """
-    Base class for model mapping.
-    Subclasses must set self.model, self.serializer, self.can_update.
-    """
-
-    @property
-    def model(self):
-        return self._model
-
-    @property
-    def serializer(self):
-        return self._serializer
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def expected_fields(self):
-        return self._expected_xlsx_fields
-
-
-class CountryModelMapping(BaseModelMapping):
-    """Model mapping for Country."""
-
-    def __init__(self):
-        self._name = 'countries'
-        self._model = Country
-        self._serializer = CountryCreateSerializer
-        self._expected_xlsx_fields = self.serializer.Meta.fields
-
-
-class CityModelMapping(BaseModelMapping):
-    """Model mapping for City."""
-
-    def __init__(self):
-        self._name = 'cities'
-        self._model = City
-        self._serializer = CityCreateSerializer
-        self._expected_xlsx_fields = self.serializer.Meta.fields
-
-
-class CourtModelMapping(BaseModelMapping):
-    """Model mapping for Court."""
-
-    def __init__(self):
-        self._name = 'courts'
-        self._model = Court
-        self._serializer = CourtCreateSerializer
-        self._expected_xlsx_fields = (
-            'longitude',
-            'latitude',
-            'court_name',
-            'country',
-            'city',
-            'description',
-            'price_description',
-            'working_hours',
-            'tags',
-            'contact_type',
-            'contact',
-        )
-
-
-class PlayerModelMapping(BaseModelMapping):
-    """Model mapping for Player."""
-
-    def __init__(self):
-        self._name = 'players'
-        self._model = Player
-        self._serializer = None
-        self._expected_xlsx_fields = None
-
-
-class GameModelMapping(BaseModelMapping):
-    """Model mapping for Game."""
-
-    def __init__(self):
-        self._name = 'games'
-        self._model = Game
-        self._serializer = None
-        self._expected_xlsx_fields = None
-
-
-class TourneyModelMapping(BaseModelMapping):
-    """Model mapping for Tourney."""
-
-    def __init__(self):
-        self._name = 'tourneys'
-        self._model = Tourney
-        self._serializer = None
-        self._expected_xlsx_fields = None
-
-
-class CurrencyTypeModelMapping(BaseModelMapping):
-    """Model mapping for CurrencyType."""
-
-    def __init__(self):
-        self._name = 'currencies'
-        self._model = CurrencyType
-        self._serializer = CurrencyCreateSerializer
-        self._expected_xlsx_fields = self.serializer.Meta.fields
-
-
-class LevelsModelMapping(BaseModelMapping):
-    """Model mapping for Levels."""
-
-    def __init__(self):
-        self._name = 'levels'
-        self._model = GameLevel
-        self._serializer = GameLevelSerializer
-        self._expected_xlsx_fields = self.serializer.Meta.fields

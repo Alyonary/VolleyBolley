@@ -4,9 +4,11 @@ from apps.courts.models import Court
 from apps.courts.serializers import CourtCreateSerializer
 from apps.event.models import Game, Tourney
 from apps.locations.models import City, Country
-from apps.locations.serializers import CityCreateSerializer, CountryCreateSerializer
+from apps.locations.serializers import (
+    CityCreateSerializer,
+    CountryCreateSerializer,
+)
 from apps.players.models import Player
-from backend.apps.event.serializers import GameCreateSerializer
 
 
 class BaseModelMapping:
@@ -47,6 +49,7 @@ class BaseModelMapping:
             for name, field in self._serializer().get_fields().items()
             if not field.read_only
         )
+
 
 class CountryModelMapping(BaseModelMapping):
     """Model mapping for Country."""
@@ -105,7 +108,7 @@ class GameModelMapping(BaseModelMapping):
     def __init__(self):
         self._name = 'games'
         self._model = Game
-        self._serializer = GameCreateSerializer
+        self._serializer = None
         self._expected_xlsx_fields = self.get_serializer_fields()
 
 

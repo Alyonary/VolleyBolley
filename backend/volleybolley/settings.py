@@ -21,7 +21,8 @@ else:
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
 TESTING = "pytest" in sys.modules or "test" in sys.argv
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
