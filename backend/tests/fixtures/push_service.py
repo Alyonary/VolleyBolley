@@ -2,7 +2,7 @@ import builtins
 from unittest.mock import Mock
 
 import pytest
-from pyfcm.errors import FCMError
+from pyfcm.errors import FCMError  # type: ignore
 
 from apps.notifications.push_service import PushService
 
