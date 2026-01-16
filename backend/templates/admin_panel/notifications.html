@@ -1,4 +1,3 @@
-<!-- filepath: c:\Dev\projects\VolleyBolley\backend\templates\admin_panel\notifications.html -->
 {% extends "admin/base_site.html" %}
 {% load static %}
 {% load i18n %}
@@ -47,7 +46,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     function toggleFields() {
         var sendType = document.getElementById('id_send_type').value;
-        document.getElementById('player_id_field').style.display = sendType === 'send_to_device' ? 'block' : 'none';
+        document.getElementById('player_id_field').style.display = sendType === 'send_to_player' ? 'block' : 'none';
         document.getElementById('event_id_field').style.display = sendType === 'send_to_event' ? 'block' : 'none';
     }
     document.getElementById('id_send_type').addEventListener('change', toggleFields);
