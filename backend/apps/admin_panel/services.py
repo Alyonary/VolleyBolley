@@ -242,3 +242,20 @@ class FileUploadService:
                 obj_data['location'] = location_data
             model_data.append(obj_data)
         return self._process_model_data(filename, model_data)
+
+    def summarize_results(self, result: dict) -> dict:
+        """Summarize results by counting created, and error messages."""
+        messages = result.get('messages', [])
+        summary = {'created': 0, 'errors': 0}
+        for msg in messages:
+            msg_lower = msg.lower()
+            if 'created' in msg_lower:
+                summary['created'] += 1
+            elif 'error' in msg_lower:
+                summary['errors'] += 1
+        summary_messages = [
+            f'Created: {summary["created"]} db objects',
+            f'Errors(skipped): {summary["errors"]}',
+        ]
+        result['messages'] = summary_messages
+        return result
