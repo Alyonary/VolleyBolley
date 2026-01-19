@@ -1,0 +1,281 @@
+{
+  "countries": [
+    {"name": "Thailand"},
+    {"name": "Cyprus"}
+  ],
+  "cities": [
+    {"name": "Bangkok", "country": "Thailand"},
+    {"name": "Chiang Mai", "country": "Thailand"},
+    {"name": "Phuket", "country": "Thailand"},
+    {"name": "Pattaya", "country": "Thailand"},
+    {"name": "Krabi", "country": "Thailand"},
+    {"name": "Hua Hin", "country": "Thailand"},
+    {"name": "Surat Thani", "country": "Thailand"},
+    {"name": "Ayutthaya", "country": "Thailand"},
+    {"name": "Nakhon Ratchasima", "country": "Thailand"},
+    {"name": "Udon Thani", "country": "Thailand"},
+    {"name": "Nicosia", "country": "Cyprus"},
+    {"name": "Limassol", "country": "Cyprus"},
+    {"name": "Larnaca", "country": "Cyprus"},
+    {"name": "Paphos", "country": "Cyprus"},
+    {"name": "Famagusta", "country": "Cyprus"},
+    {"name": "Kyrenia", "country": "Cyprus"},
+    {"name": "Morphou", "country": "Cyprus"},
+    {"name": "Paralimni", "country": "Cyprus"},
+    {"name": "Deryneia", "country": "Cyprus"},
+    {"name": "Polis", "country": "Cyprus"}
+  ],
+  "currencies": [
+    {"currency_type": "THB", "currency_name": "฿", "country": "Thailand"},
+    {"currency_type": "EUR", "currency_name": "€", "country": "Cyprus"}
+
+  ],
+  "levels": [
+    {"name": "LIGHT"},
+    {"name": "MEDIUM"},
+    {"name": "HARD"},
+    {"name": "PRO"}
+  ],
+  "courts": [
+    {
+      "location": {
+        "longitude": 100.5018,
+        "latitude": 13.7563,
+        "court_name": "Bangkok Arena",
+        "country": "Thailand",
+        "city": "Bangkok"
+      },
+      "price_description": "Premium",
+      "description": "Main arena in Bangkok",
+      "working_hours": "08:00-22:00"
+    },
+    {
+      "location": {
+        "longitude": 98.9817,
+        "latitude": 18.7961,
+        "court_name": "Chiang Mai Stadium",
+        "country": "Thailand",
+        "city": "Chiang Mai"
+      },
+      "price_description": "Standard",
+      "description": "Stadium in Chiang Mai",
+      "working_hours": "09:00-21:00"
+    },
+    {
+      "location": {
+        "longitude": 98.3381,
+        "latitude": 7.8804,
+        "court_name": "Phuket Sports Hall",
+        "country": "Thailand",
+        "city": "Phuket"
+      },
+      "price_description": "Standard",
+      "description": "Sports hall in Phuket",
+      "working_hours": "09:00-21:00"
+    },
+    {
+      "location": {
+        "longitude": 100.8880,
+        "latitude": 12.9236,
+        "court_name": "Pattaya Beach Court",
+        "country": "Thailand",
+        "city": "Pattaya"
+      },
+      "price_description": "Economy",
+      "description": "Beach court in Pattaya",
+      "working_hours": "07:00-19:00"
+    },
+    {
+      "location": {
+        "longitude": 98.9105,
+        "latitude": 8.0863,
+        "court_name": "Krabi Indoor Court",
+        "country": "Thailand",
+        "city": "Krabi"
+      },
+      "price_description": "Standard",
+      "description": "Indoor court in Krabi",
+      "working_hours": "09:00-21:00"
+    },
+    {
+      "location": {
+        "longitude": 99.9631,
+        "latitude": 12.5707,
+        "court_name": "Hua Hin Arena",
+        "country": "Thailand",
+        "city": "Hua Hin"
+      },
+      "price_description": "Premium",
+      "description": "Arena in Hua Hin",
+      "working_hours": "08:00-22:00"
+    },
+    {
+      "location": {
+        "longitude": 99.3266,
+        "latitude": 9.1406,
+        "court_name": "Surat Thani Court",
+        "country": "Thailand",
+        "city": "Surat Thani"
+      },
+      "price_description": "Economy",
+      "description": "Court in Surat Thani",
+      "working_hours": "07:00-19:00"
+    },
+    {
+      "location": {
+        "longitude": 100.5684,
+        "latitude": 14.3532,
+        "court_name": "Ayutthaya Stadium",
+        "country": "Thailand",
+        "city": "Ayutthaya"
+      },
+      "price_description": "Standard",
+      "description": "Stadium in Ayutthaya",
+      "working_hours": "09:00-21:00"
+    },
+    {
+      "location": {
+        "longitude": 102.0831,
+        "latitude": 15.0007,
+        "court_name": "Korat Sports Center",
+        "country": "Thailand",
+        "city": "Nakhon Ratchasima"
+      },
+      "price_description": "Standard",
+      "description": "Sports center in Nakhon Ratchasima",
+      "working_hours": "09:00-21:00"
+    },
+    {
+      "location": {
+        "longitude": 102.7922,
+        "latitude": 17.4139,
+        "court_name": "Udon Thani Arena",
+        "country": "Thailand",
+        "city": "Udon Thani"
+      },
+      "price_description": "Economy",
+      "description": "Arena in Udon Thani",
+      "working_hours": "07:00-19:00"
+    },
+    {
+      "location": {
+        "longitude": 33.3823,
+        "latitude": 35.1856,
+        "court_name": "Nicosia Central Court",
+        "country": "Cyprus",
+        "city": "Nicosia"
+      },
+      "price_description": "Premium",
+      "description": "Central court in Nicosia",
+      "working_hours": "08:00-22:00"
+    },
+    {
+      "location": {
+        "longitude": 33.0458,
+        "latitude": 34.7071,
+        "court_name": "Limassol Beach Arena",
+        "country": "Cyprus",
+        "city": "Limassol"
+      },
+      "price_description": "Economy",
+      "description": "Beach arena in Limassol",
+      "working_hours": "07:00-19:00"
+    },
+    {
+      "location": {
+        "longitude": 33.6348,
+        "latitude": 34.9229,
+        "court_name": "Larnaca Sports Hall",
+        "country": "Cyprus",
+        "city": "Larnaca"
+      },
+      "price_description": "Standard",
+      "description": "Sports hall in Larnaca",
+      "working_hours": "09:00-21:00"
+    },
+    {
+      "location": {
+        "longitude": 32.4297,
+        "latitude": 34.7761,
+        "court_name": "Paphos Arena",
+        "country": "Cyprus",
+        "city": "Paphos"
+      },
+      "price_description": "Standard",
+      "description": "Arena in Paphos",
+      "working_hours": "09:00-21:00"
+    },
+    {
+      "location": {
+        "longitude": 35.1168,
+        "latitude": 35.1253,
+        "court_name": "Famagusta Stadium",
+        "country": "Cyprus",
+        "city": "Famagusta"
+      },
+      "price_description": "Standard",
+      "description": "Stadium in Famagusta",
+      "working_hours": "09:00-21:00"
+    },
+    {
+      "location": {
+        "longitude": 33.3126,
+        "latitude": 35.3402,
+        "court_name": "Kyrenia Court",
+        "country": "Cyprus",
+        "city": "Kyrenia"
+      },
+      "price_description": "Standard",
+      "description": "Court in Kyrenia",
+      "working_hours": "09:00-21:00"
+    },
+    {
+      "location": {
+        "longitude": 32.9633,
+        "latitude": 35.2000,
+        "court_name": "Morphou Sports Center",
+        "country": "Cyprus",
+        "city": "Morphou"
+      },
+      "price_description": "Standard",
+      "description": "Sports center in Morphou",
+      "working_hours": "09:00-21:00"
+    },
+    {
+      "location": {
+        "longitude": 33.9816,
+        "latitude": 35.0402,
+        "court_name": "Paralimni Arena",
+        "country": "Cyprus",
+        "city": "Paralimni"
+      },
+      "price_description": "Economy",
+      "description": "Arena in Paralimni",
+      "working_hours": "07:00-19:00"
+    },
+    {
+      "location": {
+        "longitude": 33.9578,
+        "latitude": 35.0667,
+        "court_name": "Deryneia Indoor Court",
+        "country": "Cyprus",
+        "city": "Deryneia"
+      },
+      "price_description": "Economy",
+      "description": "Indoor court in Deryneia",
+      "working_hours": "07:00-19:00"
+    },
+    {
+      "location": {
+        "longitude": 32.4246,
+        "latitude": 35.0377,
+        "court_name": "Polis Beach Court",
+        "country": "Cyprus",
+        "city": "Polis"
+      },
+      "price_description": "Economy",
+      "description": "Beach court in Polis",
+      "working_hours": "07:00-19:00"
+    }
+  ]
+}

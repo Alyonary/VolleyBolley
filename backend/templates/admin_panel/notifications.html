@@ -1,0 +1,56 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% load i18n %}
+{% block title %}{{ title }} - {{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; {{ title|default:'File Upload' }}
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'admin_panel/css/notifications.css' %}">
+{% endblock %}
+{% block content %}
+<div class="upload-container">
+    <div class="main-form">
+        <h1>{% trans "Send Notification" %}</h1>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                {{ form.send_type.label_tag }}
+                {{ form.send_type }}
+            </div>
+            <div class="mb-3" id="player_id_field">
+                {{ form.player_id.label_tag }}
+                {{ form.player_id }}
+            </div>
+            <div class="mb-3" id="event_id_field">
+                {{ form.event_id.label_tag }}
+                {{ form.event_id }}
+            </div>
+            <div class="mb-3">
+                {{ form.notification_type.label_tag }}
+                {{ form.notification_type }}
+            </div>
+            <button type="submit" id="send-btn" class="btn-upload" {% if not push_service_enabled %}disabled{% endif %}>
+                {% trans "Send Notification" %}
+            </button>
+        </form>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    function toggleFields() {
+        var sendType = document.getElementById('id_send_type').value;
+        document.getElementById('player_id_field').style.display = sendType === 'send_to_player' ? 'block' : 'none';
+        document.getElementById('event_id_field').style.display = sendType === 'send_to_event' ? 'block' : 'none';
+    }
+    document.getElementById('id_send_type').addEventListener('change', toggleFields);
+    toggleFields();
+});
+</script>
+{% endblock %}

@@ -1,8 +1,8 @@
 import logging
-import os
 
 from django.db import connection, transaction
 
+from apps.admin_panel.services import FileUploadService
 from apps.core.constants import DEFAULT_FAQ
 from apps.core.models import FAQ
 from volleybolley.settings import BASE_DIR
@@ -22,13 +22,9 @@ def load_faq_from_file(file_path) -> bool:
     """
     if not check_is_db_table_exists(FAQ._meta.db_table):
         logger.warning('FAQ table does not exist in the database.')
-        return False
+        return
 
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f'FAQ file not found at {file_path}')
-
-    with open(file_path, 'r', encoding='utf-8') as faq_file:
-        content = faq_file.read()
+    content = FileUploadService().download_file_by_path(file_path)
 
     with transaction.atomic():
         if not FAQ.objects.filter(name=DEFAULT_FAQ).exists():
@@ -36,11 +32,16 @@ def load_faq_from_file(file_path) -> bool:
                 content=content, is_active=True, name=DEFAULT_FAQ
             )
             logger.info('Created default FAQ.')
-            return True
-    return False
+            return
+    logger.info('FAQ already exists. No action taken.')
 
 
 def initialize_faq() -> None:
+    if not check_is_db_table_exists(FAQ._meta.db_table):
+        logger.warning(
+            'FAQ table does not exist. Skipping FAQ initialization.'
+        )
+        return
     filename = f'{DEFAULT_FAQ}.md'
     faq_file_path = BASE_DIR / 'data' / filename
     try:

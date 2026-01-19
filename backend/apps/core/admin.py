@@ -1,16 +1,27 @@
+import logging
+
 from django.contrib import admin
+from django.contrib.auth.models import Group
 from django.utils.translation import gettext_lazy as _
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
+from social_django.models import Association, Nonce, UserSocialAuth
 
 from apps.core.enums import CoreFieldLength
 from apps.core.models import (
     FAQ,
     Contact,
     CurrencyType,
+    DailyStats,
     GameLevel,
     InfoPage,
     InfoSection,
     Tag,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class BaseNameAdmin(admin.ModelAdmin):
@@ -114,3 +125,43 @@ class FAQAdmin(admin.ModelAdmin):
         if obj.is_active:
             FAQ.objects.exclude(id=obj.id).update(is_active=False)
         super().save_model(request, obj, form, change)
+
+
+@admin.register(DailyStats)
+class DailyStatsAdmin(admin.ModelAdmin):
+    list_display = (
+        'id',
+        'date',
+        'players_registered',
+        'games_created',
+        'tourneys_created',
+    )
+    search_fields = ('date',)
+    ordering = ('-date',)
+    empty_value_display = _('Not defined')
+    list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
+
+
+models_for_unregister = [
+    Association,
+    BlacklistedToken,
+    Group,
+    Nonce,
+    OutstandingToken,
+    UserSocialAuth,
+]
+
+
+def unregister_social_django_models(models_for_unregister):
+    """Unregister specified models from the admin site."""
+    for m in models_for_unregister:
+        try:
+            admin.site.unregister(m)
+            logger.info(
+                f'Successfully unregister model {m.__name__} from admin site.'
+            )
+        except admin.sites.NotRegistered:
+            logger.warning(f'Model {m.__name__} not registered in admin site.')
+
+
+unregister_social_django_models(models_for_unregister)
