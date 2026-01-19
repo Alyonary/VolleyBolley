@@ -28,10 +28,11 @@ def notifications_view(request):
         if form.is_valid():
             send_type = form.cleaned_data['send_type']
             if send_type == SendType.SEND_TO_PLAYER.value:
-                player_id = form.cleaned_data['player_id']
+                # player_id = form.cleaned_data['player_id']
                 # ПРОПИСАТЬ ТАСКИ ПУШ СЕРВИСА
+                result = {}
             elif send_type == SendType.SEND_TO_EVENT.value:
-                event_id = form.cleaned_data
+                # event_id = form.cleaned_data
                 # ПРОПИСАТЬ ТАСКИ ПУШ СЕРВИСА
                 result = {}
             if result.get('success'):
