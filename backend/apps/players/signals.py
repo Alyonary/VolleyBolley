@@ -9,7 +9,7 @@ from apps.players.constants import (
     PlayerStrEnums,
 )
 from apps.players.models import Payment, Player, PlayerRating, PlayerRatingVote
-from apps.players.rating import GradeSystem
+from apps.players.rating import PlayerRatingManager
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def update_player_rating_on_vote(sender, instance, created, **kwargs):
     """
     if created:
         try:
-            status = GradeSystem.update_player_rating(
+            status = PlayerRatingManager().update_player_rating(
                 player=instance.rated, vote=instance
             )
             logger.info(f'Player id={instance.rated.id} rating {status}')
