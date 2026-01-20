@@ -37,7 +37,7 @@ class TestGameModel:
         assert game.payment_account == game_data['payment_account']
 
     @pytest.mark.django_db
-    @pytest.mark.parametrize('wrong_data', ['Court in Thalland', None, 999])
+    @pytest.mark.parametrize('wrong_data', ['Court in Thailand', None, 999])
     def test_create_game_with_wrong_court(self, game_data, wrong_data):
         game_data.pop(
             'players',

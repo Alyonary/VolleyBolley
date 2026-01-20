@@ -17,13 +17,13 @@ jazzmin_settings = {
         },
         {
             'name': _('📊 Dashboard'),
-            'url': '/admin/dashboard/',
+            'url': '/custom_admin/dashboard/',
             'icon': 'fas fa-tachometer-alt',
             'permissions': ['auth.view_user'],
         },
         {
             'name': _('📁 Data Upload'),
-            'url': '/admin/data_upload/',
+            'url': '/custom_admin/data_upload/',
             'permissions': ['auth.change_user'],
         },
         {
@@ -31,6 +31,12 @@ jazzmin_settings = {
             'url': '/api/swagger/',
             'new_window': True,
         },
+        {
+            'name': _('🔔 Notifications'),
+            'url': '/custom_admin/notifications/',
+            'icon': 'fas fa-bell',
+            'permissions': ['auth.view_user'],
+        }
     ],
     'usermenu_links': [
         {

@@ -1,6 +1,10 @@
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from rest_framework import serializers
 
+from apps.core.constants import DOMAIN_REGEX, ContactTypes
 from apps.core.models import Contact, CurrencyType, GameLevel, Tag
+from apps.courts.models import Court
 from apps.locations.models import Country
 
 
@@ -87,3 +91,45 @@ class GameLevelSerializer(serializers.ModelSerializer):
         fields = [
             'name',
         ]
+
+
+class ContactCreateSerializer(serializers.ModelSerializer):
+    """Serializer for Contact model."""
+
+    contact_type = serializers.ChoiceField(choices=ContactTypes.choices)
+    court = serializers.PrimaryKeyRelatedField(
+        queryset=Court.objects.all(), required=True, write_only=True
+    )
+
+    class Meta:
+        model = Contact
+        fields = ['contact_type', 'contact', 'court']
+
+    def validate(self, attrs):
+        contact_type = attrs.get('contact_type')
+        contact = attrs.get('contact')
+        if contact_type and not contact:
+            raise serializers.ValidationError(
+                f'Contact value is required for contact type "{contact_type}".'
+            )
+        if contact_type == ContactTypes.PHONE and not contact.isdigit():
+            raise serializers.ValidationError(
+                'Phone contact must contain only digits.'
+            )
+        if contact_type == ContactTypes.EMAIL:
+            try:
+                validate_email(contact)
+            except ValidationError as err:
+                raise serializers.ValidationError(
+                    'Invalid email address format.'
+                ) from err
+        elif contact_type == ContactTypes.WEBSITE:
+            if not DOMAIN_REGEX.match(contact):
+                raise serializers.ValidationError(
+                    'Invalid domain name format.'
+                )
+        return attrs
+
+    def create(self, validated_data):
+        contact, _ = Contact.objects.get_or_create(**validated_data)
+        return contact

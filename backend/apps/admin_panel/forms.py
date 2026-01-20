@@ -5,7 +5,8 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from apps.admin_panel.constants import MAX_FILE_SIZE
+from apps.admin_panel.constants import MAX_FILE_SIZE, SEND_TYPE_CHOICES
+from apps.notifications.constants import NotificationTypes
 
 
 class FileUploadForm(forms.Form):
@@ -77,3 +78,50 @@ class FileUploadForm(forms.Form):
                     _('Invalid Excel file: %(error)s') % {'error': str(e)}
                 ) from e
         return file
+
+
+class NotificationSendForm(forms.Form):
+    send_type = forms.ChoiceField(
+        choices=SEND_TYPE_CHOICES,
+        label=_('Send Type'),
+        widget=forms.Select(
+            attrs={'class': 'form-select', 'id': 'id_send_type'}
+        ),
+    )
+    player_id = forms.IntegerField(
+        label=_('Player ID'),
+        required=False,
+        widget=forms.NumberInput(
+            attrs={'class': 'form-control', 'id': 'id_player_id'}
+        ),
+    )
+    event_id = forms.IntegerField(
+        label=_('Event ID'),
+        required=False,
+        widget=forms.NumberInput(
+            attrs={'class': 'form-control', 'id': 'id_event_id'}
+        ),
+    )
+    notification_type = forms.ChoiceField(
+        choices=NotificationTypes.CHOICES,
+        label=_('Notification Type'),
+        widget=forms.Select(
+            attrs={'class': 'form-select', 'id': 'id_notification_type'}
+        ),
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        send_type = cleaned_data.get('send_type')
+        player_id = cleaned_data.get('player_id')
+        event_id = cleaned_data.get('event_id')
+
+        if send_type == 'send_to_device' and not player_id:
+            self.add_error(
+                'player_id', _('Player ID is required for device notification')
+            )
+        if send_type == 'send_to_event' and not event_id:
+            self.add_error(
+                'event_id', _('Event ID is required for event notification')
+            )
+        return cleaned_data

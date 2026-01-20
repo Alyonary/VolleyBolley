@@ -7,11 +7,15 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from apps.admin_panel.constants import (
+    (
     MAX_FILE_SIZE,
     MONTHS_STAT_PAGINATION,
+   
     SUPPORTED_FILE_TYPES,
+),
+    SendType,
 )
-from apps.admin_panel.forms import FileUploadForm
+from apps.admin_panel.forms import FileUploadForm, NotificationSendForm
 from apps.admin_panel.services import FileUploadService
 from apps.core.models import DailyStats
 from apps.core.task import collect_full_project_stats
@@ -29,6 +33,47 @@ def run_stats_task_view(request):
     else:
         messages.error(request, 'Failed to collect stats: Celery unavailable.')
     return redirect('admin_panel:admin_dashboard')
+
+
+@staff_member_required
+def notifications_view(request):
+    """Admin view for managing notifications."""
+    push_service = PushService()
+    if request.method == 'POST':
+        form = NotificationSendForm(request.POST)
+        if form.is_valid():
+            send_type = form.cleaned_data['send_type']
+            if send_type == SendType.SEND_TO_PLAYER.value:
+                # player_id = form.cleaned_data['player_id']
+                # ПРОПИСАТЬ ТАСКИ ПУШ СЕРВИСА
+                result = {}
+            elif send_type == SendType.SEND_TO_EVENT.value:
+                # event_id = form.cleaned_data
+                # ПРОПИСАТЬ ТАСКИ ПУШ СЕРВИСА
+                result = {}
+            if result.get('success'):
+                messages.success(
+                    request, _('✅ Notification sent successfully.')
+                )
+            else:
+                messages.error(
+                    request,
+                    _('❌ Failed to send notification: %(error)s')
+                    % {'error': result.get('error', 'Unknown error')},
+                )
+
+    else:
+        form = NotificationSendForm()
+    context = {
+        'title': _('Notifications Management'),
+        'page_header': _('Manage Notifications'),
+        'page_description': _(
+            'View and manage push notifications sent to users.'
+        ),
+        'push_service_enabled': push_service.enable,
+        'form': form,
+    }
+    return render(request, 'admin_panel/notifications.html', context)
 
 
 @staff_member_required

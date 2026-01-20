@@ -1,3 +1,5 @@
+from typing import Any, Dict
+
 import pytest
 from django.urls import reverse
 
@@ -6,7 +8,7 @@ from apps.courts.models import Court, CourtLocation
 
 
 @pytest.fixture
-def location_for_court_data():
+def location_for_court_data() -> Dict[str, float | str]:
     return {
         'longitude': 12.345,
         'latitude': -54.321,
@@ -15,7 +17,7 @@ def location_for_court_data():
 
 
 @pytest.fixture
-def cyprus_location_court_data():
+def cyprus_location_court_data() -> Dict[str, float | str]:
     return {
         'longitude': 34.567,
         'latitude': -12.345,
@@ -25,8 +27,10 @@ def cyprus_location_court_data():
 
 @pytest.fixture
 def location_for_court_thailand(
-    location_for_court_data, country_thailand, city_in_thailand
-):
+    location_for_court_data: Dict[str, Any],
+    country_thailand: Any,
+    city_in_thailand: Any,
+) -> CourtLocation:
     thailand_court_data = location_for_court_data.copy()
     thailand_court_data.update(
         {
@@ -40,8 +44,10 @@ def location_for_court_thailand(
 
 @pytest.fixture
 def location_for_court_cyprus(
-    cyprus_location_court_data, country_cyprus, city_in_cyprus
-):
+    cyprus_location_court_data: Dict[str, Any],
+    country_cyprus: Any,
+    city_in_cyprus: Any,
+) -> CourtLocation:
     cyprus_court_data = cyprus_location_court_data.copy()
     another_country = {
         'country': country_cyprus,
@@ -53,7 +59,7 @@ def location_for_court_cyprus(
 
 
 @pytest.fixture
-def court_data():
+def court_data() -> Dict[str, str]:
     return {
         'price_description': '1$/hour',
         'description': 'Test court description',
@@ -62,29 +68,35 @@ def court_data():
 
 
 @pytest.fixture
-def court_cyprus(court_data, location_for_court_cyprus):
+def court_cyprus(
+    court_data: Dict[str, Any],
+    location_for_court_cyprus: CourtLocation,
+) -> Court:
     court_data.update({'location': location_for_court_cyprus})
     return Court.objects.create(**court_data)
 
 
 @pytest.fixture
-def court_thailand(court_data, location_for_court_thailand):
+def court_thailand(
+    court_data: Dict[str, Any],
+    location_for_court_thailand: CourtLocation,
+) -> Court:
     court_data.update({'location': location_for_court_thailand})
     return Court.objects.create(**court_data)
 
 
 @pytest.fixture
-def tag_data():
+def tag_data() -> Dict[str, str]:
     return {'name': 'Test tag'}
 
 
 @pytest.fixture
-def tag_obj(tag_data):
+def tag_obj(tag_data: Dict[str, str]) -> Tag:
     return Tag.objects.create(**tag_data)
 
 
 @pytest.fixture
-def contact_data(court_thailand):
+def contact_data(court_thailand: Court) -> Dict[str, Any]:
     return {
         'contact_type': 'TEST Phone',
         'contact': '+79999999999',
@@ -93,27 +105,30 @@ def contact_data(court_thailand):
 
 
 @pytest.fixture
-def contact_object(contact_data):
+def contact_object(contact_data: Dict[str, Any]) -> Contact:
     return Contact.objects.create(**contact_data)
 
 
 @pytest.fixture
-def court_list_url():
+def court_list_url() -> str:
     return reverse('api:courts-list')
 
 
 @pytest.fixture
-def court_obj_with_tag(court_thailand, tag_obj):
+def court_obj_with_tag(
+    court_thailand: Court,
+    tag_obj: Tag,
+) -> Court:
     court_thailand.tag_list.add(tag_obj)
     return court_thailand
 
 
 @pytest.fixture
-def court_api_response_data():
+def court_api_response_data() -> Dict[str, Any]:
     return {
         'price_description': '1$/hour',
         'description': 'Test court description',
-        'contacts_list': [
+        'contact_list': [
             {'contact_type': 'TEST Phone', 'contact': '+79999999999'}
         ],
         'photo_url': None,

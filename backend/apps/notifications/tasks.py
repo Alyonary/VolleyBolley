@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from celery import shared_task
 from celery.signals import worker_ready
@@ -10,7 +10,11 @@ from apps.notifications.constants import (
     RETRY_PUSH_TIME,
     NotificationTypes,
 )
-from apps.notifications.models import Device, NotificationsBase
+from apps.notifications.models import (
+    Device,
+    NotificationsBase,
+    NotificationsTime,
+)
 from apps.notifications.push_service import PushService
 from apps.notifications.utils import delete_old_devices
 
@@ -116,17 +120,20 @@ def inform_removed_players_task(
 
 def process_rate_notifications_for_recent_events():
     """
-    Find all games and tourneys ended an hour ago and send rate notifications.
+    Find all games and tourneys ended a specific time ago.
+    Send rate notifications.
     """
     from apps.event.models import Game, Tourney
 
-    hour_ago = timezone.now() - timedelta(hours=1)
-    send_rate_notification_for_events(Game, hour_ago)
-    send_rate_notification_for_events(Tourney, hour_ago)
+    closed_event_time = (
+        timezone.now() - NotificationsTime.get_closed_event_notification_time()
+    )
+    send_rate_notification_for_events(Game, closed_event_time)
+    send_rate_notification_for_events(Tourney, closed_event_time)
 
 
 def send_rate_notification_for_events(
-    event_type: type, hour_ago: datetime
+    event_type: type, closed_event_time: datetime
 ) -> bool:
     """
     Sends notification to all players in the event to rate other players.
@@ -134,7 +141,7 @@ def send_rate_notification_for_events(
     from apps.event.models import Game
 
     events = event_type.objects.filter(
-        end_time__gte=hour_ago, end_time__lt=timezone.now()
+        end_time__gte=closed_event_time, end_time__lt=timezone.now()
     )
     if issubclass(event_type, Game):
         notification_type = NotificationTypes.GAME_RATE
