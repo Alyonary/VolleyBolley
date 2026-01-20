@@ -211,27 +211,27 @@ class Notifications(CreatedUpdatedMixin):
         )
 
 
-class NotificationsTime(models.Model):
+class NotificationsTime(m.Model):
     """Notification time model."""
 
-    name = models.CharField(
+    name = m.CharField(
         max_length=CoreFieldLength.NAME.value,
         unique=True,
         default='Develop Notifications Time Settings',
     )
-    closed_event_notification = models.DurationField(
+    closed_event_notification = m.DurationField(
         verbose_name=_('Notifications time after events are closed'),
         default=PROD_NOTIFICATION_TIME.closed_event,
     )
-    pre_event_notification = models.DurationField(
+    pre_event_notification = m.DurationField(
         verbose_name=_('Notifications time before events start'),
         default=PROD_NOTIFICATION_TIME.pre_event,
     )
-    advance_notification = models.DurationField(
+    advance_notification = m.DurationField(
         verbose_name=_('Notifications time in advance of the event'),
         default=PROD_NOTIFICATION_TIME.advance,
     )
-    is_active = models.BooleanField(default=True)
+    is_active = m.BooleanField(default=True)
 
     def __str__(self):
         return self.name

@@ -339,6 +339,7 @@ class TestFileUploadServiceJSON:
             for m in result.get('messages', [])
         )
 
+
 @pytest.mark.django_db
 class TestFileUploadServiceExcel:
     def test_process_excel_file_creates_currency(

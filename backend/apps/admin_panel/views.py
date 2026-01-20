@@ -7,12 +7,9 @@ from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
 from apps.admin_panel.constants import (
-    (
     MAX_FILE_SIZE,
     MONTHS_STAT_PAGINATION,
-   
     SUPPORTED_FILE_TYPES,
-),
     SendType,
 )
 from apps.admin_panel.forms import FileUploadForm, NotificationSendForm

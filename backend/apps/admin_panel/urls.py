@@ -2,8 +2,8 @@ from django.urls import path
 
 from apps.admin_panel.views import (
     dashboard_view,
-    run_stats_task_view,
     notifications_view,
+    run_stats_task_view,
     upload_file,
 )
 

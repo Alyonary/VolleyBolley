@@ -179,7 +179,7 @@ class FileUploadService:
     ) -> Dict[str, Any]:
         """Process data for specific model using serializer validation."""
         mapping_class: BaseModelMapping = self.model_mapping_class[model_name]
-        messages = []
+        messages: list[dict[str]] = []
         for obj_data in model_data:
             serializer = mapping_class.serializer(data=obj_data)
             logger.info(f'Validating {model_name}: {obj_data}')
@@ -213,7 +213,9 @@ class FileUploadService:
         Turn execel data into list of dicts and call _process_model_data.
         """
         filename = os.path.splitext(file.name)[0].lower()
-        mapping_class = self.model_mapping_class.get(filename)
+        mapping_class: BaseModelMapping = self.model_mapping_class.get(
+            filename
+        )
         if not mapping_class:
             if filename in self.private_models_mapping_class:
                 return {
@@ -245,34 +247,20 @@ class FileUploadService:
         excel_fields = set(headers)
         expected_fields = set(mapping_class.expected_fields)
         if excel_fields != expected_fields:
-            missing = expected_fields - excel_fields
-            print(excel_fields, expected_fields)
+            if expected_fields.issuperset(excel_fields):
+                missing = expected_fields - excel_fields
+                m = f'Missing fields in model attrs: {str(missing)}'
+            else:
+                invalid_field = excel_fields - expected_fields
+                m = f'Invalid fields in model attrs: {(invalid_field)}'
             return {
                 'success': False,
-                'messages': [f'Missing model fields: {missing}'],
+                'messages': [m],
             }
         model_data = []
         for row in ws.iter_rows(min_row=2, values_only=True):
             obj_data = dict(zip(headers, row, strict=False))
-            if filename == 'courts':
-                location_keys = [
-                    'longitude',
-                    'latitude',
-                    'court_name',
-                    'country',
-                    'city',
-                ]
-                location_data = {
-                    k: obj_data.pop(k) for k in location_keys if k in obj_data
-                }
-                obj_data['location'] = location_data
-            if filename == 'games' and isinstance(obj_data.get('levels'), str):
-                obj_data['levels'] = [
-                    v.strip()
-                    for v in obj_data['levels'].split(',')
-                    if v.strip()
-                ]
-            model_data.append(obj_data)
+            model_data.append(mapping_class.agregate_model_fields(obj_data))
         return self._process_model_data(filename, model_data)
 
     def summarize_results(self, result: dict) -> dict:
