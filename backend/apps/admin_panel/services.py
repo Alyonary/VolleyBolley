@@ -6,7 +6,11 @@ from typing import Any, Dict, List
 import openpyxl
 from django.conf import settings
 
-from apps.admin_panel.constants import MAX_FILE_SIZE, SUPPORTED_FILE_TYPES
+from apps.admin_panel.constants import (
+    MAX_FILE_SIZE,
+    SUPPORTED_FILE_TYPES,
+    UploadServiceMessages,
+)
 from apps.admin_panel.model_mappings import (
     BaseModelMapping,
     CityModelMapping,
@@ -115,7 +119,9 @@ class FileUploadService:
             return self._process_excel_file(file)
         return {
             'success': False,
-            'messages': ['Unsupported file type {file_type}'],
+            'messages': [
+                UploadServiceMessages.FILE_TYPE_NOT_SUPPORTED + file_type
+            ],
         }
 
     def download_file_by_path(self, file_path: str) -> bytes:
@@ -137,10 +143,10 @@ class FileUploadService:
             data = json.loads(content)
             available_models = list(data.keys())
             if not available_models:
-                logger.error('No data found in JSON file')
+                logger.error(UploadServiceMessages.NO_DATA_IN_JSON)
                 return {
                     'success': False,
-                    'messages': ['No data found in JSON file'],
+                    'messages': [UploadServiceMessages.NO_DATA_IN_JSON],
                 }
             messages = []
             for model_name in self.model_processing_order:
@@ -221,14 +227,13 @@ class FileUploadService:
                 return {
                     'success': False,
                     'messages': [
-                        f'Model {filename} upload is restricted in '
-                        'production mode.',
+                        UploadServiceMessages.RESTRICTED_UPLOAD + filename
                     ],
                 }
             return {
                 'success': False,
                 'messages': [
-                    f'Unknown model mapping for file: {filename}',
+                    UploadServiceMessages.UNKNOWN_MODEL_MAPPING + filename
                 ],
             }
         serializer_class = mapping_class.serializer
@@ -236,7 +241,7 @@ class FileUploadService:
             return {
                 'success': False,
                 'messages': [
-                    f'No serializer for model: {filename}',
+                    UploadServiceMessages.NO_MODEL_SERIALIZER + filename,
                 ],
             }
         wb = openpyxl.load_workbook(file)
@@ -248,11 +253,14 @@ class FileUploadService:
         expected_fields = set(mapping_class.expected_fields)
         if excel_fields != expected_fields:
             if expected_fields.issuperset(excel_fields):
-                missing = expected_fields - excel_fields
-                m = f'Missing fields in model attrs: {str(missing)}'
+                missing = str(expected_fields - excel_fields)
+                m = UploadServiceMessages.EXCEL_MISSING_MODEL_FIELDS + missing
             else:
-                invalid_field = excel_fields - expected_fields
-                m = f'Invalid fields in model attrs: {(invalid_field)}'
+                invalid_field = str(excel_fields - expected_fields)
+                m = (
+                    UploadServiceMessages.EXCEL_INVALID_MODEL_FIELDS
+                    + invalid_field
+                )
             return {
                 'success': False,
                 'messages': [m],
@@ -277,5 +285,4 @@ class FileUploadService:
             f'Created: {summary["created"]} db objects',
             f'Errors(skipped): {summary["errors"]}',
         ]
-        result['messages'] = summary_messages
-        return result
+        return {'success': summary['created'] > 0, 'message': summary_messages}

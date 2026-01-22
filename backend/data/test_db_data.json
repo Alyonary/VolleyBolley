@@ -47,7 +47,10 @@
       },
       "price_description": "Premium",
       "description": "Main arena in Bangkok",
-      "working_hours": "08:00-22:00"
+      "working_hours": "08:00-22:00",
+      "tags": "outdoor,premium,arena,1 courts",
+      "contact_type": "PHONE",
+      "contact": "79553631234"
     },
     {
       "location": {
@@ -59,7 +62,10 @@
       },
       "price_description": "Standard",
       "description": "Stadium in Chiang Mai",
-      "working_hours": "09:00-21:00"
+      "working_hours": "09:00-21:00",
+      "tags": "outdoor,stadium,standard,1 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636194"
     },
     {
       "location": {
@@ -71,7 +77,10 @@
       },
       "price_description": "Standard",
       "description": "Sports hall in Phuket",
-      "working_hours": "09:00-21:00"
+      "working_hours": "09:00-21:00",
+      "tags": "indoor,sports hall,standard,2 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636451"
     },
     {
       "location": {
@@ -83,7 +92,10 @@
       },
       "price_description": "Economy",
       "description": "Beach court in Pattaya",
-      "working_hours": "07:00-19:00"
+      "working_hours": "07:00-19:00",
+      "tags": "outdoor,beach court,economy,3 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636876"
     },
     {
       "location": {
@@ -95,7 +107,10 @@
       },
       "price_description": "Standard",
       "description": "Indoor court in Krabi",
-      "working_hours": "09:00-21:00"
+      "working_hours": "09:00-21:00",
+      "tags": "indoor,standard,1 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636876"
     },
     {
       "location": {
@@ -107,7 +122,10 @@
       },
       "price_description": "Premium",
       "description": "Arena in Hua Hin",
-      "working_hours": "08:00-22:00"
+      "working_hours": "08:00-22:00",
+      "tags": "outdoor,arena,premium,2 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636090"
     },
     {
       "location": {
@@ -119,7 +137,10 @@
       },
       "price_description": "Economy",
       "description": "Court in Surat Thani",
-      "working_hours": "07:00-19:00"
+      "working_hours": "07:00-19:00",
+      "tags": "beach,outdoor,economy,3 courts",
+      "contact_type": "WEBSITE",
+      "contact": "www.suratthanicourt.th"
     },
     {
       "location": {
@@ -131,7 +152,10 @@
       },
       "price_description": "Standard",
       "description": "Stadium in Ayutthaya",
-      "working_hours": "09:00-21:00"
+      "working_hours": "09:00-21:00",
+      "tags": "outdoor,stadium,standard,1 courts",
+      "contact_type": "WEBSITE",
+      "contact": "www.ayutthayastadium.th"
     },
     {
       "location": {
@@ -143,7 +167,10 @@
       },
       "price_description": "Standard",
       "description": "Sports center in Nakhon Ratchasima",
-      "working_hours": "09:00-21:00"
+      "working_hours": "09:00-21:00",
+      "tags": "indoor,sports center,standard,2 courts",
+      "contact_type": "WEBSITE",
+      "contact": "www.koratsportscenter.th"
     },
     {
       "location": {
@@ -155,7 +182,10 @@
       },
       "price_description": "Economy",
       "description": "Arena in Udon Thani",
-      "working_hours": "07:00-19:00"
+      "working_hours": "07:00-19:00",
+      "tags": "outdoor,arena,economy,3 courts",
+      "contact_type": "PHONE",
+      "contact": "795555536253"
     },
     {
       "location": {
@@ -167,7 +197,10 @@
       },
       "price_description": "Premium",
       "description": "Central court in Nicosia",
-      "working_hours": "08:00-22:00"
+      "working_hours": "08:00-22:00",
+      "tags": "indoor,central court,premium,2 courts",
+      "contact_type": "PHONE",
+      "contact": "79554446253"
     },
     {
       "location": {
@@ -179,7 +212,10 @@
       },
       "price_description": "Economy",
       "description": "Beach arena in Limassol",
-      "working_hours": "07:00-19:00"
+      "working_hours": "07:00-19:00",
+      "tags": "outdoor,beach arena,economy,3 courts",
+      "contact_type": "PHONE",
+      "contact": "79553631113"
     },
     {
       "location": {
@@ -191,7 +227,10 @@
       },
       "price_description": "Standard",
       "description": "Sports hall in Larnaca",
-      "working_hours": "09:00-21:00"
+      "working_hours": "09:00-21:00",
+      "tags": "indoor,central court,premium,2 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636526"
     },
     {
       "location": {
@@ -203,7 +242,10 @@
       },
       "price_description": "Standard",
       "description": "Arena in Paphos",
-      "working_hours": "09:00-21:00"
+      "working_hours": "09:00-21:00",
+      "tags": "outdoor,arena,standard,1 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636123"
     },
     {
       "location": {
@@ -215,7 +257,10 @@
       },
       "price_description": "Standard",
       "description": "Stadium in Famagusta",
-      "working_hours": "09:00-21:00"
+      "working_hours": "09:00-21:00",
+      "tags": "outdoor,stadium,standard,1 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636333"
     },
     {
       "location": {
@@ -227,7 +272,10 @@
       },
       "price_description": "Standard",
       "description": "Court in Kyrenia",
-      "working_hours": "09:00-21:00"
+      "working_hours": "09:00-21:00",
+      "tags": "indoor,standard,1 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636222"
     },
     {
       "location": {
@@ -239,7 +287,10 @@
       },
       "price_description": "Standard",
       "description": "Sports center in Morphou",
-      "working_hours": "09:00-21:00"
+      "working_hours": "09:00-21:00",
+      "tags": "indoor,sports center,standard,2 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636111"
     },
     {
       "location": {
@@ -251,7 +302,10 @@
       },
       "price_description": "Economy",
       "description": "Arena in Paralimni",
-      "working_hours": "07:00-19:00"
+      "working_hours": "07:00-19:00",
+      "tags": "outdoor,arena,economy,3 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636984"
     },
     {
       "location": {
@@ -263,7 +317,10 @@
       },
       "price_description": "Economy",
       "description": "Indoor court in Deryneia",
-      "working_hours": "07:00-19:00"
+      "working_hours": "07:00-19:00",
+      "tags": "indoor,central court,premium,2 courts",
+      "contact_type": "PHONE",
+      "contact": "79545236253"
     },
     {
       "location": {
@@ -275,7 +332,10 @@
       },
       "price_description": "Economy",
       "description": "Beach court in Polis",
-      "working_hours": "07:00-19:00"
+      "working_hours": "07:00-19:00",
+      "tags": "indoor,central court,premium,2 courts",
+      "contact_type": "PHONE",
+      "contact": "79553636253"
     }
   ]
 }

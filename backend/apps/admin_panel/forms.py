@@ -24,10 +24,10 @@ class FileUploadForm(forms.Form):
             }
         ),
     )
-    stats_detail = forms.BooleanField(
-        label=_('Detailed statistics'),
+    show_succeed = forms.BooleanField(
+        label=_('Show failed entries'),
         required=False,
-        help_text=_('Enable detailed statistics for the uploaded data.'),
+        help_text=_('Show only failed entries in the detailed results.'),
         widget=forms.CheckboxInput(attrs={'class': 'checkbox-input'}),
     )
 

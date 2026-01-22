@@ -9,6 +9,7 @@ import openpyxl
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+from apps.admin_panel.constants import UploadServiceMessages
 from apps.admin_panel.services import FileUploadService
 from apps.core.models import CurrencyType, GameLevel
 from apps.courts.models import Court, CourtLocation
@@ -335,7 +336,7 @@ class TestFileUploadServiceJSON:
         result: dict = fileupload_service_debug.process_file(file)
         assert result['success'] is False
         assert any(
-            'unsupported file type' in m.lower()
+            UploadServiceMessages.FILE_TYPE_NOT_SUPPORTED in m
             for m in result.get('messages', [])
         )
 
@@ -384,7 +385,10 @@ class TestFileUploadServiceExcel:
             excel_content_type,
         )
         assert result['success'] is False
-        assert 'Missing model fields' in result['messages'][0]
+        assert (
+            UploadServiceMessages.EXCEL_INVALID_MODEL_FIELDS
+            in result['messages'][0]
+        )
 
     def test_process_excel_file_create_levels(
         self,
@@ -537,6 +541,6 @@ class TestFileUploadServiceRealFiles:
             )
             assert result['success'] is False
             assert any(
-                'restricted in production mode' in m.lower()
+                UploadServiceMessages.RESTRICTED_UPLOAD in m
                 for m in result.get('messages', [])
             )

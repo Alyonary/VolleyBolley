@@ -11,6 +11,7 @@ from apps.admin_panel.constants import (
     MONTHS_STAT_PAGINATION,
     SUPPORTED_FILE_TYPES,
     SendType,
+    UploadServiceMessages,
 )
 from apps.admin_panel.forms import FileUploadForm, NotificationSendForm
 from apps.admin_panel.services import FileUploadService
@@ -80,8 +81,10 @@ def upload_file(request):
     if request.method == 'POST':
         form = FileUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            stats_detail = form.cleaned_data.get('stats_detail', False)
-            return process_file_upload(request, form, stats_detail)
+            show_only_failure = form.cleaned_data.get(
+                'show_only_failure', False
+            )
+            return process_file_upload(request, form, show_only_failure)
     else:
         form = FileUploadForm()
 
@@ -110,42 +113,46 @@ def upload_file(request):
     return render(request, 'admin_panel/upload.html', context)
 
 
-def process_file_upload(request, form: FileUploadForm, stats_detail: bool):
+def process_file_upload(
+    request, form: FileUploadForm, show_only_failure: bool
+):
     """Process uploaded file."""
 
     file = form.cleaned_data['file']
     try:
         upload_service = FileUploadService()
         result = upload_service.process_file(file=file)
-        if not stats_detail:
-            result = upload_service.summarize_results(result)
-        if not result.get('success', False):
+        summarize_results = upload_service.summarize_results(result)
+        summary_message = summarize_results.get('message', '')
+        if not summarize_results.get('success', False):
             messages.error(
                 request,
-                _('❌ File processing failed: %(error)s')
-                % {'error': result.get('error', 'Unknown error')},
+                _(UploadServiceMessages.ERROR_DOWNLOAD + ' %(error)s')
+                % {'error': result.get('error', 'Unknown error')}
+                + f' {summary_message}',
             )
-            if result.get('messages'):
-                messages.info(
-                    request,
-                    _('Details: %(details)s')
-                    % {'details': '; '.join(result['messages'])},
-                )
-            return redirect('admin_panel:upload_file')
+        else:
+            messages.success(
+                request,
+                _(UploadServiceMessages.SUCCESS_DOWNLOAD) + summary_message,
+            )
         if 'messages' in result:
             request.session['upload_messages'] = result['messages']
         for msg in result.get('messages', []):
             msg_lower = msg.lower()
             if 'error' in msg_lower:
                 messages.error(request, msg)
-            elif 'created' in msg_lower:
-                messages.success(request, msg)
-            else:
-                messages.info(request, msg)
-
+                continue
+            if 'created' in msg_lower:
+                if show_only_failure:
+                    messages.success(request, msg)
+                continue
+            messages.info(request, msg)
     except Exception as e:
         messages.error(
-            request, _('❌ Unexpected error: %(error)s') % {'error': str(e)}
+            request,
+            _(UploadServiceMessages.UNEXPECTED_ERROR + '  %(error)s')
+            % {'error': str(e)},
         )
 
     return redirect('admin_panel:upload_file')

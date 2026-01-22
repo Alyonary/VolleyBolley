@@ -90,6 +90,9 @@ def valid_court_json_data() -> List[Dict[str, Any]]:
             'description': 'Main arena in Bangkok',
             'working_hours': '08:00-22:00',
             'price_description': 'Premium',
+            'tags': 'outdoor,premium,arena,1 courts',
+            'contact_type': 'PHONE',
+            'contact': '79553631234',
         }
     ]
 
@@ -106,6 +109,9 @@ def valid_court_xlsx_data() -> List[Dict[str, Any]]:
             'description': 'Main arena in Bangkok',
             'working_hours': '08:00-22:00',
             'price_description': 'Premium',
+            'tags': 'outdoor,premium,arena,1 courts',
+            'contact_type': 'PHONE',
+            'contact': '79553631234',
         }
     ]
 
@@ -135,6 +141,9 @@ def invalid_court_data_wrong_format() -> List[Dict[str, Any]]:
             'description': 456,
             'working_hours': 789,
             'price_description': 0.5,
+            'tags': 123,
+            'contact_type': True,
+            'contact': False,
         }
     ]
 
