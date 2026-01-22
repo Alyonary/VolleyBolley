@@ -13,6 +13,7 @@ class GenderChoices(m.TextChoices):
 
 
 DEFAULT_FAQ: str = 'default_faq'
+PREVIOUS_DAY_OFFSET: int = 1
 
 
 class ContactTypes(m.TextChoices):

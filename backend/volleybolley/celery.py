@@ -27,4 +27,8 @@ CELERYBEAT_SCHEDULE = {
         'task': 'apps.notifications.tasks.send_rate_notification_task',
         'schedule': crontab(minute='*/10'),
     },
+    'collect-stats-for-previous-day-every-day': {
+        'task': 'apps.core.task.collect_stats_for_previous_day_task',
+        'schedule': crontab(hour=5, minute=0),
+    },
 }
