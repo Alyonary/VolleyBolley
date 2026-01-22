@@ -25,10 +25,3 @@ class UploadServiceMessages:
     ERROR_DOWNLOAD = '❌ File processing failed: '
     UNEXPECTED_ERROR = '❌ Unexpected error: '
     NO_DATA_IN_JSON = 'No data found in JSON file'
-
-    FILE_SIZE_EXCEEDED = 'File size exceeded the maximum limit.'
-    INVALID_JSON_FORMAT = 'Invalid JSON format.'
-    INVALID_EXCEL_FORMAT = 'Invalid Excel format.'
-    INVALID_MODEL_ATTRS = 'Invalid fields in model attrs.'
-    DATA_VALIDATION_FAILED = 'Data validation failed.'
-    DATA_PROCESSING_SUCCESS = 'Data processed successfully.'
