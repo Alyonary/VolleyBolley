@@ -471,5 +471,7 @@ if DEBUG_TOOLBAR_ENABLED:
     MIDDLEWARE += ['debug_toolbar.middleware.DebugToolbarMiddleware']
     INTERNAL_IPS = ['127.0.0.1']
     DEBUG_TOOLBAR_CONFIG = {
-    'SHOW_TOOLBAR_CALLBACK': lambda request: True,
-}
+        'SHOW_TOOLBAR_CALLBACK': lambda request: True,
+    }
+
+SWAGGER_USE_COMPAT_RENDERERS = False

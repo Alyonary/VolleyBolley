@@ -5,7 +5,7 @@ class EventIntEnums(IntEnum):
     """Event app constants."""
 
     TITLE = 150
-    STR_MAX_LEN = 50
+    STR_MAX_LEN = 100
     MESSAGE = 300
     PAYMENT_VALUE = 60
     ADMIN_LIST_PER_PAGE = 25
@@ -14,3 +14,4 @@ class EventIntEnums(IntEnum):
     MAX_PLAYERS = 24
     MAX_TEAMS = 24
     MIN_TEAMS = 3
+    TOURNEY_TEAM_CAPACITY = 2

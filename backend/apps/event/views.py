@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -14,8 +14,10 @@ from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
 from apps.core.serializers import EmptyBodySerializer
-from apps.event.models import Game, GameInvitation
-from apps.event.permissions import IsHostOrReadOnly, IsPlayerInEvent
+from apps.event.enums import EventIntEnums
+from apps.event.models import Game, GameInvitation, Tourney, TourneyTeam
+from apps.event.permissions import (
+    IsHostOrReadOnly, IsPlayerOrReadOnly, IsPlayerInEvent)
 from apps.event.serializers import (
     # EventListShortSerializer,
     GameDetailSerializer,
@@ -23,44 +25,15 @@ from apps.event.serializers import (
     GameJoinDetailSerializer,
     GameListShortSerializer,
     GameSerializer,
-    GameShortSerializer,
+    GameTourneySerializer,
+    TourneyDetailSerializer,
+    TourneySerializer,
 )
 from apps.event.utils import process_rate_players_request
 from apps.players.serializers import PlayerListShortSerializer
 
 
-class GameViewSet(
-    CreateModelMixin, DestroyModelMixin, RetrieveModelMixin, GenericViewSet
-):
-    """Provides CRUD operations for the Game model."""
-
-    permission_classes = (IsHostOrReadOnly,)
-    http_method_names = ['get', 'post', 'delete']
-
-    def get_queryset(self):
-        player = getattr(self.request.user, 'player', None)
-        if (
-            player is None
-            or player.country is None
-            or self.action in ('joining_game', 'delete_invitation')
-        ):
-            qs = Game.objects.all()
-        elif self.action == 'rate_players':
-            qs = Game.objects.archive_games(player)
-        else:
-            qs = Game.objects.player_located_games(player)
-        return qs.select_related('host', 'court').prefetch_related('players')
-
-    def get_serializer_class(self, *args, **kwargs):
-        if self.action in ('retrieve', 'joining_game'):
-            return GameDetailSerializer
-
-        if self.action == 'invite_players':
-            return GameInviteSerializer
-
-        if self.action in ('my_games', 'archive', 'invites', 'upcoming'):
-            return GameShortSerializer
-        return GameSerializer
+class InvitePlayersMixin:
 
     @swagger_auto_schema(
         tags=['games'],
@@ -91,249 +64,34 @@ class GameViewSet(
         security=[{'Bearer': []}, {'JWT': []}],
     )
     @action(
-        methods=['post'],
-        detail=True,
-        url_path='invite-players',
-    )
+            methods=['post'],
+            detail=True,
+            url_path='invite-players',
+            permission_classes=[IsPlayerOrReadOnly,]
+        )
     def invite_players(self, request, *args, **kwargs):
-        """Creates invitations to the game for players on the list."""
-        game_id = self.get_object().id
+        """
+        Creates invitations to the game/tournament for players on the list.
+        """
+        obj = self.get_object()
         host_id = request.user.player.id
-        for player_id in request.data['players']:
-            serializer = self.get_serializer(
-                data={'host': host_id, 'invited': player_id, 'game': game_id}
-            )
+        content_type = ContentType.objects.get_for_model(obj.__class__)
+        invited_list = request.data.get('players')
+        if invited_list:
+            invites_data = [{
+                        'host': host_id,
+                        'invited': player_id,
+                        "content_type": content_type.id,
+                        "object_id": obj.id
+                    } for player_id in invited_list]
+            serializer = self.get_serializer(data=invites_data, many=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-        return Response(status=status.HTTP_201_CREATED)
-
-    @swagger_auto_schema(
-        tags=['games'],
-        operation_summary=(
-            'Get number of active invitations and time of next game'
-        ),
-        operation_description="""
-        Get number of active invitations and time of next game
-
-        **Returns:** upcoming_game_time, invites.
-        """,
-        responses={
-            200: openapi.Schema(
-                title='Success',
-                type=openapi.TYPE_OBJECT,
-                properties={
-                    'upcoming_game_time': openapi.Schema(
-                        type=openapi.TYPE_STRING,
-                        format='date-time',
-                        description='Time in ISO format',
-                        example='2025-08-21T15:30:00Z',
-                    ),
-                    'invites': openapi.Schema(
-                        type=openapi.TYPE_INTEGER,
-                        description='Number of invitations',
-                        example=3,
-                    ),
-                },
-            ),
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
-    @action(methods=['get'], detail=False, url_path='preview')
-    def preview(self, request, *args, **kwargs):
-        """Returns the time of the next game and the number of invitations."""
-
-        upcoming_game = Game.objects.nearest_game(request.user.player)
-        if upcoming_game is not None:
-            upcoming_game_time = upcoming_game.start_time
-        else:
-            upcoming_game_time = None
-        invites = (
-            GameInvitation.objects.filter(invited=request.user.player)
-            .values('game')
-            .distinct()
-            .count()
-        )
+            return Response(status=status.HTTP_201_CREATED)
         return Response(
-            data={
-                'upcoming_game_time': upcoming_game_time,
-                'invites': invites,
-            },
-            status=status.HTTP_200_OK,
+            data={'players': 'Must be a list of players id'},
+            status=status.HTTP_400_BAD_REQUEST
         )
-
-    @swagger_auto_schema(
-        tags=['games'],
-        operation_summary=(
-            'Get lists of upcoming games and tournaments'
-            ' created by current player'
-        ),
-        operation_description="""
-        Get two lists of the upcoming games and the upcoming tournaments
-        created by the current player.
-        The player is the host of the events.
-
-        **Returns:** game objects, tournament objects
-        """,
-        responses={
-            200: openapi.Response(
-                'Success', GameListShortSerializer
-            ),  # TODO: Change for EventListShortSerializer # noqa
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
-    @action(methods=['get'], detail=False, url_path='my-games')
-    def my_games(self, request, *args, **kwargs):
-        """Retrieves the list of games created by the user."""
-
-        my_games = Game.objects.my_upcoming_games(request.user.player)
-        serializer = self.get_serializer(my_games, many=True)
-        wrapped_data = {'games': serializer.data}
-        return Response(data=wrapped_data, status=status.HTTP_200_OK)
-
-    @swagger_auto_schema(
-        tags=['games'],
-        operation_summary=(
-            'Get lists of players archived games and tournaments'
-        ),
-        operation_description="""
-        Get two lists of the archived games and tournaments
-        related to the current player.
-
-        **Returns:** game objects, tournament objects
-        """,
-        responses={
-            200: openapi.Response(
-                'Success', GameListShortSerializer
-            ),  # TODO: Change for EventListShortSerializer # noqa
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
-    @action(methods=['get'], detail=False, url_path='archive')
-    def archive_games(self, request, *args, **kwargs):
-        """Retrieves the list of archived games related to user."""
-
-        archived_games = Game.objects.archive_games(request.user.player)
-        serializer = self.get_serializer(archived_games, many=True)
-        wrapped_data = {'games': serializer.data}
-        return Response(data=wrapped_data, status=status.HTTP_200_OK)
-
-    @swagger_auto_schema(
-        tags=['games'],
-        operation_summary=(
-            'Get lists of games and tournaments'
-            ' to which player has been invited'
-        ),
-        operation_description="""
-        Get two lists of the games and the tournaments
-        to which the current player has been invited.
-        The player hasn't yet managed the invitations.
-
-        **Returns:** game objects, tournament objects
-        """,
-        responses={
-            200: openapi.Response(
-                'Success', GameListShortSerializer
-            ),  # TODO: Change for EventListShortSerializer # noqa
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
-    @action(methods=['get'], detail=False, url_path='invites')
-    def invited_games(self, request, *args, **kwargs):
-        """Retrieving upcoming games to which the player has been invited."""
-
-        invited_games = Game.objects.invited_games(request.user.player)
-        serializer = self.get_serializer(invited_games, many=True)
-        wrapped_data = {'games': serializer.data}
-        return Response(data=wrapped_data, status=status.HTTP_200_OK)
-
-    @swagger_auto_schema(
-        tags=['games'],
-        operation_summary=(
-            'Get lists of upcoming games and tournaments'
-            ' in which player will participate'
-        ),
-        operation_description="""
-        Get two lists of the upcoming games and the upcoming tournaments
-        in which the current player will participate.
-        The player has accepted the invitations or is host of the events.
-
-        **Returns:** game objects, tournament objects
-        """,
-        responses={
-            200: openapi.Response(
-                'Success', GameListShortSerializer
-            ),  # TODO: Change for EventListShortSerializer # noqa
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
-    @action(methods=['get'], detail=False, url_path='upcoming')
-    def upcoming_games(self, request, *args, **kwargs):
-        """Retrieving upcoming games that the player participates in."""
-
-        upcoming_games = Game.objects.upcoming_games(request.user.player)
-        serializer = self.get_serializer(upcoming_games, many=True)
-        wrapped_data = {'games': serializer.data}
-        return Response(data=wrapped_data, status=status.HTTP_200_OK)
-
-    @swagger_auto_schema(
-        tags=['games'],
-        operation_summary='Accept invitation to game by player',
-        operation_description="""
-        The current player accepts an invitation to a game.
-        The game id is given as a path-parameter of the request.
-
-        **Returns:** game object.
-        """,
-        request_body=EmptyBodySerializer,
-        manual_parameters=[
-            openapi.Parameter(
-                'id',
-                openapi.IN_PATH,
-                description='Game ID',
-                type=openapi.TYPE_INTEGER,
-                required=True,
-            )
-        ],
-        responses={
-            200: openapi.Response('Success', GameJoinDetailSerializer),
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
-    @action(
-        methods=['post'],
-        detail=True,
-        url_path='join-game',
-        permission_classes=[IsAuthenticated],
-    )
-    def joining_game(self, request, *args, **kwargs):
-        """Adding a user to the game and removing the invitation."""
-
-        game = self.get_object()
-        player = request.user.player
-        if game.max_players > game.players.count():
-            is_joined = {'is_joined': True}
-            game.players.add(player)
-            GameInvitation.objects.filter(
-                Q(game=game) & Q(invited=player)
-            ).delete()
-        else:
-            is_joined = {'is_joined': False}
-        serializer = self.get_serializer(game, context={'request': request})
-        data = serializer.data.copy()
-        data.update(is_joined)
-        return Response(data=data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         tags=['games'],
@@ -356,14 +114,12 @@ class GameViewSet(
         methods=['delete'],
         detail=True,
         url_path='invites',
-        permission_classes=[IsAuthenticated],
+        permission_classes=[IsAuthenticated,]
     )
     def delete_invitation(self, request, *args, **kwargs):
-        game = self.get_object()
+        event = self.get_object()
         player = request.user.player
-        delete_count, dt = GameInvitation.objects.filter(
-            Q(game=game) & Q(invited=player)
-        ).delete()
+        delete_count, dt = event.event_invites.filter(invited=player).delete()
         if not delete_count:
             return Response(
                 data={'error': _('The invitation does not exist!')},
@@ -371,6 +127,8 @@ class GameViewSet(
             )
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+
+class RatePlayersMixin:
     @swagger_auto_schema(
         tags=['games'],
         method='get',
@@ -449,61 +207,379 @@ class GameViewSet(
         """
         return process_rate_players_request(self, request, *args, **kwargs)
 
+
+class GameViewSet(GenericViewSet,
+                  CreateModelMixin,
+                  RetrieveModelMixin,
+                  DestroyModelMixin,
+                  InvitePlayersMixin,
+                  RatePlayersMixin):
+    """Provides CRUD operations for the Game model."""
+
+    permission_classes = (IsHostOrReadOnly,)
+    http_method_names = ['get', 'post', 'delete']
+
+    def get_queryset(self):
+        player = getattr(self.request.user, 'player', None)
+        if (player is None or
+                player.country is None or
+                self.action in (
+                    'joining_game',
+                    'delete_invitation',
+                    'rate_players'
+                    )):
+            return (Game.objects
+                    .all()
+                    .select_related('host', 'court')
+                    .prefetch_related('players')
+                    )
+        return (Game.objects
+                .player_located_games(player)
+                .select_related('host', 'court')
+                .prefetch_related('players')
+                )
+
+    def get_serializer_class(self, *args, **kwargs):
+        if self.action in (
+                'retrieve',
+                'joining_game'):
+            return GameDetailSerializer
+
+        if self.action == 'invite_players':
+            return GameInviteSerializer
+
+        elif self.action in (
+                'my_games',
+                'archive_games',
+                'invited_games',
+                'upcoming_games'):
+            return GameTourneySerializer
+        else:
+            return GameSerializer
+
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary='Create game',
+        operation_summary=(
+            'Get number of active invitations and time of next game'
+        ),
         operation_description="""
-        Create a new game. The current player becomes the host of the game.
+        Get number of active invitations and time of next game
+
+        **Returns:** upcoming_game_time, invites.
+        """,
+        responses={
+            200: openapi.Schema(
+                title='Success',
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'upcoming_game_time': openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                        format='date-time',
+                        description='Time in ISO format',
+                        example='2025-08-21T15:30:00Z',
+                    ),
+                    'invites': openapi.Schema(
+                        type=openapi.TYPE_INTEGER,
+                        description='Number of invitations',
+                        example=3,
+                    ),
+                },
+            ),
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='preview'
+    )
+    def preview(self, request, *args, **kwargs):
+        """Returns the time of the next game and the number of invitations."""
+
+        upcoming_game = Game.objects.nearest_game(request.user.player)
+        upcoming_tourney = Tourney.objects.nearest_game(request.user.player)
+        nearest_event_time_list = sorted([
+            obj.start_time for obj in (
+                upcoming_game, upcoming_tourney) if obj])
+        if len(nearest_event_time_list) == 0:
+            upcoming_game_time = None
+        else:
+            upcoming_game_time = nearest_event_time_list[0]
+
+        invites = GameInvitation.objects.count_events(request.user.player)
+        return Response(
+            data={'upcoming_game_time': upcoming_game_time,
+                  'invites': invites}, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get lists of upcoming games and tournaments"
+                          " created by current player",
+        operation_description="""
+        Get two lists of the upcoming games and the upcoming tournaments
+        created by the current player.
+        The player is the host of the events.
+
+        **Returns:** game objects, tournament objects
+        """,
+        responses={
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='my-games'
+    )
+    def my_games(self, request, *args, **kwargs):
+        """Retrieves the list of games created by the user."""
+
+        my_games = Game.objects.my_upcoming_games(request.user.player)
+        my_tourneys = Tourney.objects.my_upcoming_games(request.user.player)
+        combined_data = {
+            'games': my_games,
+            'tournaments': my_tourneys
+        }
+        serializer = self.get_serializer(combined_data)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get lists of players archived games"
+                          " and tournaments",
+        operation_description="""
+        Get two lists of the archived games and tournaments
+        related to the current player.
+
+        **Returns:** game objects, tournament objects
+        """,
+        responses={
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='archive'
+    )
+    def archive_games(self, request, *args, **kwargs):
+        """Retrieves the list of archived games related to user."""
+
+        archived_games = Game.objects.archive_games(request.user.player)
+        archived_tourneys = Tourney.objects.archive_games(request.user.player)
+        combined_data = {
+            'games': archived_games,
+            'tournaments': archived_tourneys
+        }
+        serializer = self.get_serializer(combined_data)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get lists of games and tournaments"
+                          " to which player has been invited",
+        operation_description="""
+        Get two lists of the games and the tournaments
+        to which the current player has been invited.
+        The player hasn't yet managed the invitations.
+
+        **Returns:** game objects, tournament objects
+        """,
+        responses={
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='invites'
+    )
+    def invited_games(self, request, *args, **kwargs):
+        """Retrieving upcoming games to which the player has been invited."""
+
+        invited_games = Game.objects.invited_games(request.user.player)
+        invited_tourneys = Tourney.objects.invited_games(request.user.player)
+        combined_data = {
+            'games': invited_games,
+            'tournaments': invited_tourneys
+        }
+        serializer = self.get_serializer(combined_data)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Get lists of upcoming games and tournaments"
+                          " in which player will participate",
+        operation_description="""
+        Get two lists of the upcoming games and the upcoming tournaments
+        in which the current player will participate.
+        The player has accepted the invitations or is host of the events.
+
+        **Returns:** game objects, tournament objects
+        """,
+        responses={
+            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
+    @action(
+        methods=['get'],
+        detail=False,
+        url_path='upcoming'
+    )
+    def upcoming_games(self, request, *args, **kwargs):
+        """Retrieving upcoming games that the player participates in."""
+
+        upcoming_games = Game.objects.upcoming_games(request.user.player)
+        upcoming_tourneys = Tourney.objects.upcoming_games(
+            request.user.player
+        )
+        combined_data = {
+            'games': upcoming_games,
+            'tournaments': upcoming_tourneys
+        }
+        serializer = self.get_serializer(combined_data)
+        return Response(data=serializer.data, status=status.HTTP_200_OK)
+
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary="Accept invitation to game by player",
+        operation_description="""
+        The current player accepts an invitation to a game.
+        The game id is given as a path-parameter of the request.
 
         **Returns:** game object.
         """,
-        request_body=GameSerializer,  # TODO: Добавить новый сериалайзер для создания игры # noqa
+        request_body=EmptyBodySerializer,
+        manual_parameters=[
+            openapi.Parameter(
+                'id',
+                openapi.IN_PATH,
+                description="Game ID",
+                type=openapi.TYPE_INTEGER,
+                required=True
+            )
+        ],
         responses={
-            201: openapi.Response(
-                'Success', GameSerializer
-            ),  # TODO: Добавить новый сериалайзер для создания игры # noqa
-            400: 'Bad request',
+            200: openapi.Response('Success', GameJoinDetailSerializer),
             401: 'Unauthorized',
             403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
-    def create(self, request, *args, **kwargs):
-        return super().create(request, *args, **kwargs)
-
-    @swagger_auto_schema(
-        tags=['games'],
-        operation_summary='Get game info',
-        operation_description="""
-        Get information about a game.
-
-        **Returns:** game object.
-        """,
-        responses={
-            200: openapi.Response('Success', GameDetailSerializer),
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
+    @action(
+        methods=['post'],
+        detail=True,
+        url_path='join-game',
+        permission_classes=[IsAuthenticated],
     )
-    def retrieve(self, request, *args, **kwargs):
-        return super().retrieve(request, *args, **kwargs)
+    def joining_game(self, request, *args, **kwargs):
+        """Adding a user to the game and removing the invitation."""
 
-    @swagger_auto_schema(
-        tags=['games'],
-        operation_summary='Delete game',
-        operation_description="""
-        Delete a game by the current player.
-        The game could be deleted only by its host.
+        game = self.get_object()
+        player = request.user.player
+        if (game.event_invites.filter(invited=player).exists()
+                and game.max_players > game.players.count()):
+            is_joined = {'is_joined': True}
+            game.players.add(player)
+            game.event_invites.filter(invited=player).delete()
+        else:
+            is_joined = {'is_joined': False}
+        serializer = self.get_serializer(game, context={'request': request})
+        data = serializer.data.copy()
+        data.update(is_joined)
+        return Response(data=data, status=status.HTTP_200_OK)
 
-        **Returns:** empty body response.
-        """,
-        responses={
-            204: 'No content',
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
+
+class TourneyViewSet(
+    GenericViewSet,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+    InvitePlayersMixin,
+    RatePlayersMixin
+):
+    """CRUD for tournaments."""
+    permission_classes = (IsHostOrReadOnly,)
+    http_method_names = ['get', 'post', 'delete']
+    queryset = Tourney.objects.all()
+
+    def get_queryset(self):
+        player = getattr(self.request.user, 'player', None)
+        if player is None or player.country is None:
+            return Tourney.objects.all().select_related(
+                'host', 'court').prefetch_related('teams', 'teams__players')
+        return Tourney.objects.player_located_games(
+            player).select_related(
+                'host', 'court').prefetch_related('teams', 'teams__players')
+
+    def get_serializer_class(self):
+        if self.action in ('retrieve', 'joining_tournament'):
+            return TourneyDetailSerializer
+        elif self.action == 'invite_players':
+            return GameInviteSerializer
+        return TourneySerializer
+
+    @action(
+        methods=['post'],
+        detail=True,
+        url_path='join-tournament',
+        permission_classes=[IsAuthenticated]
     )
-    def destroy(self, request, *args, **kwargs):
-        return super().destroy(request, *args, **kwargs)
+    def joining_tournament(self, request, *args, **kwargs):
+        """Adding a user to the tourney and removing the invitation."""
+
+        tourney = self.get_object()
+        player = request.user.player
+        team_id = request.data.get('team_id')
+        team = TourneyTeam.objects.filter(pk=team_id, tourney=tourney).first()
+        capacity = EventIntEnums.TOURNEY_TEAM_CAPACITY.value
+        if not team:
+            return Response(
+                data={'team_id': 'This team is not exists.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif TourneyTeam.objects.filter(
+                tourney=tourney, players=player).exists():
+            return Response(
+                data={
+                    'team_id': (
+                        'The player is already participate in tournament.')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif not tourney.event_invites.filter(invited=player).exists():
+            return Response(
+                data={
+                    'team_id': (
+                        'The player have not invitation in this tournament.')},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        elif (
+            (tourney.is_individual and
+             tourney.max_players > team.players.count()) or
+            (not tourney.is_individual and
+             capacity > team.players.count())
+        ):
+            is_joined = {'is_joined': True}
+            team.players.add(player)
+            tourney.event_invites.filter(invited=player).delete()
+        else:
+            is_joined = {'is_joined': False}
+        serializer = self.get_serializer(
+            tourney, context={'request': request})
+        data = serializer.data.copy()
+        data.update(is_joined)
+        return Response(data=data, status=status.HTTP_200_OK)

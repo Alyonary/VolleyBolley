@@ -248,6 +248,12 @@ def player_thailand_female_pro(country_thailand):
 
 
 @pytest.fixture
+def api_client_thailand_pro(player_thailand_female_pro, client):
+    client.force_authenticate(player_thailand_female_pro.user)
+    return client
+
+
+@pytest.fixture
 def three_games_thailand(game_data):
     """Create three games in Thailand with same configuration."""
     games = []
@@ -257,8 +263,8 @@ def three_games_thailand(game_data):
         players = working_data.pop('players')
         levels = working_data.pop('player_levels')
 
-        start_time = working_data['start_time'] + timedelta(hours=i * 4)
-        end_time = working_data['end_time'] + timedelta(hours=i * 4)
+        start_time = working_data['start_time'] + timedelta(hours=i*4)
+        end_time = working_data['end_time'] + timedelta(hours=i*4)
         working_data['start_time'] = start_time
         working_data['end_time'] = end_time
 

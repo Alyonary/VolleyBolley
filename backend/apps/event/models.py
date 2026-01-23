@@ -1,5 +1,7 @@
 from datetime import date
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.db import models as m
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
@@ -36,7 +38,7 @@ class GameQuerySet(m.query.QuerySet, StatsQuerySetMixin):
         return (
             self.player_located_games(player)
             .future_games()
-            .filter(game_invites__invited=player)
+            .filter(event_invites__invited=player)
         )
 
     def upcoming_games(self, player):
@@ -67,6 +69,32 @@ class GameQuerySet(m.query.QuerySet, StatsQuerySetMixin):
     def get_stats_for_day(self, day: date) -> int:
         """Returns number of games created on a specific day."""
         return self.filter(created_at__date=day).count()
+
+
+class TourneyQuerySet(GameQuerySet, StatsQuerySetMixin):
+
+    def player_related_games(self, player):
+        return self.player_located_games(player).filter(
+            (m.Q(host=player) | m.Q(teams__players=player))).distinct()
+
+
+class EventInvitesManager(m.Manager):
+    def count_events(self, player):
+        """
+        The method retrieves the number of events which the player was invited.
+
+        Parameters:
+        - player: Player object.
+
+        Returns:
+        The number of unique objects (games and tournaments)
+        for which the player has received invitations.
+        """
+        distinct_invites = self.filter(
+            invited=player).values(
+                'content_type', 'object_id').distinct().count()
+
+        return distinct_invites
 
 
 class GameManager(m.Manager):
@@ -117,11 +145,7 @@ class GameManager(m.Manager):
         return self.get_queryset().get_stats_for_day(day)
 
 
-class TourneyQuerySet(m.query.QuerySet, StatsQuerySetMixin):
-    pass
-
-
-class TourneyManager(m.Manager):
+class TourneyManager(GameManager):
     def get_queryset(self):
         return TourneyQuerySet(self.model, using=self._db)
 
@@ -131,7 +155,7 @@ class TourneyManager(m.Manager):
 
 
 class GameInvitation(m.Model):
-    """Invitation to game model."""
+    """Invitation to game or tourney model."""
 
     host = m.ForeignKey(
         'players.Player', on_delete=m.CASCADE, related_name='invite_host'
@@ -140,17 +164,26 @@ class GameInvitation(m.Model):
     invited = m.ForeignKey(
         'players.Player', on_delete=m.CASCADE, related_name='invited'
     )
-
-    game = m.ForeignKey(
-        'event.Game', on_delete=m.CASCADE, related_name='game_invites'
+    content_type = m.ForeignKey(
+        ContentType,
+        on_delete=m.CASCADE
     )
+    object_id = m.PositiveBigIntegerField()
+
+    content_object = GenericForeignKey(
+        "content_type",
+        "object_id"
+    )
+    objects = EventInvitesManager()
 
     class Meta:
         verbose_name = _('Game invitation')
         verbose_name_plural = _('Game invitations')
 
     def __str__(self):
-        return str(_(f'Invitation in {self.game} for {self.invited}'))
+        discription = str(_(
+            f'Invitation in {self.content_object.id} for {self.invited}'))
+        return discription
 
 
 class Game(EventMixin, CreatedUpdatedMixin):
@@ -174,7 +207,7 @@ class Game(EventMixin, CreatedUpdatedMixin):
         name = (
             f'{self.id}, '
             f'{self.court.location.court_name}, '
-            f'{self.message[:15]}, '
+            f'{self.message}, '
             f'time: {self.start_time}'
             f'host: {self.host}, '
         )
@@ -197,21 +230,65 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         blank=True,
         related_name='tournaments_host',
     )
-    players = m.ManyToManyField(
-        'players.Player',
-        verbose_name=_('Players'),
-        related_name='tournaments_players',
-    )
     is_individual = m.BooleanField(
-        verbose_name=_('Individual format'),
-        default=False,
+        verbose_name=_('Individual format')
     )
     maximum_teams = m.PositiveIntegerField(
         verbose_name=_('Maximum of teams'),
+        blank=True,
+        null=False
     )
     objects = TourneyManager()
+
+    @property
+    def players(self):
+        """
+        Returns a qs of players in the tourney via related TourneyTeam.
+        """
+        from apps.players.models import Player
+
+        return Player.objects.filter(
+            tourney_players__tourney=self
+        ).distinct()
 
     class Meta:
         verbose_name = _('Tourney')
         verbose_name_plural = _('Tourneys')
         default_related_name = 'tournaments'
+
+    def __str__(self):
+        name = (
+            f'{self.id}, '
+            f'{self.court.location.court_name}, '
+            f'{self.message}, '
+            f'time: {self.start_time}'
+            f'host: {self.host}, '
+        )
+        return name[:EventIntEnums.STR_MAX_LEN.value]
+
+
+class TourneyTeam(m.Model):
+
+    tourney = m.ForeignKey(
+        'event.Tourney',
+        verbose_name=_('Tourney is from'),
+        on_delete=m.CASCADE
+        )
+    players = m.ManyToManyField(
+        'players.Player',
+        verbose_name=_('Players'),
+        related_name='tourney_players',
+        blank=True
+    )
+
+    class Meta:
+        verbose_name = _('Tourney team')
+        verbose_name_plural = _('Tourney teams')
+        default_related_name = 'teams'
+
+    def __str__(self):
+        name = (
+            f'Team #{self.id}, of '
+            f'{self.tourney} tourney'
+        )
+        return name[:EventIntEnums.STR_MAX_LEN.value]

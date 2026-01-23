@@ -82,8 +82,8 @@ class TestGameAPI:
         assert response.status_code == status.HTTP_201_CREATED
         assert GameInvitation.objects.count() == len(player_ids)
         for user in player_ids:
-            invite = GameInvitation.objects.filter(
-                host=game_thailand.host, invited=user, game=game_thailand
+            invite = game_thailand.event_invites.filter(
+                invited=user
             ).first()
             assert invite is not None
 
@@ -91,7 +91,9 @@ class TestGameAPI:
         self, game_thailand, player_cyprus, api_client_cyprus
     ):
         GameInvitation.objects.create(
-            host=game_thailand.host, invited=player_cyprus, game=game_thailand
+            host=game_thailand.host,
+            invited=player_cyprus,
+            content_object=game_thailand
         )
         url = reverse('api:games-joining-game', args=(game_thailand.id,))
         assert game_thailand.players.count() == 0
@@ -109,7 +111,13 @@ class TestGameAPI:
         player_cyprus,
     ):
         GameInvitation.objects.create(
-            host=game_thailand.host, invited=player_cyprus, game=game_thailand
+            host=game_thailand.host,
+            invited=player_cyprus,
+            content_object=game_thailand
+        )
+        url = reverse(
+            'api:games-delete-invitation',
+            args=(game_thailand.id,)
         )
         url = reverse('api:games-delete-invitation', args=(game_thailand.id,))
         assert game_thailand.players.count() == 0
@@ -126,8 +134,10 @@ class TestGameAPI:
         api_client_thailand,
     ):
         assert Game.objects.count() == 2
-        response = api_client_thailand.get(reverse('api:games-upcoming-games'))
-        assert len(response.data) == 1
+        response = api_client_thailand.get(
+            reverse('api:games-upcoming-games')
+        )
+        assert len(response.data['games']) == 1
         assert response.data['games'][0]['game_id'] == game_thailand.id
 
     def test_deleting_game_by_host(
@@ -164,11 +174,15 @@ class TestGameSerializers:
         game_create_data,
     ):
         response = api_client_thailand.post(
-            reverse('api:games-list'), data=game_create_data, format='json'
+            reverse('api:games-list'),
+            data=game_create_data,
+            format='json'
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert Game.objects.filter(pk=response.json()['game_id']).exists()
+        assert Game.objects.filter(
+            pk=response.json()['game_id']
+        ).exists()
 
         response_data = response.json()
 
@@ -177,25 +191,16 @@ class TestGameSerializers:
         assert response_data['gender'] == game_create_data['gender']
         assert response_data['levels'] == game_create_data['levels']
         assert response_data['is_private'] == game_create_data['is_private']
-        assert (
-            response_data['maximum_players']
-            == game_create_data['maximum_players']
-        )
-        assert (
-            response_data['price_per_person']
-            == game_create_data['price_per_person']
-        )
-        assert (
-            response_data['currency_type']
-            == currency_type_thailand.currency_type
-        )
-        assert (
-            response_data['payment_type'] == game_create_data['payment_type']
-        )
-        assert (
-            response_data['payment_account']
-            == payment_account_revolut.payment_account
-        )
+        assert (response_data['maximum_players'] ==
+                game_create_data['maximum_players'])
+        assert (response_data['price_per_person'] ==
+                game_create_data['price_per_person'])
+        assert (response_data['currency_type'] ==
+                currency_type_thailand.currency_type)
+        assert (response_data['payment_type'] ==
+                game_create_data['payment_type'])
+        assert (response_data['payment_account'] ==
+                payment_account_revolut.payment_account)
         assert response_data['players'] == [player_thailand.id]
         assert response_data['start_time'] == game_create_data['start_time']
         assert response_data['end_time'] == game_create_data['end_time']
@@ -210,7 +215,10 @@ class TestGameSerializers:
         court_thailand,
     ):
         response = api_client_thailand.get(
-            reverse('api:games-detail', args=(game_thailand_with_players.id,))
+            reverse(
+                'api:games-detail',
+                args=(game_thailand_with_players.id,)
+            )
         )
         response_data = response.json()
 
@@ -229,33 +237,24 @@ class TestGameSerializers:
         for level in game_thailand_with_players.player_levels.all():
             assert level.name in levels
 
-        assert response_data['game_id'] == game_thailand_with_players.id
-        assert (
-            response_data['is_private']
-            == game_thailand_with_players.is_private
-        )
-        assert response_data['message'] == game_thailand_with_players.message
-        assert response_data['gender'] == game_thailand_with_players.gender
-        assert (
-            response_data['price_per_person']
-            == game_thailand_with_players.price_per_person
-        )
-        assert (
-            response_data['currency_type']
-            == game_thailand_with_players.currency_type.currency_type
-        )
-        assert (
-            response_data['payment_type']
-            == game_thailand_with_players.payment_type
-        )
-        assert (
-            response_data['payment_account']
-            == game_thailand_with_players.payment_account
-        )
-        assert (
-            response_data['maximum_players']
-            == game_thailand_with_players.max_players
-        )
+        assert (response_data['game_id'] ==
+                game_thailand_with_players.id)
+        assert (response_data['is_private'] ==
+                game_thailand_with_players.is_private)
+        assert (response_data['message'] ==
+                game_thailand_with_players.message)
+        assert (response_data['gender'] ==
+                game_thailand_with_players.gender)
+        assert (response_data['price_per_person'] ==
+                game_thailand_with_players.price_per_person)
+        assert (response_data['currency_type'] ==
+                game_thailand_with_players.currency_type.currency_type)
+        assert (response_data['payment_type'] ==
+                game_thailand_with_players.payment_type)
+        assert (response_data['payment_account'] ==
+                game_thailand_with_players.payment_account)
+        assert (response_data['maximum_players'] ==
+                game_thailand_with_players.max_players)
 
         host = response_data['host']
         assert host['player_id'] == player_thailand.id
@@ -268,16 +267,13 @@ class TestGameSerializers:
         assert court['longitude'] == court_thailand.location.longitude
         assert court['latitude'] == court_thailand.location.latitude
         assert court['court_name'] == court_thailand.location.court_name
-        assert court['location_name'] == court_thailand.location.location_name
+        assert (court['location_name'] ==
+                court_thailand.location.location_name)
 
-        assert (
-            parse_datetime(response_data['start_time'])
-            == game_thailand_with_players.start_time
-        )
-        assert (
-            parse_datetime(response_data['end_time'])
-            == game_thailand_with_players.end_time
-        )
+        assert (parse_datetime(response_data['start_time']) ==
+                game_thailand_with_players.start_time)
+        assert (parse_datetime(response_data['end_time']) ==
+                game_thailand_with_players.end_time)
 
     @pytest.mark.parametrize(
         ('field, value'),
@@ -294,7 +290,9 @@ class TestGameSerializers:
         wrong_data = game_create_data
         wrong_data[field] = value
         response = api_client_thailand.post(
-            reverse('api:games-list'), data=game_create_data, format='json'
+            reverse('api:games-list'),
+            data=game_create_data,
+            format='json'
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
@@ -310,10 +308,12 @@ class TestGameSerializers:
             },
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data.get('invited')
+        assert response.data[0].get('invited')
 
     def test_game_short_serializer(
-        self, game_thailand, game_thailand_with_players
+            self,
+            game_thailand,
+            game_thailand_with_players
     ):
         games = Game.objects.all()
         serializer = GameShortSerializer(games, many=True)
@@ -321,8 +321,10 @@ class TestGameSerializers:
         assert result['game_id'] == game_thailand.id
         assert result['message'] == game_thailand.message
 
-        assert parse_datetime(result['start_time']) == game_thailand.start_time
-        assert parse_datetime(result['end_time']) == game_thailand.end_time
+        assert (parse_datetime(result['start_time']) ==
+                game_thailand.start_time)
+        assert (parse_datetime(result['end_time']) ==
+                game_thailand.end_time)
 
         host = result['host']
         assert host['player_id'] == game_thailand.host.id
@@ -334,11 +336,10 @@ class TestGameSerializers:
         court = result['court_location']
         assert court['longitude'] == game_thailand.court.location.longitude
         assert court['latitude'] == game_thailand.court.location.latitude
-        assert court['court_name'] == game_thailand.court.location.court_name
-        assert (
-            court['location_name']
-            == game_thailand.court.location.location_name
-        )
+        assert (court['court_name'] ==
+                game_thailand.court.location.court_name)
+        assert (court['location_name'] ==
+                game_thailand.court.location.location_name)
 
 
 @pytest.mark.django_db()
@@ -363,7 +364,9 @@ class TestGameFiltering:
         self, api_client_thailand, player_thailand, game_cyprus
     ):
         GameInvitation.objects.create(
-            game=game_cyprus, host=game_cyprus.host, invited=player_thailand
+            content_object=game_cyprus,
+            host=game_cyprus.host,
+            invited=player_thailand
         )
         response = api_client_thailand.get(reverse('api:games-preview'))
         assert response.json() == {'upcoming_game_time': None, 'invites': 1}
@@ -380,7 +383,8 @@ class TestGameFiltering:
         assert Game.objects.count() == 2
         response = api_client_thailand.get(reverse('api:games-my-games'))
         assert len(response.data['games']) == 1
-        assert response.data['games'][0]['game_id'] == game_thailand.id
+        assert (response.data['games'][0]['game_id'] ==
+                game_thailand.id)
 
     def test_archive_filtering(
         self,
@@ -405,7 +409,7 @@ class TestGameFiltering:
         assert not games
 
         GameInvitation.objects.create(
-            game=game_thailand,
+            content_object=game_thailand,
             host=game_thailand.host,
             invited=player_thailand_female_pro,
         )
