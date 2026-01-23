@@ -4,7 +4,7 @@ from drf_yasg.views import get_schema_view
 from rest_framework import permissions
 from rest_framework.routers import DefaultRouter
 
-from apps.core.views import FAQView
+from apps.core.views import CurrenciesView, FAQView
 from apps.courts.views import CourtViewSet
 from apps.event.views import GameViewSet, TourneyViewSet
 from apps.locations.views import CountryListView
@@ -36,8 +36,9 @@ urlpatterns = [
     path('auth/', include('apps.authentication.urls', namespace='auth')),
     path(
         'notifications/',
-        include('apps.notifications.urls', namespace='notifications')
+        include('apps.notifications.urls', namespace='notifications'),
     ),
+    path('currencies/', CurrenciesView.as_view(), name='currencies'),
     # Swagger UI (interactive API docs)
     re_path(
         r'^swagger(?P<format>\.json|\.yaml)$',

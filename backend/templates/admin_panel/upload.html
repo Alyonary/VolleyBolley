@@ -1,0 +1,171 @@
+{% extends 'admin/base_site.html' %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{{ title }} - {{ block.super }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">{% trans 'Home' %}</a>
+    &rsaquo; {{ title|default:'File Upload' }}
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="{% static 'admin_panel/css/upload.css' %}">
+{% endblock %}
+
+
+{% block content %}
+<div class="upload-container">
+    
+    <div class="header-section">
+        <h1>📁 {{ page_header|default:'File Upload' }}</h1>
+        <p>{{ page_description|default:'Upload data files to import information' }}</p>
+    </div>
+    
+    <div class="description-section">
+        <h3>📄 How to Use</h3>
+        <p>
+            You can upload data from <strong>JSON</strong> or <strong>Excel (XLSX)</strong> files.<br>
+            <span style="font-size: 1.15em; font-weight: 600;">
+    Supported models for import:
+    {% for model in supported_models %}
+        <code style="font-size: 1.1em;">{{ model|capfirst }}</code>{% if not forloop.last %}, {% endif %}
+    {% endfor %}
+</span>
+        </p>
+
+        <h4>📁 Supported File Types</h4>
+        <ul>
+            <li><strong>JSON</strong> — any file name is allowed.</li>
+            <li><strong>Excel (XLSX)</strong> — file name must match the model name in plural form:<br>
+                <code>countries.xlsx</code>, <code>cities.xlsx</code>, <code>locations.xlsx</code>, <code>courts.xlsx</code>
+            </li>
+        </ul>
+
+        <h4>📋 File Structure</h4>
+        <ul>
+            <li>
+                <strong>JSON:</strong>
+                <br>
+                The file should follow this structure:<br>
+                <code>{"model_name": [{"attribute": "value"}, ...]}</code>
+                <br>
+                You can upload data for all models or partially in a single file.
+            </li>
+            <li>
+                <strong>Excel (XLSX):</strong>
+                <br>
+                <ul>
+                    <li>File name must be the model name in plural (see above).</li>
+                    <li>The first row must contain model attribute names (headers).</li>
+                    <li>Each following row contains values for one record.</li>
+                </ul>
+                <br>
+                <strong>Example:</strong>
+                <pre style="background:#f8f8f8; border-radius:6px; padding:10px; margin-top:8px;">
+longitude   latitude   court_name         country    city        price_description   description               working_hours
+100.5018    13.7563    Bangkok Arena      Thailand   Bangkok     Premium             Main arena in Bangkok     08:00-22:00
+98.9817     18.7961    Chiang Mai Stadium Thailand   Chiang Mai  Standard            Stadium in Chiang Mai     09:00-21:00
+                </pre>
+            </li>
+        </ul>
+
+        <h4>📑 Expected Fields for Each Model</h4>
+        <ul>
+            {% for info in model_fields_info %}
+                <li>
+                    <strong>{{ info.model|capfirst }}</strong>
+                    <ul>
+                        {% if info.excel_fields %}
+                            <li>
+                                <span style="color: #0073aa;">Excel fields:</span>
+                                <code>{{ info.excel_fields|join:", " }}</code>
+                            </li>
+                        {% endif %}
+                        {% if info.json_fields %}
+                            <li>
+                                <span style="color: #009900;">JSON fields:</span>
+                                {% for field in info.json_fields %}
+                                    {% if field.items %}
+                                        {% for k, v in field.items %}
+                                            <code>{{ k }}: [{{ v|join:", " }}]</code>
+                                        {% endfor %}
+                                    {% else %}
+                                        <code>{{ field }}</code>
+                                    {% endif %}
+                                {% endfor %}
+                            </li>
+                        {% endif %}
+                        {% if not info.json_fields and not info.excel_fields %}
+                            <li style="color: #b00;">
+                                Data upload is not supported for this model.
+                            </li>
+                        {% endif %}
+                    </ul>
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+    
+    <div class="main-form">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="upload-section">
+                <div class="file-input-wrapper">
+                    <label for="{{ form.file.id_for_label }}" class="file-input-label">
+                        <span class="upload-icon">📤</span>
+                        <div class="upload-text">{% trans 'Choose a file to upload' %}</div>
+                        <div class="upload-hint">{% trans 'Click to browse your files' %}</div>
+                        <div class="upload-formats">{{ form_description }}</div>
+                        {{ form.file }}
+                    </label>
+                </div>
+            </div>
+            <div class="checkbox-wrapper">
+    <label for="{{ form.stats_detail.id_for_label }}" class="checkbox-container">
+        {{ form.stats_detail }}
+        <div class="checkbox-content">
+            <span class="checkbox-title">{{ form.stats_detail.label }}</span>
+            <p class="checkbox-description">{{ form.stats_detail.help_text }}</p>
+        </div>
+    </label>
+</div>
+            {% if form.file.errors %}
+                <div class="error-section">
+                    <h4>⚠️ {% trans 'Validation Error' %}</h4>
+                    <ul>
+                        {% for error in form.file.errors %}
+                            <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+
+            <div style="text-align: center; margin-top: 30px;">
+                <button type="submit" class="btn-upload">
+                    📤 {% trans 'Upload & Process File' %}
+                </button>
+                
+                <a href="{% url 'admin:index' %}" class="btn-secondary">
+                    ← {% trans 'Back to Admin' %}
+                </a>
+            </div>
+        </form>
+    </div>
+
+    {% if upload_messages %}
+        <div class="upload-messages">
+            <ul>
+                {% for msg in upload_messages %}
+                    <li>{{ msg }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

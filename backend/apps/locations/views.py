@@ -18,12 +18,10 @@ class CountryListView(APIView):
 
     @swagger_auto_schema(
         tags=['locations'],
-        operation_summary="Get countries list",
-        operation_description="Retrieve all countries with their cities",
-        responses={
-            200: openapi.Response('Success', CountryListSerializer)
-        },
-        security=[]
+        operation_summary='Get countries list',
+        operation_description='Retrieve all countries with their cities',
+        responses={200: openapi.Response('Success', CountryListSerializer)},
+        security=[],
     )
     def get(self, request):
         try:
@@ -36,6 +34,4 @@ class CountryListView(APIView):
             error_msg = f'Internal server error: {e}.'
             logger.error(error_msg)
 
-            return Response(
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
+            return Response(status=status.HTTP_500_INTERNAL_SERVER_ERROR)

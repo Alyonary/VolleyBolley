@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.contrib.contenttypes.fields import GenericRelation
 from django.core.validators import MaxLengthValidator
 from django.db import models as m
@@ -69,8 +71,18 @@ class EventMixin(m.Model):
         verbose_name=_('Active'),
         default=True,
     )
+    created_at = m.DateTimeField(
+        verbose_name=_('Created at'),
+        auto_now_add=True,
+    )
     event_invites = GenericRelation('event.GameInvitation')
 
     class Meta:
         abstract = True
         ordering = ('start_time',)
+
+
+class StatsQuerySetMixin:
+    def get_stats_for_day(self, day: date) -> int:
+        """Returns number of objects created on a specific day."""
+        return self.filter(created_at__date=day).count()

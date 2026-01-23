@@ -5,6 +5,9 @@ import sys
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
+from apps.admin_panel.settings import jazzmin_settings, jazzmin_ui_tweaks
+from volleybolley.celery import CELERYBEAT_SCHEDULE
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_DIR_OUT = Path(__file__).resolve().parents[2]
@@ -18,7 +21,8 @@ else:
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
 TESTING = "pytest" in sys.modules or "test" in sys.argv
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
 
@@ -29,6 +33,7 @@ if not ALLOWED_HOSTS:
     )
 
 INSTALLED_APPS = [
+    'jazzmin',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -38,7 +43,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'social_django',
-    'django_celery_beat',
     'apps.users.apps.UsersConfig',
     'apps.api.apps.ApiConfig',
     'apps.authentication.apps.AuthenticationConfig',
@@ -48,10 +52,12 @@ INSTALLED_APPS = [
     'apps.core.apps.CoreConfig',
     'apps.locations.apps.LocationsConfig',
     'apps.notifications.apps.NotificationsConfig',
+    'apps.admin_panel.apps.AdminPanelConfig',
     'phonenumber_field',
     'django_filters',
     'drf_yasg',
     'django_prometheus',
+    'django_celery_beat',
 ]
 
 USE_X_FORWARDED_HOST = True
@@ -393,7 +399,7 @@ CELERY_TASK_TIME_LIMIT = 1800  # 30 minutes
 CELERY_TASK_SOFT_TIME_LIMIT = 1500  # 25 minutes
 
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
-
+CELERY_BEAT_SCHEDULE = CELERYBEAT_SCHEDULE
 SWAGGER_SETTINGS = {
     'SECURITY_DEFINITIONS': {
         'Bearer': {
@@ -454,6 +460,9 @@ SWAGGER_SETTINGS = {
     Use refresh_token through the appropriate endpoint to refresh your token.
     '''
 }
+
+JAZZMIN_SETTINGS = jazzmin_settings
+JAZZMIN_UI_TWEAKS = jazzmin_ui_tweaks
 
 DEBUG_TOOLBAR_ENABLED = DEBUG and not TESTING
 

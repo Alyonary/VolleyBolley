@@ -1,0 +1,72 @@
+.dashboard-cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    margin: 32px 0;
+    justify-content: flex-start;
+}
+.dashboard-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    padding: 32px 40px;
+    min-width: 220px;
+    text-align: center;
+    flex: 1 1 220px;
+    border-left: 6px solid #0073aa;
+}
+.dashboard-card .dash-title {
+    font-size: 18px;
+    color: #0073aa;
+    margin-bottom: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+.dashboard-card .dash-value {
+    font-size: 36px;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 0;
+}
+@media (max-width: 900px) {
+    .dashboard-cards {
+        flex-direction: column;
+        gap: 18px;
+    }
+    .dashboard-card {
+        padding: 24px 12px;
+    }
+}
+
+.stats-task-btn-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 40px 0 32px 0;
+    width: 100%;
+}
+
+.stats-task-btn {
+    background: linear-gradient(90deg, #0073aa 0%, #0099cc 100%);
+    color: #fff;
+    font-size: 1.5rem;
+    padding: 22px 48px;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    box-shadow: 0 4px 16px rgba(0,115,170,0.12);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    letter-spacing: 0.5px;
+    outline: none;
+    margin-bottom: 0;
+    margin-top: 0;
+    display: inline-block;
+}
+
+.stats-task-btn:hover,
+.stats-task-btn:focus {
+    background: linear-gradient(90deg, #005f8a 0%, #0073aa 100%);
+    transform: scale(1.05);
+    color: #fff;
+}

@@ -37,7 +37,7 @@ class InvitePlayersMixin:
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary="Invite list of players to game",
+        operation_summary='Invite list of players to game',
         operation_description="""
         Invite a list of players to the game.
 
@@ -50,8 +50,8 @@ class InvitePlayersMixin:
                 'players': openapi.Schema(
                     type=openapi.TYPE_ARRAY,
                     items=openapi.Schema(type=openapi.TYPE_INTEGER),
-                    description="List of player IDs",
-                    example=[1, 2, 3]
+                    description='List of player IDs',
+                    example=[1, 2, 3],
                 )
             },
         ),
@@ -95,7 +95,7 @@ class InvitePlayersMixin:
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary="Reject invitation to game by player",
+        operation_summary='Reject invitation to game by player',
         operation_description="""
         The current player rejects an invitation to a game.
         The game_id is given as a path-parameter of the request.
@@ -132,7 +132,7 @@ class RatePlayersMixin:
     @swagger_auto_schema(
         tags=['games'],
         method='get',
-        operation_summary="Get list of players available for rating",
+        operation_summary='Get list of players available for rating',
         operation_description="""
         Get a list of players available for rating.
 
@@ -148,7 +148,7 @@ class RatePlayersMixin:
     @swagger_auto_schema(
         tags=['games'],
         method='post',
-        operation_summary="Rate players by current player",
+        operation_summary='Rate players by current player',
         operation_description="""
         The current player rates the other who played in the same event
         as he did.
@@ -168,23 +168,23 @@ class RatePlayersMixin:
                             'player_id': openapi.Schema(
                                 type=openapi.TYPE_INTEGER,
                                 description='Unique player identifier',
-                                example=123
+                                example=123,
                             ),
                             'level_changed': openapi.Schema(
                                 type=openapi.TYPE_STRING,
                                 enum=['UP', 'DOWN', 'CONFIRM'],
                                 description='Direction of level change',
-                                example='UP'
-                            )
-                        }
+                                example='UP',
+                            ),
+                        },
                     ),
                     description='List of players with level changes',
                     example=[
                         {'player_id': 1, 'level_changed': 'UP'},
-                        {'player_id': 2, 'level_changed': 'DOWN'}
-                    ]
+                        {'player_id': 2, 'level_changed': 'DOWN'},
+                    ],
                 )
-            }
+            },
         ),
         responses={
             201: 'Success',
@@ -197,7 +197,7 @@ class RatePlayersMixin:
         methods=['get', 'post'],
         detail=True,
         url_path='rate-players',
-        permission_classes=[IsPlayerInEvent]
+        permission_classes=[IsPlayerInEvent],
     )
     def rate_players(self, request, *args, **kwargs):
         """

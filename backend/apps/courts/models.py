@@ -16,12 +16,16 @@ class CourtLocation(models.Model):
             MinValueValidator(
                 LocationEnums.MIN_LONGITUDE.value,
                 message=_(
-                    f'Min longitude: {LocationEnums.MIN_LONGITUDE.value}')),
+                    f'Min longitude: {LocationEnums.MIN_LONGITUDE.value}'
+                ),
+            ),
             MaxValueValidator(
                 LocationEnums.MAX_LONGITUDE.value,
                 message=_(
-                    f'Max longitude: {LocationEnums.MAX_LONGITUDE.value}')),
-        )
+                    f'Max longitude: {LocationEnums.MAX_LONGITUDE.value}'
+                ),
+            ),
+        ),
     )
 
     latitude = models.FloatField(
@@ -38,7 +42,9 @@ class CourtLocation(models.Model):
         ),
     )
     court_name = models.CharField(
-        _('Court name'), max_length=LocationEnums.LOCATION_NAME_LENGTH.value
+        _('Court name'),
+        max_length=LocationEnums.LOCATION_NAME_LENGTH.value,
+        unique=True,
     )
     country = models.ForeignKey(
         Country,
@@ -55,6 +61,12 @@ class CourtLocation(models.Model):
         verbose_name_plural = _('Locations')
         default_related_name = 'locations'
         ordering = ('-court_name',)
+        constraints = [
+            models.UniqueConstraint(
+                fields=['latitude', 'longitude'],
+                name='unique_latitude_longitude',
+            ),
+        ]
 
     @property
     def location_name(self):

@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from apps.event.models import Game, GameInvitation, Tourney, TourneyTeam
 from apps.notifications.constants import NotificationTypes
-from apps.notifications.push_service import PushService
+from apps.notifications.models import NotificationsTime
 from apps.notifications.tasks import send_event_notification_task
 
 
@@ -26,23 +26,27 @@ def schedule_event_notifications(instance, event_type):  # noqa: RET503
     if not notification_type:
         return False
     start_time = instance.start_time
-    notify_hour = start_time - timezone.timedelta(hours=1)
-    if notify_hour > now:
+    pre_event_notification_time = (
+        start_time - NotificationsTime.get_pre_event_time()
+    )
+    if pre_event_notification_time > now:
         return send_event_notification_task.apply_async(
             args=[
                 instance.id,
                 notification_type,
             ],
-            eta=notify_hour,
+            eta=pre_event_notification_time,
         )
-    notify_day = start_time - timezone.timedelta(days=1)
+    advance_notification_time = (
+        start_time - NotificationsTime.get_advance_notification_time()
+    )
     if (start_time - now).days >= 1:
         return send_event_notification_task.apply_async(
             args=[
                 instance.id,
                 notification_type,
             ],
-            eta=notify_day,
+            eta=advance_notification_time,
         )
     return False
 

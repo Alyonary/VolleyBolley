@@ -25,6 +25,23 @@ def validate_birthday(value):
         raise ValidationError(_('Date of birth cannot be in the future.'))
 
 
+class PlayerQuerySet(models.QuerySet):
+    """Custom QuerySet for Player model."""
+
+    def get_stats_for_day(self, day: date) -> int:
+        """Returns number of players registered on a specific day."""
+        return self.filter(user__date_joined__date=day).count()
+
+
+class PlayerManager(models.Manager):
+    def get_queryset(self):
+        return PlayerQuerySet(self.model, using=self._db)
+
+    def stats_for_day(self, day: date) -> int:
+        """Returns number of players registered on a specific day."""
+        return self.get_queryset().get_stats_for_day(day)
+
+
 class Player(models.Model):
     """Player model."""
 
@@ -77,6 +94,7 @@ class Player(models.Model):
         default=False,
         null=False,
     )
+    objects: PlayerManager = PlayerManager()
 
     class Meta:
         verbose_name = _('Player')
