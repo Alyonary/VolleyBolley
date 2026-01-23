@@ -257,6 +257,39 @@ class GameViewSet(GenericViewSet,
         else:
             return GameSerializer
 
+    @swagger_auto_schema(
+        tags=['games'],
+        operation_summary=(
+            'Get number of active invitations and time of next game'
+        ),
+        operation_description="""
+        Get number of active invitations and time of next game
+
+        **Returns:** upcoming_game_time, invites.
+        """,
+        responses={
+            200: openapi.Schema(
+                title='Success',
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'upcoming_game_time': openapi.Schema(
+                        type=openapi.TYPE_STRING,
+                        format='date-time',
+                        description='Time in ISO format',
+                        example='2025-08-21T15:30:00Z',
+                    ),
+                    'invites': openapi.Schema(
+                        type=openapi.TYPE_INTEGER,
+                        description='Number of invitations',
+                        example=3,
+                    ),
+                },
+            ),
+            401: 'Unauthorized',
+            403: 'Forbidden',
+        },
+        security=[{'Bearer': []}, {'JWT': []}],
+    )
     @action(
         methods=['get'],
         detail=False,
