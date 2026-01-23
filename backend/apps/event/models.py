@@ -71,7 +71,7 @@ class GameQuerySet(m.query.QuerySet, StatsQuerySetMixin):
         return self.filter(created_at__date=day).count()
 
 
-class TourneyQuerySet(GameQuerySet):
+class TourneyQuerySet(GameQuerySet, StatsQuerySetMixin):
 
     def player_related_games(self, player):
         return self.player_located_games(player).filter(
@@ -145,11 +145,7 @@ class GameManager(m.Manager):
         return self.get_queryset().get_stats_for_day(day)
 
 
-class TourneyQuerySet(m.query.QuerySet, StatsQuerySetMixin):
-    pass
-
-
-class TourneyManager(m.Manager):
+class TourneyManager(GameManager):
     def get_queryset(self):
         return TourneyQuerySet(self.model, using=self._db)
 

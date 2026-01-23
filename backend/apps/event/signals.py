@@ -13,9 +13,6 @@ def schedule_event_notifications(instance, event_type):  # noqa: RET503
     Schedule notifications for the event (Game or Tourney).
     Sends notifications 1 hour and 1 day before the event start time.
     """
-    push_service = PushService()
-    if not push_service.enable:
-        return False
     now = timezone.now()
     notification_type = {
         'game': NotificationTypes.GAME_REMINDER,
@@ -64,25 +61,11 @@ def tourney_created_handler(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=GameInvitation)
-def event_invitation_created_handler(sender, instance, created, **kwargs):
+def game_invitation_created_handler(sender, instance, created, **kwargs):
     if created:
-        event = instance.content_object  # Game or Tourney
-        if isinstance(event, Game):
-            # send_event_notification_task.delay(
-            #     event.id,
-            #     NotificationTypes.GAME_INVITE
-            # )
-            pass
-        elif isinstance(event, Tourney):
-            # send_event_notification_task.delay(
-            #     event.id,
-            #     NotificationTypes.TOURNEY_INVITE
-            # )
-            pass
-        else:
-            raise Exception(
-                f'{isinstance} - not an invitation to a game or tournament.'
-            )
+        send_event_notification_task.delay(
+            instance.game.id, NotificationTypes.GAME_INVITE
+        )
 
 
 @receiver(post_save, sender=Tourney)
