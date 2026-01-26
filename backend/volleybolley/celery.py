@@ -20,8 +20,12 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'apps.players.tasks.downgrade_inactive_players_task',
         'schedule': crontab(hour=2, minute=0),
     },
-    'create-rate-objects-and-notify-every-10-minutes': {
-        'task': 'apps.notifications.tasks.send_rate_notification_task',
+    'tourneys-rate-objects-and-notify-every-10-minutes': {
+        'task': 'apps.notifications.tasks.send_rate_tourney_notification_task',
+        'schedule': crontab(minute='*/10'),
+    },
+    'games-create-rate-objects-and-notify-every-10-minutes': {
+        'task': 'apps.notifications.tasks.send_rate_game_notification_task',
         'schedule': crontab(minute='*/10'),
     },
 }

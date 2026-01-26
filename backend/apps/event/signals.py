@@ -64,10 +64,14 @@ def tourney_created_handler(sender, instance, created, **kwargs):
 
 
 @receiver(post_save, sender=GameInvitation)
-def game_invitation_created_handler(sender, instance, created, **kwargs):
+def game_invitation_created_handler(
+    sender, instance: GameInvitation, created, **kwargs
+):
     if created:
         send_invite_to_player_task.delay(
-            instance.invited.id, NotificationTypes.GAME_INVITE
+            instance.invited.id,
+            instance.game.id,
+            NotificationTypes.GAME_INVITE,
         )
 
 
@@ -75,6 +79,7 @@ def game_invitation_created_handler(sender, instance, created, **kwargs):
 # def tourney_invitation_created_handler(sender, instance, created, **kwargs):
 #     if created:
 #         send_event_notification_task.delay(
+#             instance.invited.id,
 #             instance.tourney.id,
 #             NotificationTypes.TOURNEY_INVITE
 #         )

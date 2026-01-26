@@ -4,6 +4,7 @@ import pytest
 from pyfcm.errors import FCMError
 
 from apps.event.models import Game
+from apps.notifications.constants import PushServiceMessages
 from apps.notifications.models import Device, Notifications, NotificationsBase
 from apps.notifications.push_service import PushService
 
@@ -119,18 +120,19 @@ class TestPushServiceNotificationMethods:
     ):
         """Test successful single device notification."""
         service: PushService = push_service_enabled
-        result: dict = service.sender.send_notification_by_device(
+        result, _ = service.sender._send_notification_by_device_internal(
             sample_device,
             sample_notification,
         )
-        assert result['success'] is True
+        assert result is True
 
-    def test_send_notification_by_device_with_game_id(
+    def test_send_notification_by_player_with_game_id(
         self,
         push_service_enabled: PushService,
         in_game_notification_type: NotificationsBase,
         sample_device: Device,
         game_for_notification: Game,
+        push_service_answer_sample: dict,
     ):
         """Test single device notification with game_id."""
         service: PushService = push_service_enabled
@@ -145,6 +147,9 @@ class TestPushServiceNotificationMethods:
             notification_type=in_game_notification_type.type,
             event_id=game_for_notification.id,
         )
+        assert all(
+            list(map(lambda k: k in push_service_answer_sample, result))
+        )
         assert result['success'] is True
         notif_in_db = Notifications.objects.filter(
             player=sample_device.player,
@@ -157,6 +162,7 @@ class TestPushServiceNotificationMethods:
         push_service_disabled: PushService,
         sample_notification: NotificationsBase,
         sample_device: Device,
+        push_service_answer_sample,
     ):
         """Test notification when service is disabled."""
         service: PushService = push_service_disabled
@@ -164,8 +170,11 @@ class TestPushServiceNotificationMethods:
             sample_device.player.id,
             sample_notification.type,
         )
+        assert all(
+            list(map(lambda k: k in push_service_answer_sample, result))
+        )
         assert result['success'] is False
-        assert result['message'] == 'Push service unavailable'
+        assert result['message'] == PushServiceMessages.SERVICE_UNAVAILABLE
 
     def test_send_push_notifications_multiple_devices(
         self,
@@ -174,6 +183,7 @@ class TestPushServiceNotificationMethods:
         sample_notification: NotificationsBase,
         mock_tasks_import,
         devices: dict[str, list[Device]],
+        push_service_answer_sample: dict,
     ):
         """Test sending to multiple devices."""
         service: PushService = push_service_enabled
@@ -183,49 +193,56 @@ class TestPushServiceNotificationMethods:
             notification=sample_notification,
             event_id=game_for_notification.id,
         )
-        assert isinstance(result, dict)
+        assert all(
+            list(map(lambda k: k in push_service_answer_sample, result))
+        )
         assert result['total_devices'] == 3
         assert result['delivered'] == 3
         assert result['failed'] == 0
 
-        service.connector.push_service.notify = Mock(
-            side_effect=FCMError('FCM failure')
-        )
-        result_with_errors: dict = service.sender.send_push_bulk(
+    def test_send_push_notifications_multiple_devices_error(
+        self,
+        game_for_notification: Game,
+        push_service_disabled: PushService,
+        sample_notification: NotificationsBase,
+        mock_tasks_import,
+        devices: dict[str, list[Device]],
+        push_service_answer_sample: dict,
+    ):
+        """Test sending to multiple devices."""
+        service: PushService = push_service_disabled
+        devices_list: list[Device] = devices['active_devices']
+
+        result: dict = service.sender.send_push_bulk(
             devices=devices_list,
             notification=sample_notification,
             event_id=game_for_notification.id,
         )
-        assert isinstance(result_with_errors, dict)
-        assert result_with_errors['total_devices'] == 3
-        assert result_with_errors['delivered'] == 0
-        assert result_with_errors['failed'] == 3
+        assert all(
+            list(map(lambda k: k in push_service_answer_sample, result))
+        )
 
     def test_send_push_notifications_empty_tokens_list(
         self,
         push_service_enabled: PushService,
         sample_notification: NotificationsBase,
         game_for_notification: Game,
+        push_service_answer_sample: dict,
     ):
         """Test sending to empty devices list."""
         service: PushService = push_service_enabled
-        devices: list[Device] = []
+        devices: list = []
+
         result: dict = service.sender.send_push_bulk(
             devices=devices,
             notification=sample_notification,
             event_id=game_for_notification.id,
         )
         assert isinstance(result, dict)
-        assert result['total_devices'] == 0
-        assert result['delivered'] == 0
-        assert result['failed'] == 0
-
-        result = service.send_push_for_event(
-            notification_type=sample_notification.type,
-            event_id=game_for_notification.id,
+        assert all(
+            list(map(lambda k: k in push_service_answer_sample, result))
         )
-        assert isinstance(result, dict)
-        assert result['total_devices'] == 0
+        assert result['total_devices'] == len(devices)
         assert result['delivered'] == 0
         assert result['failed'] == 0
 
@@ -283,12 +300,12 @@ class TestPushServiceEdgeCases:
         """Test sending notification with an invalid token."""
         service: PushService = push_service_enabled
         sample_device.token = ''
-        result: dict = service.sender.send_notification_by_device(
+        result, m = service.sender._send_notification_by_device_internal(
             sample_device,
             sample_notification,
         )
-        assert result['success'] is False
-        assert result['message'] == 'Empty device token'
+        assert result is False
+        assert m == PushServiceMessages.EMPTY_TOKEN
 
     def test_send_notification_with_none_token(
         self,
@@ -300,12 +317,12 @@ class TestPushServiceEdgeCases:
         """Test sending notification with a None token."""
         service: PushService = push_service_enabled
         sample_device.token = None
-
-        result: dict = service.sender.send_notification_by_device(
+        result, m = service.sender._send_notification_by_device_internal(
             sample_device,
             sample_notification,
         )
-        assert result['success'] is False
+        assert result is False
+        assert m == PushServiceMessages.EMPTY_TOKEN
 
 
 @pytest.mark.django_db

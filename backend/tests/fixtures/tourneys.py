@@ -38,6 +38,7 @@ def tourney_data(
         'host': player_thailand,
         'currency_type': currency_type_thailand,
         'payment_account': payment_account_revolut.payment_account,
+        'maximum_teams': 5,
     }
 
 

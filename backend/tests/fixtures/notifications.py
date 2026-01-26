@@ -113,6 +113,11 @@ def devices(players: dict[str, Player]) -> dict[str, Any]:
 
 
 @pytest.fixture
+def players_with_devices(devices: dict[str, Any]) -> list[Player]:
+    return [d.player for d in devices['active_devices']]
+
+
+@pytest.fixture
 def sample_device(devices: dict[str, Any]) -> Device:
     """Returns a sample device for testing."""
     return devices['device1']

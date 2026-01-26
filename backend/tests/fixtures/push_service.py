@@ -2,6 +2,7 @@ import builtins
 from unittest.mock import Mock
 
 import pytest
+from backend.apps.notifications.constants import PushServiceMessages
 
 from apps.notifications import push_service as push_service_module
 from apps.notifications.push_service import PushService
@@ -181,3 +182,8 @@ def push_service_connector_none(monkeypatch):
         push_service_module, 'PushServiceConnector', connector_factory
     )
     return push_service_module.PushService()
+
+
+@pytest.fixture
+def push_service_answer_sample() -> dict[str | int | bool]:
+    return PushServiceMessages.ANSWER_SAMPLE.keys()

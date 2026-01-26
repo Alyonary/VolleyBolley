@@ -33,6 +33,13 @@ class NotificationTypes:
         (TOURNEY_RATE, 'tourney_rate'),
         (TOURNEY_REMOVED, 'tourney_removed'),
     ]
+    FOR_GAMES: tuple[str] = GAME_INVITE, GAME_RATE, GAME_REMINDER, GAME_REMOVED
+    FOR_TOURNEYS: tuple[str] = (
+        TOURNEY_INVITE,
+        TOURNEY_RATE,
+        TOURNEY_REMINDER,
+        TOURNEY_REMOVED,
+    )
 
 
 FCM_TOKEN_EXPIRY_DAYS: int = 270
@@ -114,3 +121,23 @@ PROD_NOTIFICATION_TIME = NotificationTimePreset(
     advance=timedelta(hours=24),
     is_active=not settings.DEBUG,
 )
+
+
+class PushServiceMessages:
+    """Messages used in Push Service responses."""
+
+    NO_DEVICES_FOUND: str = 'No devices found for player'
+    NOTIFICATION_TYPE_NOT_FOUND: str = 'Notification type not found'
+    NO_DEVICES_FOR_EVENT: str = 'Not found any devices to send message'
+    ALL_NOT_DELIVERED: str = 'All notifications failed'
+    EMPTY_TOKEN: str = 'Empty device token, skipping notification'
+    SUCCESS: str = 'Notification sent successfully'
+    SERVICE_UNAVAILABLE: str = 'Push service unavailable'
+    ANSWER_SAMPLE: dict[str | bool | int] = {
+        'success': False,
+        'total_devices': 0,
+        'delivered': 0,
+        'failed': 0,
+        'message': '',
+        'notification_type': None,
+    }
