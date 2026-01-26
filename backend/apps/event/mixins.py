@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.core.validators import MaxLengthValidator
 from django.db import models as m
 from django.utils.translation import gettext_lazy as _
@@ -70,3 +72,9 @@ class EventMixin(m.Model):
     class Meta:
         abstract = True
         ordering = ('start_time',)
+
+
+class StatsQuerySetMixin:
+    def get_stats_for_day(self, day: date) -> int:
+        """Returns number of objects created on a specific day."""
+        return self.filter(created_at__date=day).count()

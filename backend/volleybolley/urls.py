@@ -6,6 +6,10 @@ from django.views.generic import TemplateView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path(
+        'custom_admin/',
+        include('apps.admin_panel.urls', namespace='admin_panel'),
+    ),
     path('api/', include('apps.api.urls', namespace='api')),
     path(
         'privacy/',
@@ -30,7 +34,7 @@ if settings.DEBUG:
     )
     if not settings.TESTING:
         # импортируем debug toolbar только если не в режиме тестирования
-        # иначе будет ошибка при тестированиии
-        from debug_toolbar.toolbar import debug_toolbar_urls
+        # иначе будет ошибка при тестировании
+        from debug_toolbar.toolbar import debug_toolbar_urls  # type: ignore
 
         urlpatterns.extend(debug_toolbar_urls())

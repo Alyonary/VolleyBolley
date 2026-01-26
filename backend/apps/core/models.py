@@ -1,8 +1,14 @@
+from datetime import timedelta
+
 from django.contrib.auth import get_user_model
 from django.db import models as m
+from django.db.models import Sum
+from django.db.models.functions import TruncMonth
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.enums import CoreFieldLength
+from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.core.mixins.name_title import NameMixin, TitleMixin
 from apps.locations.models import Country
 
@@ -148,7 +154,7 @@ class CurrencyType(m.Model):
         default_related_name = 'currency_types'
 
 
-class FAQ(m.Model):
+class FAQ(CreatedUpdatedMixin):
     """FAQ model to store project description."""
 
     name = m.CharField(
@@ -157,8 +163,6 @@ class FAQ(m.Model):
         default='',
     )
     is_active = m.BooleanField(default=False)
-    created_at = m.DateTimeField(auto_now_add=True)
-    updated_at = m.DateTimeField(auto_now=True)
     content = m.TextField()
 
     class Meta:
@@ -179,3 +183,53 @@ class FAQ(m.Model):
     def get_active(cls):
         """Get the active FAQ instance."""
         return cls.objects.filter(is_active=True).first()
+
+
+class DailyStatsQuerySet(m.QuerySet):
+    def get_stats_by_month(self, months_count: int):
+        """
+        Get aggregated statistics per month for the given number of months.
+        """
+        end_date = timezone.now().date() - timedelta(days=1)
+        start_date = end_date - timedelta(days=months_count * 31)
+        return (
+            DailyStats.objects.filter(date__gte=start_date, date__lte=end_date)
+            .annotate(month=TruncMonth('date'))
+            .values('month')
+            .annotate(
+                players_registered=Sum('players_registered'),
+                games_created=Sum('games_created'),
+                tourneys_created=Sum('tourneys_created'),
+            )
+            .order_by('month')
+        )
+
+
+class DailyStatsManager(m.Manager):
+    def get_queryset(self):
+        return DailyStatsQuerySet(self.model, using=self._db)
+
+    def get_stats_by_month(self, months_count: int):
+        return self.get_queryset().get_stats_by_month(months_count)
+
+
+class DailyStats(m.Model):
+    """
+    Stores aggregated statistics for a specific date (per day).
+    Used to quickly serve  data without heavy DB queries.
+    """
+
+    date = m.DateField(unique=True)
+    players_registered = m.IntegerField()
+    games_created = m.IntegerField()
+    tourneys_created = m.IntegerField()
+
+    objects = DailyStatsManager()
+
+    class Meta:
+        verbose_name = _('Daily Stats')
+        verbose_name_plural = _('Daily Stats')
+        ordering = ['-date']
+
+    def __str__(self):
+        return f'Dashboard stats for {self.date}'

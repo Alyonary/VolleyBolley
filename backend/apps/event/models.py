@@ -1,14 +1,17 @@
+from datetime import date
+
 from django.db import models as m
 from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.event.enums import EventIntEnums
-from apps.event.mixins import EventMixin
+from apps.event.mixins import EventMixin, StatsQuerySetMixin
 
 
-class GameQuerySet(m.query.QuerySet):
+class GameQuerySet(m.query.QuerySet, StatsQuerySetMixin):
     def player_located_games(self, player):
+        """Basic queryset for games."""
         country = getattr(player, 'country', None)
         city = getattr(player, 'city', None)
         if country is None or city is None:
@@ -20,13 +23,16 @@ class GameQuerySet(m.query.QuerySet):
         return self
 
     def player_related_games(self, player):
+        """Returns games in which the user is a host or player."""
         return self.filter(m.Q(host=player) | m.Q(players=player)).distinct()
 
     def future_games(self):
+        """Returns games with start_time in the future."""
         current_time = now()
         return self.filter(start_time__gt=current_time).order_by('start_time')
 
     def invited_games(self, player):
+        """Returns games in which the user was invited."""
         return (
             self.player_located_games(player)
             .future_games()
@@ -34,15 +40,19 @@ class GameQuerySet(m.query.QuerySet):
         )
 
     def upcoming_games(self, player):
+        """Returns upcoming games in which the user is a host or player."""
         return self.player_related_games(player).future_games()
 
     def my_upcoming_games(self, player):
+        """Returns upcoming games in which the user is a host."""
         return self.upcoming_games(player).filter(host=player)
 
     def nearest_game(self, player):
+        """Returns nearest upcoming game where user is a host or player."""
         return self.upcoming_games(player).first()
 
     def archive_games(self, player):
+        """Returns past games in which the user is a host or player."""
         current_time = now()
         return (
             self.player_related_games(player)
@@ -51,6 +61,7 @@ class GameQuerySet(m.query.QuerySet):
         )
 
     def recent_games(self, player, limit):
+        """Returns recent past games in which the user is a host or player."""
         return self.archive_games(player).order_by('-start_time')[:limit]
 
 
@@ -96,6 +107,23 @@ class GameManager(m.Manager):
 
     def recent_games(self, player, limit):
         return self.get_queryset().recent_games(player, limit)
+
+    def stats_for_day(self, day: date) -> int:
+        """Returns number of games created on a specific day."""
+        return self.get_queryset().get_stats_for_day(day)
+
+
+class TourneyQuerySet(m.query.QuerySet, StatsQuerySetMixin):
+    pass
+
+
+class TourneyManager(m.Manager):
+    def get_queryset(self):
+        return TourneyQuerySet(self.model, using=self._db)
+
+    def stats_for_day(self, day: date) -> int:
+        """Returns number of tournaments created on a specific day."""
+        return self.get_queryset().get_stats_for_day(day)
 
 
 class GameInvitation(m.Model):
@@ -177,6 +205,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
     maximum_teams = m.PositiveIntegerField(
         verbose_name=_('Maximum of teams'),
     )
+    objects = TourneyManager()
 
     class Meta:
         verbose_name = _('Tourney')

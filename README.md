@@ -56,3 +56,7 @@ poetry run ruff check {название файла/путь до директо�
    
 ### Обновление проекта, развернутого на сервере:    
 1. Для обновления проекта на сервере необходимо сделать push в ветку main.  
+
+### Полезные команды для отладки grafana:  
+1. Посмотреть лог работы: `sudo docker-compose -f docker-compose.production.yml logs grafana | tail -50`.  
+2. Сменить пароль админа: `sudo docker-compose -f docker-compose.production.yml exec grafana grafana cli admin reset-admin-password <new password>`.  

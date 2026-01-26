@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.event.models import Game, Tourney
 from apps.locations.models import City, Country
 from apps.players.constants import (
@@ -23,6 +24,23 @@ User = get_user_model()
 def validate_birthday(value):
     if value > timezone.now().date():
         raise ValidationError(_('Date of birth cannot be in the future.'))
+
+
+class PlayerQuerySet(models.QuerySet):
+    """Custom QuerySet for Player model."""
+
+    def get_stats_for_day(self, day: date) -> int:
+        """Returns number of players registered on a specific day."""
+        return self.filter(user__date_joined__date=day).count()
+
+
+class PlayerManager(models.Manager):
+    def get_queryset(self):
+        return PlayerQuerySet(self.model, using=self._db)
+
+    def stats_for_day(self, day: date) -> int:
+        """Returns number of players registered on a specific day."""
+        return self.get_queryset().get_stats_for_day(day)
 
 
 class Player(models.Model):
@@ -77,6 +95,7 @@ class Player(models.Model):
         default=False,
         null=False,
     )
+    objects: PlayerManager = PlayerManager()
 
     class Meta:
         verbose_name = _('Player')
@@ -233,7 +252,7 @@ class PlayerRating(models.Model):
         return f'Rating {self.grade} of {self.player} at {self.updated_at}'
 
 
-class PlayerRatingVote(models.Model):
+class PlayerRatingVote(CreatedUpdatedMixin):
     """
     Model for storing player-to-player rating votes.
 
@@ -256,9 +275,6 @@ class PlayerRatingVote(models.Model):
         verbose_name=_('Player who receives the rating'),
     )
     value = models.FloatField(verbose_name=_('Rating value'))
-    created_at = models.DateTimeField(
-        auto_now_add=True, verbose_name=_('Date of rating vote creation')
-    )
     is_counted = models.BooleanField(
         default=False, verbose_name=_('Is vote counted in rating calculation')
     )

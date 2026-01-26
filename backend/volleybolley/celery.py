@@ -1,7 +1,10 @@
+import logging
 import os
 
 from celery import Celery
 from celery.schedules import crontab
+
+logger = logging.getLogger('django.celery')
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'volleybolley.settings')
 
@@ -11,7 +14,7 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 app.autodiscover_tasks()
 
-CELERY_BEAT_SCHEDULE = {
+CELERYBEAT_SCHEDULE = {
     'delete-old-devices-every-day': {
         'task': 'apps.notifications.tasks.delete_old_devices_task',
         'schedule': crontab(hour=0, minute=0),
@@ -27,5 +30,9 @@ CELERY_BEAT_SCHEDULE = {
     'games-create-rate-objects-and-notify-every-10-minutes': {
         'task': 'apps.notifications.tasks.send_rate_game_notification_task',
         'schedule': crontab(minute='*/10'),
+    },
+    'collect-stats-for-previous-day-every-day': {
+        'task': 'apps.core.task.collect_stats_for_previous_day_task',
+        'schedule': crontab(hour=5, minute=0),
     },
 }

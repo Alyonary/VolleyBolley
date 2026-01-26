@@ -1,9 +1,10 @@
 from datetime import timedelta
 
-from django.db import models
+from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.enums import CoreFieldLength
+
 from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.notifications.constants import (
     DEVICE_PLATFORM_LENGTH,
@@ -18,7 +19,7 @@ from apps.notifications.constants import (
 )
 
 
-class DeviceQuerySet(models.QuerySet):
+class DeviceQuerySet(m.QuerySet):
     """
     Custom QuerySet for Device model.
     Allows chaining custom filters and queries.
@@ -45,7 +46,7 @@ class DeviceQuerySet(models.QuerySet):
         return self.active().filter(player_id=player_id)
 
 
-class DeviceManager(models.Manager):
+class DeviceManager(m.Manager):
     """
     Custom manager for Device model.
     Uses DeviceQuerySet for advanced querying.
@@ -92,21 +93,19 @@ class DeviceManager(models.Manager):
         return device, created
 
 
-class Device(models.Model):
+class Device(CreatedUpdatedMixin):
     """Model for storing device information for push notifications."""
 
-    token = models.CharField(max_length=DEVICE_TOKEN_MAX_LENGTH, unique=True)
-    platform = models.CharField(
+    token = m.CharField(max_length=DEVICE_TOKEN_MAX_LENGTH, unique=True)
+    platform = m.CharField(
         max_length=DEVICE_PLATFORM_LENGTH,
         choices=DeviceType.choices,
         default=DeviceType.ANDROID,
     )
-    player = models.ForeignKey(
-        'players.Player', related_name='devices', on_delete=models.CASCADE
+    player = m.ForeignKey(
+        'players.Player', related_name='devices', on_delete=m.CASCADE
     )
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    is_active = m.BooleanField(default=True)
     objects = DeviceManager()
 
     class Meta:
@@ -117,20 +116,20 @@ class Device(models.Model):
         return f'{self.player.user.username} - device {self.id}'
 
 
-class NotificationsBase(models.Model):
+class NotificationsBase(m.Model):
     """Model for defining different types of notifications."""
 
-    type = models.CharField(
+    type = m.CharField(
         max_length=NOTIFICATION_TYPE_MAX_LENGTH,
         choices=NotificationTypes.CHOICES,
         unique=True,
         db_index=True,
     )
-    title = models.CharField(
+    title = m.CharField(
         max_length=NOTIFICATION_TITLE_MAX_LENGTH, null=False, blank=False
     )
-    body = models.TextField(null=False, blank=False)
-    screen = models.CharField(
+    body = m.TextField(null=False, blank=False)
+    screen = m.CharField(
         max_length=NOTIFICATION_SCREEN_MAX_LENGTH, null=False, blank=False
     )
 
@@ -138,7 +137,7 @@ class NotificationsBase(models.Model):
         verbose_name = _('Notification Type')
         verbose_name_plural = _('Notification Types')
         indexes = [
-            models.Index(fields=['type']),
+            m.Index(fields=['type']),
         ]
 
     def __str__(self):
@@ -166,30 +165,30 @@ class NotificationsBase(models.Model):
 class Notifications(CreatedUpdatedMixin):
     """Model for storing notification messages."""
 
-    player = models.ForeignKey(
+    player = m.ForeignKey(
         'players.Player',
         related_name='notifications',
-        on_delete=models.CASCADE,
+        on_delete=m.CASCADE,
         verbose_name=_('Player'),
     )
-    notification_type = models.ForeignKey(
+    notification_type = m.ForeignKey(
         'notifications.NotificationsBase',
-        on_delete=models.CASCADE,
+        on_delete=m.CASCADE,
         verbose_name=_('Notification type'),
     )
-    is_read = models.BooleanField(default=False, verbose_name=_('Is read'))
-    game = models.ForeignKey(
+    is_read = m.BooleanField(default=False, verbose_name=_('Is read'))
+    game = m.ForeignKey(
         'event.Game',
         related_name='notifications',
-        on_delete=models.CASCADE,
+        on_delete=m.CASCADE,
         null=True,
         blank=True,
         verbose_name=_('Related game'),
     )
-    tourney = models.ForeignKey(
+    tourney = m.ForeignKey(
         'event.Tourney',
         related_name='notifications',
-        on_delete=models.CASCADE,
+        on_delete=m.CASCADE,
         null=True,
         blank=True,
         verbose_name=_('Related tourney'),
@@ -213,27 +212,27 @@ class Notifications(CreatedUpdatedMixin):
         )
 
 
-class NotificationsTime(models.Model):
+class NotificationsTime(m.Model):
     """Notification time model."""
 
-    name = models.CharField(
+    name = m.CharField(
         max_length=CoreFieldLength.NAME.value,
         unique=True,
         default='Develop Notifications Time Settings',
     )
-    closed_event_notification = models.DurationField(
+    closed_event_notification = m.DurationField(
         verbose_name=_('Notifications time after events are closed'),
         default=PROD_NOTIFICATION_TIME.closed_event,
     )
-    pre_event_notification = models.DurationField(
+    pre_event_notification = m.DurationField(
         verbose_name=_('Notifications time before events start'),
         default=PROD_NOTIFICATION_TIME.pre_event,
     )
-    advance_notification = models.DurationField(
+    advance_notification = m.DurationField(
         verbose_name=_('Notifications time in advance of the event'),
         default=PROD_NOTIFICATION_TIME.advance,
     )
-    is_active = models.BooleanField(default=True)
+    is_active = m.BooleanField(default=True)
 
     def __str__(self):
         return self.name
