@@ -4,7 +4,6 @@ from django.db import models as m
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.enums import CoreFieldLength
-
 from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.notifications.constants import (
     DEVICE_PLATFORM_LENGTH,

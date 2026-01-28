@@ -141,3 +141,5 @@ class PushServiceMessages:
         'message': '',
         'notification_type': None,
     }
+    PLAYER_NOT_FOUND: str = 'Player with this id NOT found.'
+    EVENT_NOT_FOUND: str = 'Event with this id NOT found.'

@@ -5,7 +5,11 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from apps.admin_panel.constants import MAX_FILE_SIZE, SEND_TYPE_CHOICES
+from apps.admin_panel.constants import (
+    MAX_FILE_SIZE,
+    SEND_TYPE_CHOICES,
+    SendType,
+)
 from apps.notifications.constants import NotificationTypes
 
 
@@ -115,12 +119,11 @@ class NotificationSendForm(forms.Form):
         send_type = cleaned_data.get('send_type')
         player_id = cleaned_data.get('player_id')
         event_id = cleaned_data.get('event_id')
-
-        if send_type == 'send_to_device' and not player_id:
+        if send_type == SendType.SEND_TO_PLAYER and not player_id:
             self.add_error(
                 'player_id', _('Player ID is required for device notification')
             )
-        if send_type == 'send_to_event' and not event_id:
+        if send_type == SendType.SEND_TO_EVENT and not event_id:
             self.add_error(
                 'event_id', _('Event ID is required for event notification')
             )

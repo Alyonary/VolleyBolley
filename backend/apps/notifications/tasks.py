@@ -36,6 +36,19 @@ def send_invite_to_player_task(
 
 
 @shared_task
+def send_notification_to_player_task(
+    player_id: int, event_id: int, notification_type: str
+):
+    """Sends notification to the player."""
+    push_service = PushService()
+    return push_service.send_to_player(
+        player_id=player_id,
+        notification_type=notification_type,
+        event_id=event_id,
+    )
+
+
+@shared_task
 def init_push_service():
     """
     Initialize the push service to ensure Firebase Admin SDK is set up.

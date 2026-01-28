@@ -25,3 +25,8 @@ class ContactTypes(m.TextChoices):
 
 
 DOMAIN_REGEX = re.compile(r'^(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}$')
+
+
+class CeleryInspectorMessages:
+    TASK_CREATED: str = 'Task successfully created.'
+    WORKERS_NOT_READY: str = 'Celery workers not ready.'

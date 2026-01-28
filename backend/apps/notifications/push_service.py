@@ -5,7 +5,7 @@ from functools import wraps
 from threading import Lock
 
 import firebase_admin
-from celery import current_app
+from backend.volleybolley.celery import CeleryInspector
 from django.conf import settings
 from firebase_admin import credentials
 from pyfcm import FCMNotification
@@ -71,10 +71,13 @@ class PushServiceConnector:
                     cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self, main_service: 'PushService'):
+    def __init__(
+        self, main_service: 'PushService', inspector: CeleryInspector
+    ):
         if self._initialized:
             return
         self.main_service = main_service
+        self.inspector = inspector
         self._initialize_services()
 
     def __bool__(self):
@@ -197,20 +200,7 @@ class PushServiceConnector:
         Returns:
             bool: True if Celery workers are available, False otherwise
         """
-        try:
-            inspector = current_app.control.inspect(timeout=2.0)
-            active_workers = inspector.active()
-            if not active_workers:
-                logger.warning('No active Celery workers found')
-                return False
-            logger.debug(f'Found {len(active_workers)} active Celery workers')
-            return True
-        except ImportError:
-            logger.error('Celery is not installed')
-            return False
-        except Exception as e:
-            logger.warning(f'Cannot connect to Celery: {str(e)}')
-            return False
+        return self.inspector.check_connection()
 
 
 class NotificationRepository:
@@ -305,7 +295,6 @@ class NotificationRepository:
                 if tourney_obj:
                     data['tourney'] = tourney_obj
         try:
-            print('CREATING', data)
             Notifications.objects.create(**data)
             logger.debug(
                 f'Notification DB model created for player '
@@ -359,7 +348,6 @@ class PushNotificationSender:
                 event_id=event_id,
             )
             if status:
-                print(d, notification, event_id, 'SSSSSS')
                 self.main_service.repository.create_notification_record(
                     device=d,
                     notification=notification,
@@ -453,7 +441,9 @@ class PushService:
 
     def __init__(self):
         self.repository = NotificationRepository(main_service=self)
-        self.connector = PushServiceConnector(main_service=self)
+        self.connector = PushServiceConnector(
+            main_service=self, inspector=CeleryInspector()
+        )
         self.sender = PushNotificationSender(main_service=self)
 
     def __bool__(self):

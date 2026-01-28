@@ -1,5 +1,7 @@
 import logging
 
+from volleybolley.celery import CeleryInspector
+from celery.exceptions import CeleryError
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render
@@ -17,7 +19,17 @@ from apps.admin_panel.forms import FileUploadForm, NotificationSendForm
 from apps.admin_panel.services import FileUploadService
 from apps.core.models import DailyStats
 from apps.core.task import collect_full_project_stats
+from apps.event.models import Game, Tourney
+from apps.notifications.constants import (
+    NotificationTypes,
+    PushServiceMessages,
+)
 from apps.notifications.push_service import PushService
+from apps.notifications.tasks import (
+    send_event_notification_task,
+    send_notification_to_player_task,
+)
+from apps.players.models import Player
 
 logger = logging.getLogger(__name__)
 
@@ -36,30 +48,43 @@ def run_stats_task_view(request):
 @staff_member_required
 def notifications_view(request):
     """Admin view for managing notifications."""
-    push_service = PushService()
+    inspector = CeleryInspector()
     if request.method == 'POST':
+        error_occured = False
         form = NotificationSendForm(request.POST)
-        if form.is_valid():
+        if not form.is_valid():
+            messages.warning(request, form.errors)
+        else:
+            player_id = form.cleaned_data.get('player_id', None)
+            event_id = form.cleaned_data.get('event_id', None)
             send_type = form.cleaned_data['send_type']
-            if send_type == SendType.SEND_TO_PLAYER.value:
-                # player_id = form.cleaned_data['player_id']
-                # ПРОПИСАТЬ ТАСКИ ПУШ СЕРВИСА
-                result = {}
-            elif send_type == SendType.SEND_TO_EVENT.value:
-                # event_id = form.cleaned_data
-                # ПРОПИСАТЬ ТАСКИ ПУШ СЕРВИСА
-                result = {}
-            if result.get('success'):
-                messages.success(
-                    request, _('✅ Notification sent successfully.')
+            notification_type = form.cleaned_data['notification_type']
+            if send_type == SendType.SEND_TO_PLAYER:
+                player = Player.objects.filter(id=player_id).first()
+                if not player:
+                    error_occured = True
+                    messages.error(
+                        request, _(PushServiceMessages.PLAYER_NOT_FOUND)
+                    )
+            elif send_type == SendType.SEND_TO_EVENT:
+                if notification_type in NotificationTypes.FOR_GAMES:
+                    event_model = Game
+                elif notification_type in NotificationTypes.FOR_TOURNEYS:
+                    event_model = Tourney
+                event = event_model.objects.filter(id=event_id).first()
+                if not event:
+                    error_occured = True
+                    messages.error(
+                        request, PushServiceMessages.EVENT_NOT_FOUND
+                    )
+            if not error_occured:
+                task_status = create_notification_task(
+                    event_id, player_id, send_type, notification_type
                 )
-            else:
-                messages.error(
-                    request,
-                    _('❌ Failed to send notification: %(error)s')
-                    % {'error': result.get('error', 'Unknown error')},
-                )
-
+                if not task_status['success']:
+                    messages.error(request, _(task_status['message']))
+                else:
+                    messages.success(request, _(task_status['message']))
     else:
         form = NotificationSendForm()
     context = {
@@ -68,7 +93,7 @@ def notifications_view(request):
         'page_description': _(
             'View and manage push notifications sent to users.'
         ),
-        'push_service_enabled': push_service.enable,
+        'push_service_enabled': True,
         'form': form,
     }
     return render(request, 'admin_panel/notifications.html', context)
@@ -221,3 +246,37 @@ def dashboard_view(request):
         'games_chart_data': games_chart_data,
     }
     return render(request, 'admin_panel/admin_dashboard.html', context)
+
+
+def create_notification_task(
+    event_id: int | None,
+    player_id: int | None,
+    send_type: str,
+    notification_type: str,
+    inspector: CeleryInspector
+) -> dict[str, bool]:
+    """
+    Create notification task.
+    Attempting to create notification by celery task.
+    Return dict with status and message about error(if thats occured).
+    """
+    if send_type == SendType.SEND_TO_EVENT:
+        return inspector.delay_task(
+            task=send_event_notification_task,
+            task_args={
+                'event_id':event_id, 'notification_type': notification_type
+            }
+        )
+    elif send_type == SendType.SEND_TO_PLAYER:
+        return inspector.delay_task(
+            task=send_notification_to_player_task,
+            task_args={
+                'player_id': player_id,
+                'event_id': event_id,
+                'notification_type':notification_type
+            }
+        )
+    else:
+        m = f'Uknown type {notification_type} for {send_type}notification'
+        logger.error(m)
+        return {'success': False, 'message': m}

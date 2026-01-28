@@ -2,9 +2,9 @@ import builtins
 from unittest.mock import Mock
 
 import pytest
-from apps.notifications.constants import PushServiceMessages  # type: ignore
 
 from apps.notifications import push_service as push_service_module
+from apps.notifications.constants import PushServiceMessages  # type: ignore
 from apps.notifications.push_service import PushService
 
 
