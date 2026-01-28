@@ -3,10 +3,11 @@ from unittest.mock import Mock
 import pytest
 from pyfcm.errors import FCMError
 
-from apps.event.models import Game
-from apps.notifications.constants import PushServiceMessages
+from apps.event.models import Game, Tourney
+from apps.notifications.constants import NotificationTypes, PushServiceMessages
 from apps.notifications.models import Device, Notifications, NotificationsBase
 from apps.notifications.push_service import PushService
+from apps.players.models import Player
 
 
 @pytest.mark.django_db
@@ -20,7 +21,6 @@ class TestPushServiceInitialization:
         service: PushService = push_service_enabled
         assert service.connector.enable is True
         assert service.connector.celery_available is True
-        assert service.connector._initialized is True
         assert hasattr(service.connector, 'push_service')
 
     def test_initialization_no_services_available(
@@ -30,7 +30,6 @@ class TestPushServiceInitialization:
         service: PushService = push_service_disabled
         assert service.connector.enable is False
         assert service.connector.celery_available is False
-        assert service.connector._initialized is True
 
     def test_initialization_fcm_only_available(
         self, push_service_fcm_only: PushService
@@ -39,7 +38,6 @@ class TestPushServiceInitialization:
         service: PushService = push_service_fcm_only
         assert service.connector.celery_available is False
         assert service.connector.fb_available is True
-        assert service.connector._initialized is True
         assert service.connector.enable is False
 
     def push_service_with_celery_only(
@@ -49,7 +47,6 @@ class TestPushServiceInitialization:
         service: PushService = push_service_with_celery
         assert service.connector.celery_available is True
         assert service.connector.fb_available is False
-        assert service.connector._initialized is True
         assert service.connector.enable is False
 
 
@@ -64,7 +61,6 @@ class TestPushServiceStatusMethods:
         service: PushService = push_service_enabled
         assert service.connector.enable is True
         assert service.connector.celery_available is True
-        assert service.connector._initialized is True
         assert bool(service) is True
 
     def test_bool_method_services_unavailable(
@@ -74,7 +70,6 @@ class TestPushServiceStatusMethods:
         service: PushService = push_service_disabled
         assert service.connector.enable is False
         assert service.connector.celery_available is False
-        assert service.connector._initialized is True
 
     def test_get_status_returns_correct_dict(
         self, push_service_enabled: PushService
@@ -87,13 +82,11 @@ class TestPushServiceStatusMethods:
             'notifications_enabled',
             'fcm_available',
             'celery_available',
-            'initialized',
         }
         assert set(status.keys()) == expected_keys
         assert status['notifications_enabled'] is True
         assert status['fcm_available'] is True
         assert status['celery_available'] is True
-        assert status['initialized'] is True
 
     def test_get_status_disabled_service(
         self, push_service_disabled: PushService
@@ -105,7 +98,6 @@ class TestPushServiceStatusMethods:
         assert status['notifications_enabled'] is False
         assert status['fcm_available'] is False
         assert status['celery_available'] is False
-        assert status['initialized'] is True
 
 
 @pytest.mark.django_db
@@ -125,6 +117,52 @@ class TestPushServiceNotificationMethods:
             sample_notification,
         )
         assert result is True
+
+    @pytest.mark.parametrize(
+        'notification_type, event_type',
+        [
+            (NotificationTypes.GAME_REMINDER, 'game'),
+            (NotificationTypes.GAME_RATE, 'game'),
+            (NotificationTypes.TOURNEY_REMINDER, 'tourney'),
+            (NotificationTypes.TOURNEY_RATE, 'tourney'),
+        ],
+    )
+    def test_send_push_for_eventsuccess(
+        self,
+        push_service_enabled: PushService,
+        game_thailand: Game,
+        tourney_thailand: Tourney,
+        players_with_devices: Player,
+        all_notification_types: NotificationsBase,
+        push_service_answer_sample: dict,
+        event_type: str,
+        notification_type: str,
+    ):
+        """Test send_push_notifications task success."""
+        if event_type == 'game':
+            event = game_thailand
+            qs_data = {'game': game_thailand}
+        else:
+            event = tourney_thailand
+            qs_data = {'tourney': tourney_thailand}
+        event.players.set(players_with_devices)
+        result = push_service_enabled.send_push_for_event(
+            event_id=event.id, notification_type=notification_type
+        )
+        for p in players_with_devices:
+            qs_data['player'] = p
+            qs_data['notification_type'] = all_notification_types[
+                notification_type
+            ]
+            notif_in_db = Notifications.objects.filter(**qs_data).first()
+            assert notif_in_db is not None
+        assert isinstance(result, dict)
+        assert all(
+            list(map(lambda k: k in push_service_answer_sample, result))
+        )
+        assert result['success'] is True
+        assert result['notification_type'] == notification_type
+        assert result['message'] == PushServiceMessages.SUCCESS
 
     def test_send_notification_by_player_with_game_id(
         self,
@@ -345,7 +383,7 @@ class TestPushServiceWithTasksIntegration:
         )
         assert result is True
         assert message == 'success'
-        assert not mock_tasks_import.apply_async.called
+        assert not mock_tasks_import.called
 
     def test_send_notification_fcm_error(
         self,
