@@ -5,6 +5,7 @@ from django.utils import timezone
 from apps.event.models import Game, GameInvitation, Tourney
 from apps.notifications.constants import NotificationTypes
 from apps.notifications.models import NotificationsTime
+from apps.notifications.task_manager import TaskManager
 from apps.notifications.tasks import (
     send_event_notification_task,
     send_invite_to_player_task,
@@ -16,6 +17,7 @@ def schedule_event_notifications(instance, event_type):
     Schedule notifications for the event (Game or Tourney).
     Sends notifications 1 hour and 1 day before the event start time.
     """
+    task_manager = TaskManager()
     now = timezone.now()
     notification_type = {
         'game': NotificationTypes.GAME_REMINDER,
@@ -30,23 +32,21 @@ def schedule_event_notifications(instance, event_type):
         start_time - NotificationsTime.get_pre_event_time()
     )
     if pre_event_notification_time > now:
-        return send_event_notification_task.apply_async(
-            args=[
-                instance.id,
-                notification_type,
-            ],
+        task_manager.create_task(
+            task=send_event_notification_task,
             eta=pre_event_notification_time,
+            event_id=instance.id,
+            notification_type=notification_type,
         )
     advance_notification_time = (
         start_time - NotificationsTime.get_advance_notification_time()
     )
     if (start_time - now).days >= 1:
-        return send_event_notification_task.apply_async(
-            args=[
-                instance.id,
-                notification_type,
-            ],
+        task_manager.create_task(
+            task=send_event_notification_task,
             eta=advance_notification_time,
+            event_id=instance.id,
+            notification_type=notification_type,
         )
     return False
 
@@ -68,10 +68,12 @@ def game_invitation_created_handler(
     sender, instance: GameInvitation, created, **kwargs
 ):
     if created:
-        send_invite_to_player_task.delay(
-            instance.invited.id,
-            instance.game.id,
-            NotificationTypes.GAME_INVITE,
+        manager = TaskManager()
+        manager.create_task(
+            send_invite_to_player_task,
+            player_id=instance.invited.id,
+            event_id=instance.game.id,
+            notification_type=NotificationTypes.GAME_INVITE,
         )
 
 

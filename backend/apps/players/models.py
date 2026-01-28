@@ -6,6 +6,7 @@ from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from apps.core.mixins.created_updated import CreatedUpdatedMixin
 from apps.event.models import Game, Tourney
 from apps.locations.models import City, Country
 from apps.players.constants import (
@@ -233,7 +234,7 @@ class PlayerRating(models.Model):
         return f'Rating {self.grade} of {self.player} at {self.updated_at}'
 
 
-class PlayerRatingVote(models.Model):
+class PlayerRatingVote(CreatedUpdatedMixin):
     """
     Model for storing player-to-player rating votes.
 
@@ -256,9 +257,6 @@ class PlayerRatingVote(models.Model):
         verbose_name=_('Player who receives the rating'),
     )
     value = models.FloatField(verbose_name=_('Rating value'))
-    created_at = models.DateTimeField(
-        auto_now_add=True, verbose_name=_('Date of rating vote creation')
-    )
     is_counted = models.BooleanField(
         default=False, verbose_name=_('Is vote counted in rating calculation')
     )

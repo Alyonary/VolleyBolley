@@ -2,15 +2,14 @@ import json
 import logging
 import os
 from functools import wraps
-from threading import Lock
 
 import firebase_admin
-from celery import current_app
 from django.conf import settings
 from firebase_admin import credentials
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
 
+from apps.core.base import BaseSingleton
 from apps.event.models import Game, Tourney
 from apps.notifications.constants import (
     RETRY_PUSH_TIME,
@@ -22,6 +21,7 @@ from apps.notifications.models import (
     Notifications,
     NotificationsBase,
 )
+from apps.notifications.task_manager import CeleryInspector
 
 logger = logging.getLogger(__name__)
 
@@ -34,15 +34,15 @@ def service_required(func):
     """
 
     @wraps(func)
-    def wrapper(self: 'PushNotificationSender', *args, **kwargs):
+    def wrapper(self: 'PushService', *args, **kwargs):
         result = PushServiceMessages.ANSWER_SAMPLE.copy()
 
-        if not self.main_service.enable:
+        if not self.enable:
             logger.info(
                 f'Service not available for {func.__name__}, '
                 f'attempting reconnection'
             )
-            if not self.main_service.reconnect():
+            if not self.connector.reconnect():
                 logger.warning(
                     f'Service still unavailable, skipping {func.__name__}'
                 )
@@ -53,28 +53,18 @@ def service_required(func):
     return wrapper
 
 
-class PushServiceConnector:
+class PushServiceConnector(BaseSingleton):
     """
     Singleton class for managing connections to Firebase Cloud Messaging (FCM)
     and Celery services. Handles initialization, status checking, and
     reconnection logic for push notification infrastructure.
     """
 
-    _instance = None
-    _lock = Lock()
-
-    def __new__(cls, *args, **kwargs):
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    cls._instance._initialized = False
-        return cls._instance
-
-    def __init__(self, main_service: 'PushService'):
-        if self._initialized:
-            return
+    def __init__(
+        self, main_service: 'PushService', inspector: CeleryInspector
+    ):
         self.main_service = main_service
+        self.inspector = inspector
         self._initialize_services()
 
     def __bool__(self):
@@ -106,7 +96,6 @@ class PushServiceConnector:
                 logger.error(
                     f'Error initializing services: {error_msg}', exc_info=True
                 )
-            self._initialized = True
 
     def _get_fcm_file_path(self) -> str:
         """Return path to fcm.json in BASE_DIR."""
@@ -179,7 +168,6 @@ class PushServiceConnector:
             'notifications_enabled': getattr(self, 'enable', False),
             'fcm_available': self._check_fcm(),
             'celery_available': getattr(self, 'celery_available', False),
-            'initialized': getattr(self, '_initialized', False),
         }
 
     def _check_fcm(self) -> bool:
@@ -197,20 +185,7 @@ class PushServiceConnector:
         Returns:
             bool: True if Celery workers are available, False otherwise
         """
-        try:
-            inspector = current_app.control.inspect(timeout=2.0)
-            active_workers = inspector.active()
-            if not active_workers:
-                logger.warning('No active Celery workers found')
-                return False
-            logger.debug(f'Found {len(active_workers)} active Celery workers')
-            return True
-        except ImportError:
-            logger.error('Celery is not installed')
-            return False
-        except Exception as e:
-            logger.warning(f'Cannot connect to Celery: {str(e)}')
-            return False
+        return self.inspector.check_connection()
 
 
 class NotificationRepository:
@@ -278,11 +253,8 @@ class NotificationRepository:
             logger.error(f'Notification type {notification_type} not found')
             return None
 
-    def create_notification_record(
-        self,
-        device: Device,
-        notification: NotificationsBase,
-        event_id: int | None = None,
+    def bulk_create_notifications_record(
+        self, notifications_data: list[dict]
     ) -> bool:
         """
         Create a database model for storing notification.
@@ -291,34 +263,35 @@ class NotificationRepository:
             notification_type (str): Type of notification sent.
             event_id (int, optional): Game ID for the notification data.
         """
-        data = {
-            'player': device.player,
-            'notification_type': notification,
-        }
-        if event_id:
-            if notification.type in NotificationTypes.FOR_GAMES:
-                game_obj = Game.objects.filter(id=event_id).first()
-                if game_obj:
-                    data['game'] = game_obj
-            else:  # notification.type in NotificationTypes.FOR_TOURNEYS
-                tourney_obj = Tourney.objects.filter(id=event_id).first()
-                if tourney_obj:
-                    data['tourney'] = tourney_obj
-        try:
-            print('CREATING', data)
-            Notifications.objects.create(**data)
-            logger.debug(
-                f'Notification DB model created for player '
-                f'{device.player.user.username}'
-            )
-        except Exception as e:
-            logger.error(
-                f'Error creating notification DB model for player '
-                f'{device.player}: {str(e)}',
-                exc_info=True,
-            )
-            return False
-        return True
+        for n_data in notifications_data:
+            event_id = n_data.pop('event_id')
+            if event_id:
+                if (
+                    n_data['notification_type'].type
+                    in NotificationTypes.FOR_GAMES
+                ):
+                    game_obj = Game.objects.filter(id=event_id).first()
+                    if game_obj:
+                        n_data['game'] = game_obj
+                else:  # notification.type in NotificationTypes.FOR_TOURNEYS
+                    tourney_obj = Tourney.objects.filter(id=event_id).first()
+                    if tourney_obj:
+                        n_data['tourney'] = tourney_obj
+            try:
+                print('QSDATACREATE', n_data)
+                Notifications.objects.create(**n_data)
+                logger.debug(
+                    f'Notification DB model created for player '
+                    f'{n_data["player"]}'
+                )
+            except Exception as e:
+                logger.error(
+                    f'Error creating notification DB model for player '
+                    f'{n_data["player"]}: {str(e)}',
+                    exc_info=True,
+                )
+                continue
+        return
 
 
 class PushNotificationSender:
@@ -334,7 +307,6 @@ class PushNotificationSender:
         )
         self.main_service = main_service
 
-    @service_required
     def send_push_bulk(
         self,
         devices: list[Device],
@@ -344,6 +316,7 @@ class PushNotificationSender:
         result = PushServiceMessages.ANSWER_SAMPLE.copy()
         result['notification_type'] = notification.type
         result['total_devices'] = len(devices)
+        result['notifications_data'] = []
         if not notification:
             logger.error('Notification object is None')
             result['message'] = PushServiceMessages.NOTIFICATION_TYPE_NOT_FOUND
@@ -359,11 +332,12 @@ class PushNotificationSender:
                 event_id=event_id,
             )
             if status:
-                print(d, notification, event_id, 'SSSSSS')
-                self.main_service.repository.create_notification_record(
-                    device=d,
-                    notification=notification,
-                    event_id=event_id,
+                result['notifications_data'].append(
+                    {
+                        'player': d.player,
+                        'notification_type': notification,
+                        'event_id': event_id,
+                    }
                 )
                 result['delivered'] += 1
                 continue
@@ -460,26 +434,34 @@ class PushService:
         """Return True if push service is enabled."""
         return bool(self.connector)
 
+    @service_required
     def send_to_player(
         self,
         player_id: int,
         notification_type: str,
         event_id: int | None = None,
     ) -> dict | bool:
-        return self.sender.send_push_bulk(
+        result = self.sender.send_push_bulk(
             devices=self.repository.get_devices_by_player(player_id),
             notification=self.repository.get_notification_object(
                 notification_type=notification_type
             ),
             event_id=event_id,
         )
+        notifications_data = result.pop('notifications_data')
+        if notifications_data:
+            self.repository.bulk_create_notifications_record(
+                notifications_data
+            )
+        return result
 
+    @service_required
     def send_push_for_event(
         self,
         notification_type: str,
         event_id: int | None = None,
     ) -> dict[str, int]:
-        return self.sender.send_push_bulk(
+        result = self.sender.send_push_bulk(
             devices=self.repository.get_devices(
                 notification_type=notification_type,
                 event_id=event_id,
@@ -489,6 +471,12 @@ class PushService:
             ),
             event_id=event_id,
         )
+        notifications_data = result.pop('notifications_data')
+        if notifications_data:
+            self.repository.bulk_create_notifications_record(
+                notifications_data
+            )
+        return result
 
     def reconnect(self) -> bool:
         """Reconnect to push notification services."""

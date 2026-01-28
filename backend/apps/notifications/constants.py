@@ -4,6 +4,14 @@ from django.conf import settings
 from django.db import models
 
 
+class CeleryInspectorMessages:
+    TASK_CREATED: str = 'Task successfully created.'
+    WORKERS_NOT_READY: str = 'Celery workers not ready.'
+
+
+CELERY_INSPECTOR_TIMEOUT: float = 2.0
+
+
 class DeviceType(models.TextChoices):
     """Device type choices for push notifications."""
 
@@ -140,4 +148,5 @@ class PushServiceMessages:
         'failed': 0,
         'message': '',
         'notification_type': None,
+        'notifications_data': None,
     }

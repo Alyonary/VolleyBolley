@@ -15,6 +15,7 @@ from apps.notifications.models import (
     NotificationsTime,
 )
 from apps.notifications.push_service import PushService
+from apps.notifications.task_manager import TaskManager
 from apps.notifications.utils import delete_old_devices
 
 logger = logging.getLogger('django.notifications')
@@ -190,7 +191,13 @@ def send_rate_notification_for_events(
     else:
         notification_type = NotificationTypes.TOURNEY_RATE
     for event in events:
-        send_event_notification_task.delay(event.id, notification_type)
+        task_manager = TaskManager()
+        task_manager.create_task(
+            send_event_notification_task,
+            eta=None,
+            event_id=event.id,
+            notification_type=notification_type,
+        )
         event.is_active = False
         event.save()
     logger.info(

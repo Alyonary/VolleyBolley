@@ -2,9 +2,9 @@ import builtins
 from unittest.mock import Mock
 
 import pytest
-from backend.apps.notifications.constants import PushServiceMessages
 
 from apps.notifications import push_service as push_service_module
+from apps.notifications.constants import PushServiceMessages
 from apps.notifications.push_service import PushService
 
 
@@ -19,7 +19,6 @@ class MockPushServiceConnector:
         self.fb_available = fb_available
         self.celery_available = celery_available
         self.enable = fb_available and celery_available
-        self._initialized = True
         self.fb_admin = Mock() if fb_available else None
         self.push_service = Mock()
         self.push_service.notify = Mock()
@@ -32,7 +31,6 @@ class MockPushServiceConnector:
             'notifications_enabled': self.enable,
             'fcm_available': self.fb_available,
             'celery_available': self.celery_available,
-            'initialized': self._initialized,
         }
 
     def reconnect(self):
