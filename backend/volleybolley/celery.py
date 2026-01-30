@@ -1,12 +1,8 @@
 import logging
 import os
-from datetime import datetime
-from threading import Lock
 
-from celery import Celery, current_app
+from celery import Celery
 from celery.schedules import crontab
-
-from apps.core.constants import CeleryInspectorMessages
 
 logger = logging.getLogger('django.celery')
 

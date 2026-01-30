@@ -1,7 +1,6 @@
 import logging
 
-from volleybolley.celery import CeleryInspector
-from celery.exceptions import CeleryError
+from django import forms
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.shortcuts import redirect, render
@@ -25,6 +24,11 @@ from apps.notifications.constants import (
     PushServiceMessages,
 )
 from apps.notifications.push_service import PushService
+from apps.notifications.task_manager import (
+    CeleryInspector,
+    RedisInspector,
+    TaskManager,
+)
 from apps.notifications.tasks import (
     send_event_notification_task,
     send_notification_to_player_task,
@@ -48,38 +52,19 @@ def run_stats_task_view(request):
 @staff_member_required
 def notifications_view(request):
     """Admin view for managing notifications."""
-    inspector = CeleryInspector()
+    manager = TaskManager(broker=RedisInspector(), worker=CeleryInspector())
     if request.method == 'POST':
-        error_occured = False
         form = NotificationSendForm(request.POST)
         if not form.is_valid():
             messages.warning(request, form.errors)
         else:
-            player_id = form.cleaned_data.get('player_id', None)
-            event_id = form.cleaned_data.get('event_id', None)
-            send_type = form.cleaned_data['send_type']
-            notification_type = form.cleaned_data['notification_type']
-            if send_type == SendType.SEND_TO_PLAYER:
-                player = Player.objects.filter(id=player_id).first()
-                if not player:
-                    error_occured = True
-                    messages.error(
-                        request, _(PushServiceMessages.PLAYER_NOT_FOUND)
-                    )
-            elif send_type == SendType.SEND_TO_EVENT:
-                if notification_type in NotificationTypes.FOR_GAMES:
-                    event_model = Game
-                elif notification_type in NotificationTypes.FOR_TOURNEYS:
-                    event_model = Tourney
-                event = event_model.objects.filter(id=event_id).first()
-                if not event:
-                    error_occured = True
-                    messages.error(
-                        request, PushServiceMessages.EVENT_NOT_FOUND
-                    )
-            if not error_occured:
+            if not validate_model_data(request, form):
                 task_status = create_notification_task(
-                    event_id, player_id, send_type, notification_type
+                    form.cleaned_data['event_id'],
+                    form.cleaned_data['player_id'],
+                    form.cleaned_data['send_type'],
+                    form.cleaned_data['notification_type'],
+                    manager,
                 )
                 if not task_status['success']:
                     messages.error(request, _(task_status['message']))
@@ -93,7 +78,7 @@ def notifications_view(request):
         'page_description': _(
             'View and manage push notifications sent to users.'
         ),
-        'push_service_enabled': True,
+        'task_manager_enabled': manager.ready,
         'form': form,
     }
     return render(request, 'admin_panel/notifications.html', context)
@@ -102,7 +87,6 @@ def notifications_view(request):
 @staff_member_required
 def upload_file(request):
     """File upload page in admin."""
-
     if request.method == 'POST':
         form = FileUploadForm(request.POST, request.FILES)
         if form.is_valid():
@@ -183,32 +167,6 @@ def process_file_upload(
     return redirect('admin_panel:upload_file')
 
 
-def get_model_expected_fields() -> list[dict[str, list[str] | str]]:
-    """Get expected fields for each model in upload service."""
-
-    upload_service = FileUploadService()
-    result = []
-    for name, mapping in upload_service.model_mapping_class.items():
-        entry = {'model': name}
-        if getattr(mapping, 'serializer', None):
-            entry['excel_fields'] = list(
-                getattr(mapping, 'expected_fields', [])
-            )
-            serializer_class = mapping.serializer
-            if serializer_class:
-                serializer = serializer_class()
-                json_fields = []
-                for field_name, field in serializer.fields.items():
-                    if hasattr(field, 'fields'):
-                        nested = list(field.fields.keys())
-                        json_fields.append({field_name: nested})
-                    else:
-                        json_fields.append(field_name)
-                entry['json_fields'] = json_fields
-        result.append(entry)
-    return result
-
-
 @staff_member_required
 def dashboard_view(request):
     """Admin dashboard view showing key metrics."""
@@ -253,7 +211,7 @@ def create_notification_task(
     player_id: int | None,
     send_type: str,
     notification_type: str,
-    inspector: CeleryInspector
+    manager: TaskManager,
 ) -> dict[str, bool]:
     """
     Create notification task.
@@ -261,22 +219,76 @@ def create_notification_task(
     Return dict with status and message about error(if thats occured).
     """
     if send_type == SendType.SEND_TO_EVENT:
-        return inspector.delay_task(
+        return manager.create_task(
             task=send_event_notification_task,
+            eta=None,
             task_args={
-                'event_id':event_id, 'notification_type': notification_type
-            }
+                'event_id': event_id,
+                'notification_type': notification_type,
+            },
         )
-    elif send_type == SendType.SEND_TO_PLAYER:
-        return inspector.delay_task(
+    if send_type == SendType.SEND_TO_PLAYER:
+        return manager.create_task(
             task=send_notification_to_player_task,
+            eta='time1213',
             task_args={
                 'player_id': player_id,
                 'event_id': event_id,
-                'notification_type':notification_type
-            }
+                'notification_type': notification_type,
+            },
         )
-    else:
-        m = f'Uknown type {notification_type} for {send_type}notification'
-        logger.error(m)
-        return {'success': False, 'message': m}
+    m = f'Uknown type {notification_type} for {send_type} notification'
+    logger.error(m)
+    return {'success': False, 'message': m}
+
+
+def validate_model_data(request, form: forms) -> bool:
+    """Checking models data provided in form.
+    Show info message on the page if model obj does not exist.
+    """
+    error_occured = False
+    player_id = form.cleaned_data.get('player_id', None)
+    event_id = form.cleaned_data.get('event_id', None)
+    send_type = form.cleaned_data['send_type']
+    notification_type = form.cleaned_data['notification_type']
+    if send_type == SendType.SEND_TO_PLAYER:
+        player = Player.objects.filter(id=player_id).first()
+        if not player:
+            error_occured = True
+            messages.error(request, _(PushServiceMessages.PLAYER_NOT_FOUND))
+    elif send_type == SendType.SEND_TO_EVENT:
+        if notification_type in NotificationTypes.FOR_GAMES:
+            event_model = Game
+        elif notification_type in NotificationTypes.FOR_TOURNEYS:
+            event_model = Tourney
+        event = event_model.objects.filter(id=event_id).first()
+        if not event:
+            error_occured = True
+            messages.error(request, PushServiceMessages.EVENT_NOT_FOUND)
+    return error_occured
+
+
+def get_model_expected_fields() -> list[dict[str, list[str] | str]]:
+    """Get expected fields for each model in upload service."""
+
+    upload_service = FileUploadService()
+    result = []
+    for name, mapping in upload_service.model_mapping_class.items():
+        entry = {'model': name}
+        if getattr(mapping, 'serializer', None):
+            entry['excel_fields'] = list(
+                getattr(mapping, 'expected_fields', [])
+            )
+            serializer_class = mapping.serializer
+            if serializer_class:
+                serializer = serializer_class()
+                json_fields = []
+                for field_name, field in serializer.fields.items():
+                    if hasattr(field, 'fields'):
+                        nested = list(field.fields.keys())
+                        json_fields.append({field_name: nested})
+                    else:
+                        json_fields.append(field_name)
+                entry['json_fields'] = json_fields
+        result.append(entry)
+    return result

@@ -36,7 +36,7 @@
                 {{ form.notification_type.label_tag }}
                 {{ form.notification_type }}
             </div>
-            <button type="submit" id="send-btn" class="btn-upload" {% if not push_service_enabled %}disabled{% endif %}>
+            <button type="submit" id="send-btn" class="btn-upload" {% if not task_manager_enabled %}disabled{% endif %}>
                 {% trans "Send Notification" %}
             </button>
         </form>

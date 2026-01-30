@@ -7,9 +7,11 @@ from django.db import models
 class CeleryInspectorMessages:
     TASK_CREATED: str = 'Task successfully created.'
     WORKERS_NOT_READY: str = 'Celery workers not ready.'
+    ERROR_CREATING_TASK: str = 'Task not created. ' + WORKERS_NOT_READY
 
 
-CELERY_INSPECTOR_TIMEOUT: float = 2.0
+CELERY_INSPECTOR_TIMEOUT: int = 2
+REDIS_CONNECTION_TIMEOUT: int = 2
 
 
 class DeviceType(models.TextChoices):

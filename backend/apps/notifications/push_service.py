@@ -9,7 +9,7 @@ from firebase_admin import credentials
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
 
-from apps.core.base import BaseSingleton
+from apps.core.base import BaseConnectionManager
 from apps.event.models import Game, Tourney
 from apps.notifications.constants import (
     RETRY_PUSH_TIME,
@@ -21,7 +21,7 @@ from apps.notifications.models import (
     Notifications,
     NotificationsBase,
 )
-from apps.notifications.task_manager import CeleryInspector
+from apps.notifications.task_manager import CeleryInspector, RedisInspector
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ def service_required(func):
     return wrapper
 
 
-class PushServiceConnector(BaseSingleton):
+class PushServiceConnector(BaseConnectionManager):
     """
     Singleton class for managing connections to Firebase Cloud Messaging (FCM)
     and Celery services. Handles initialization, status checking, and
@@ -61,10 +61,13 @@ class PushServiceConnector(BaseSingleton):
     """
 
     def __init__(
-        self, main_service: 'PushService', inspector: CeleryInspector
+        self,
+        main_service: 'PushService',
+        worker: CeleryInspector,
+        broker: RedisInspector,
     ):
+        super().__init__(worker, broker)
         self.main_service = main_service
-        self.inspector = inspector
         self._initialize_services()
 
     def __bool__(self):
@@ -185,7 +188,7 @@ class PushServiceConnector(BaseSingleton):
         Returns:
             bool: True if Celery workers are available, False otherwise
         """
-        return self.inspector.check_connection()
+        return super().get_status()
 
 
 class NotificationRepository:
@@ -278,7 +281,6 @@ class NotificationRepository:
                     if tourney_obj:
                         n_data['tourney'] = tourney_obj
             try:
-                print('QSDATACREATE', n_data)
                 Notifications.objects.create(**n_data)
                 logger.debug(
                     f'Notification DB model created for player '
@@ -428,7 +430,9 @@ class PushService:
     def __init__(self):
         self.repository = NotificationRepository(main_service=self)
         self.connector = PushServiceConnector(
-            main_service=self, inspector=CeleryInspector()
+            main_service=self,
+            inspector=CeleryInspector(),
+            broker=RedisInspector(),
         )
         self.sender = PushNotificationSender(main_service=self)
 

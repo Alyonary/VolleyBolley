@@ -38,24 +38,6 @@ jazzmin_settings = {
             'permissions': ['auth.view_user'],
         }
     ],
-    'usermenu_links': [
-        {
-            'name': _('👤 Profile'),
-            'url': 'admin:auth_user_change',
-            'icon': 'fas fa-user',
-        },
-        {
-            'name': _('🔐 Change Password'),
-            'url': 'admin:password_change',
-            'icon': 'fas fa-key',
-        },
-        {
-            'name': _('🚪 Logout'),
-            'url': 'admin:logout',
-            'icon': 'fas fa-sign-out-alt',
-        },
-        {'model': 'auth.user'},
-    ],
     'show_sidebar': True,
     'navigation_expanded': True,
     'hide_apps': [],
