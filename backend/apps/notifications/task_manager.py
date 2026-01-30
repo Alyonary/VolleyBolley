@@ -18,12 +18,24 @@ logger = logging.getLogger(__name__)
 
 
 class CeleryInspector(BaseInspector):
-    """Class for checking Celery workers."""
+    """
+    Inspector specialized in monitoring Celery worker availability.
+
+    Uses the Celery control interface to ping active workers and verify
+    the cluster health.
+    """
 
     def __init__(self):
+        """Initialize the inspector using the current Celery application."""
         super().__init__(current_app)
 
     def check_connection(self):
+        """
+        Ping Celery workers to verify they are active and responding.
+
+        Returns:
+            bool: True if at least one worker responds, False otherwise.
+        """
         try:
             inspector = self.app.control.inspect(
                 timeout=CELERY_INSPECTOR_TIMEOUT
@@ -43,9 +55,15 @@ class CeleryInspector(BaseInspector):
 
 
 class RedisInspector(BaseInspector):
-    """Class for checking connection with redis."""
+    """
+    Inspector specialized in monitoring Redis broker connectivity.
+
+    Attributes:
+        app (Redis): The Redis client instance used for health checks.
+    """
 
     def __init__(self):
+        """Initialize the Redis client with settings-defined credentials."""
         super().__init__(
             app=Redis(
                 host=settings.REDIS_HOST,
@@ -56,6 +74,12 @@ class RedisInspector(BaseInspector):
         )
 
     def check_connection(self):
+        """
+        Execute a Redis PING command to verify server availability.
+
+        Returns:
+            bool: True if Redis responds, False on connection or DNS errors.
+        """
         try:
             return self.app.ping()
         except RedisConnectionError:
@@ -69,18 +93,33 @@ class RedisInspector(BaseInspector):
 
 
 class TaskManager(BaseConnectionManager):
-    """Class for creating async task using workers."""
+    """
+    Manager class for dispatching asynchronous tasks.
+
+    Validates system readiness before attempting to enqueue tasks
+    to ensure reliable delivery.
+    """
 
     def create_task(
         self, task: Task, eta: datetime, task_args: dict[str, int]
     ) -> dict[str, bool]:
-        """Create async task using Celery Workers"""
+        """
+        Safely dispatch a Celery task with specified scheduling and arguments.
+
+        Args:
+            task (Task): The Celery task instance to execute(task func name).
+            eta (datetime): The scheduled time for the task.
+            task_args (dict[str, int]): Keyword arguments for the task.
+
+        Returns:
+            dict: A status dictionary containing 'success' (bool)
+                  and 'message' (str).
+        """
         if not self.get_status():
             return {
                 'success': False,
                 'message': CeleryInspectorMessages.ERROR_CREATING_TASK,
             }
-        eta = datetime.now()
         try:
             if task_args and eta:
                 task.apply_async(eta=eta, kwargs=task_args)
