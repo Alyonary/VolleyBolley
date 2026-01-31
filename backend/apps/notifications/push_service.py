@@ -431,7 +431,7 @@ class PushService:
         self.repository = NotificationRepository(main_service=self)
         self.connector = PushServiceConnector(
             main_service=self,
-            inspector=CeleryInspector(),
+            worker=CeleryInspector(),
             broker=RedisInspector(),
         )
         self.sender = PushNotificationSender(main_service=self)
