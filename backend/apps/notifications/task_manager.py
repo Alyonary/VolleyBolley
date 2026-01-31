@@ -2,8 +2,13 @@ import logging
 from datetime import datetime
 
 from celery import current_app
+from celery.app.task import Task
+from django.conf import settings
+from kombu.exceptions import OperationalError
+from redis import Redis
+from redis.exceptions import ConnectionError as RedisConnectionError
 
-from apps.core.base import BaseSingleton
+from apps.core.base import BaseConnectionManager, BaseInspector
 from apps.notifications.constants import (
     CELERY_INSPECTOR_TIMEOUT,
     CeleryInspectorMessages,
@@ -12,55 +17,125 @@ from apps.notifications.constants import (
 logger = logging.getLogger(__name__)
 
 
-class CeleryInspector(BaseSingleton):
-    """Class for checking Celery workers."""
+class CeleryInspector(BaseInspector):
+    """
+    Inspector specialized in monitoring Celery worker availability.
+
+    Uses the Celery control interface to ping active workers and verify
+    the cluster health.
+    """
 
     def __init__(self):
-        self.ready = self.check_connection()
+        """Initialize the inspector using the current Celery application."""
+        super().__init__(current_app)
 
     def check_connection(self):
+        """
+        Ping Celery workers to verify they are active and responding.
+
+        Returns:
+            bool: True if at least one worker responds, False otherwise.
+        """
         try:
-            inspector = current_app.control.inspect(
+            inspector = self.app.control.inspect(
                 timeout=CELERY_INSPECTOR_TIMEOUT
             )
-            active_workers = inspector.active()
-            if not active_workers:
+            workers_ping = inspector.ping()
+            if workers_ping:
+                return True
+            if not workers_ping:
                 logger.warning('No active Celery workers found')
                 return False
-            logger.debug(f'Found {len(active_workers)} active Celery workers')
-            return True
-        except ImportError:
-            logger.error('Celery is not installed')
+        except (ConnectionError, OperationalError) as e:
+            logger.error(f'Celery not ready: {str(e)}')
             return False
         except Exception as e:
-            logger.warning(f'Cannot connect to Celery: {str(e)}')
+            logger.warning(f'Uknown error: {str(e)}')
             return False
 
 
-class TaskManager:
-    """Class for creating async task using workers."""
+class RedisInspector(BaseInspector):
+    """
+    Inspector specialized in monitoring Redis broker connectivity.
+
+    Attributes:
+        app (Redis): The Redis client instance used for health checks.
+    """
 
     def __init__(self):
-        self.inspector = CeleryInspector()
-        self.ready = self.inspector.check_connection()
+        """Initialize the Redis client with settings-defined credentials."""
+        super().__init__(
+            app=Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                db=settings.REDIS_DB,
+                password=settings.REDIS_PASSWORD,
+            )
+        )
 
-    def create_task(self, task, eta: datetime, **kwargs) -> dict[str, bool]:
-        """Create async task using Celery Workers"""
-        if not self.ready:
+    def check_connection(self):
+        """
+        Execute a Redis PING command to verify server availability.
+
+        Returns:
+            bool: True if Redis responds, False on connection or DNS errors.
+        """
+        try:
+            return self.app.ping()
+        except RedisConnectionError:
+            logger.error(
+                f'DNS Error: Host {settings.REDIS_HOST} not found. '
+                'Check docker-compose or your hosts file.'
+            )
+            return False
+        except Exception as e:
+            logger.error(f'Unknown error : {e}')
+
+
+class TaskManager(BaseConnectionManager):
+    """
+    Manager class for dispatching asynchronous tasks.
+
+    Validates system readiness before attempting to enqueue tasks
+    to ensure reliable delivery.
+    """
+
+    def create_task(
+        self, task: Task, eta: datetime, task_args: dict[str, int]
+    ) -> dict[str, bool]:
+        """
+        Safely dispatch a Celery task with specified scheduling and arguments.
+
+        Args:
+            task (Task): The Celery task instance to execute(task func name).
+            eta (datetime): The scheduled time for the task.
+            task_args (dict[str, int]): Keyword arguments for the task.
+
+        Returns:
+            dict: A status dictionary containing 'success' (bool)
+                  and 'message' (str).
+        """
+        if not self.get_status():
             return {
                 'success': False,
+                'message': CeleryInspectorMessages.ERROR_CREATING_TASK,
+            }
+        try:
+            if task_args and eta:
+                task.apply_async(eta=eta, kwargs=task_args)
+            elif task_args and not eta:
+                task.apply_async(kwargs=task_args)
+            elif not task_args and eta:
+                task.apply_async(eta=eta)
+            else:
+                task.apply_async()
+            return {
+                'success': True,
                 'message': CeleryInspectorMessages.TASK_CREATED,
             }
-        task_data = {}
-        if kwargs:
-            task_data['kwargs'] = kwargs
-        if eta:
-            task_data['eta'] = eta
-        if not task_data:
-            task.apply_async()
-        else:
-            task.apply_async(**task_data)
-        return {
-            'success': True,
-            'message': CeleryInspectorMessages.TASK_CREATED,
-        }
+        except OperationalError as e:
+            logger.error(f'Error connecting with workers: {str(e)}')
+            return {
+                'success': False,
+                'message': CeleryInspectorMessages.ERROR_CREATING_TASK,
+            }
