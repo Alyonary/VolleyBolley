@@ -5,7 +5,7 @@ import pytest
 
 from apps.notifications import push_service as push_service_module
 from apps.notifications import task_manager as inspectors_module
-from apps.notifications.constants import PushServiceMessages
+from apps.notifications.messages import PushServiceMessages
 from apps.notifications.push_service import PushService
 
 

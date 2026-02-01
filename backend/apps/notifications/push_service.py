@@ -5,6 +5,8 @@ from functools import wraps
 
 import firebase_admin
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.db import DatabaseError, IntegrityError
 from firebase_admin import credentials
 from pyfcm import FCMNotification
 from pyfcm.errors import FCMError
@@ -14,7 +16,12 @@ from apps.event.models import Game, Tourney
 from apps.notifications.constants import (
     RETRY_PUSH_TIME,
     NotificationTypes,
+)
+from apps.notifications.messages import (
+    ConnectionLogMessages,
     PushServiceMessages,
+    RepositoryLogMessages,
+    SenderLogMessages,
 )
 from apps.notifications.models import (
     Device,
@@ -38,13 +45,16 @@ def service_required(func):
         result = PushServiceMessages.ANSWER_SAMPLE.copy()
 
         if not self.enable:
-            logger.info(
-                f'Service not available for {func.__name__}, '
-                f'attempting reconnection'
+            logger.warning(
+                ConnectionLogMessages.SERVICE_MISSING.format(
+                    func=func.__name__
+                )
             )
             if not self.connector.reconnect():
                 logger.warning(
-                    f'Service still unavailable, skipping {func.__name__}'
+                    ConnectionLogMessages.RECONNECT_SUCCESS.format(
+                        func.__name__
+                    )
                 )
                 result['message'] = PushServiceMessages.SERVICE_UNAVAILABLE
                 return result
@@ -70,10 +80,6 @@ class PushServiceConnector(BaseConnectionManager):
         self.main_service = main_service
         self._initialize_services()
 
-    def __bool__(self):
-        """Return True if notifications services are available."""
-        return all(self.get_status().values())
-
     def _initialize_services(self):
         """Initialize FCM and Celery services."""
         self.enable = False
@@ -83,21 +89,23 @@ class PushServiceConnector(BaseConnectionManager):
             self.celery_available = self._check_celery_availability()
             if self.fb_available and self.celery_available:
                 self.enable = True
-                logger.info(
-                    'Firebase and Celery services connected successfully, '
-                    'notifications enabled'
-                )
+                logger.info(ConnectionLogMessages.INIT_SUCCESS)
             if not self.fb_available:
-                error_msg = 'FCM service not available\n'
+                error_msg = ConnectionLogMessages.FCM_FAIL
             if not self.celery_available:
-                error_msg += ' Celery workers not available'
+                error_msg += ConnectionLogMessages.CELERY_FAIL
         except Exception as e:
-            error_msg = f'Unexpected error during initialization: {str(e)}'
+            error_msg = ConnectionLogMessages.INIT_UNEXPECTED_ERROR.format(
+                error=str(e)
+            )
         finally:
             if error_msg:
                 self.enable = False
                 logger.error(
-                    f'Error initializing services: {error_msg}', exc_info=True
+                    ConnectionLogMessages.INIT_FAILED.format(
+                        error=str(error_msg)
+                    ),
+                    exc_info=True,
                 )
 
     def _get_fcm_file_path(self) -> str:
@@ -107,6 +115,10 @@ class PushServiceConnector(BaseConnectionManager):
     def _fcm_file_exists(self) -> bool:
         """Check if fcm.json exists in BASE_DIR."""
         return os.path.isfile(self._get_fcm_file_path())
+
+    def __bool__(self):
+        """Return True if notifications services are available."""
+        return all(self.get_status().values())
 
     def _create_fcm_file(self):
         """Create fcm.json from FIREBASE_SERVICE_ACCOUNT in BASE_DIR."""
@@ -118,7 +130,9 @@ class PushServiceConnector(BaseConnectionManager):
                 indent=2,
                 ensure_ascii=False,
             )
-        logger.info(f'FCM file created at {file_path}')
+        logger.info(
+            ConnectionLogMessages.FCM_FILE_CREATED.format(path=file_path)
+        )
 
     def _initialize_firebase(self):
         """Initialize Firebase app if not already initialized."""
@@ -127,38 +141,32 @@ class PushServiceConnector(BaseConnectionManager):
             if not firebase_admin._apps:
                 firebase_admin.initialize_app(cred)
             self.fb_admin = firebase_admin.get_app()
-            logger.info('FB_admin initialized successfully')
+            logger.info(ConnectionLogMessages.FCM_ADMIN_OK)
             fcm_file_path = self._get_fcm_file_path()
             if not self._fcm_file_exists():
                 self._create_fcm_file()
             self.push_service = FCMNotification(
                 service_account_file=fcm_file_path,
             )
-            logger.info('Firebase app initialized successfully')
             return True
         except Exception as e:
             self.fb_admin = None
             self.push_service = None
-            logger.error(f'Error initializing Firebase app: {str(e)}')
+            logger.error(
+                ConnectionLogMessages.INIT_FAILED.format(error=str(e))
+            )
             return False
 
     def reconnect(self) -> bool:
         """Reconnect to FCM and Celery services."""
         with self._lock:
-            logger.info('Attempting to reconnect services.')
+            logger.info(ConnectionLogMessages.RECONNECT_START)
             self._initialize_services()
             current_status = self.get_status()
-            logger.info(f'Reconnection completed: {current_status}')
             if all(current_status.values()) and self.enable:
-                logger.info(
-                    'FCM and Celery workers are available. '
-                    'Notifications enabled.'
-                )
+                logger.info(ConnectionLogMessages.RECONNECT_SUCCESS)
                 return True
-            logger.warning(
-                'FCM and/or Celery workers are NOT available. '
-                'Notifications disabled.'
-            )
+            logger.warning(ConnectionLogMessages.RECONNECT_FAILED)
             return False
 
     def get_status(self) -> dict:
@@ -188,7 +196,7 @@ class PushServiceConnector(BaseConnectionManager):
         Returns:
             bool: True if Celery workers are available, False otherwise
         """
-        return super().get_status()
+        return self.worker.check_connection()
 
 
 class NotificationRepository:
@@ -236,7 +244,12 @@ class NotificationRepository:
             devices = self.device_model.objects.in_tourney(event_id)
         else:
             devices = []
-            logger.warning(f'Unknown notification type: {notification_type}')
+        logger.warning(
+            RepositoryLogMessages.UNKNOWN_TYPE.format(
+                notif_type=notification_type
+            )
+        )
+
         return devices
 
     def get_notification_object(
@@ -253,7 +266,11 @@ class NotificationRepository:
         try:
             return self.notification_type.objects.get(type=notification_type)
         except self.notification_type.DoesNotExist:
-            logger.error(f'Notification type {notification_type} not found')
+            logger.error(
+                RepositoryLogMessages.TYPE_NOT_FOUND.format(
+                    notif_type=notification_type
+                )
+            )
             return None
 
     def bulk_create_notifications_record(
@@ -283,13 +300,38 @@ class NotificationRepository:
             try:
                 Notifications.objects.create(**n_data)
                 logger.debug(
-                    f'Notification DB model created for player '
-                    f'{n_data["player"]}'
+                    RepositoryLogMessages.DB_CREATED.format(
+                        player=n_data.get('player')
+                    )
+                )
+            except IntegrityError as e:
+                logger.error(
+                    RepositoryLogMessages.DB_CREATION_ERROR.format(
+                        player=n_data.get('player'),
+                        error=f'Integrity check failed: {e}',
+                    )
+                )
+            except ValidationError as e:
+                logger.error(
+                    RepositoryLogMessages.DB_CREATION_ERROR.format(
+                        player=n_data.get('player'),
+                        error=f'Validation failed: {e}',
+                    )
+                )
+            except DatabaseError as e:
+                logger.error(
+                    RepositoryLogMessages.DB_CREATION_ERROR.format(
+                        player=n_data.get('player'),
+                        error=f'Database error: {e}',
+                    ),
+                    exc_info=True,
                 )
             except Exception as e:
-                logger.error(
-                    f'Error creating notification DB model for player '
-                    f'{n_data["player"]}: {str(e)}',
+                logger.critical(
+                    RepositoryLogMessages.DB_CREATION_ERROR.format(
+                        player=n_data.get('player'),
+                        error=f'Unexpected error: {e}',
+                    ),
                     exc_info=True,
                 )
                 continue
@@ -319,14 +361,19 @@ class PushNotificationSender:
         result['notification_type'] = notification.type
         result['total_devices'] = len(devices)
         result['notifications_data'] = []
+
         if not notification:
-            logger.error('Notification object is None')
+            logger.error(
+                RepositoryLogMessages.TYPE_NOT_FOUND.format(notif_type='None')
+            )
             result['message'] = PushServiceMessages.NOTIFICATION_TYPE_NOT_FOUND
             return result
+
         if not devices:
             logger.info(PushServiceMessages.NO_DEVICES_FOR_EVENT)
             result['message'] = PushServiceMessages.NO_DEVICES_FOR_EVENT
             return result
+
         for d in devices:
             status, message = self._send_notification_by_device_internal(
                 device=d,
@@ -344,11 +391,16 @@ class PushNotificationSender:
                 result['delivered'] += 1
                 continue
             result['failed'] += 1
+
         logger.info(
-            f'Push notification "{notification.type}" results: '
-            f'{result["delivered"]}/{result["total_devices"]} successful, '
-            f'{result["failed"]} failed'
+            SenderLogMessages.PUSH_RESULTS.format(
+                notif_type=notification.type,
+                delivered=result['delivered'],
+                total=result['total_devices'],
+                failed=result['failed'],
+            )
         )
+
         if result['delivered'] > 0:
             result['success'] = True
             result['message'] = PushServiceMessages.SUCCESS
@@ -364,20 +416,23 @@ class PushNotificationSender:
     ) -> tuple[bool, str]:
         """
         Internal method to send push notification to a single device.
-        This method is NOT decorated with @service_required
-        to avoid double checking.
         """
         error_occurred = False
         if not device.token:
             m = PushServiceMessages.EMPTY_TOKEN
-            logger.warning(m)
+            logger.warning(SenderLogMessages.EMPTY_TOKEN)
             return False, m
+
         data_message = {'screen': notification.screen}
         if event_id:
             data_message['gameId'] = str(event_id)
-        masked_token = device.token[:8] + '...'
+
+        masked_token = f'{device.token[:8]}...'
+
         try:
-            logger.debug(f'Sending notification to device {masked_token}')
+            logger.debug(
+                SenderLogMessages.SENDING_TO.format(token=masked_token)
+            )
             self.push_service.notify(
                 fcm_token=device.token,
                 notification_title=notification.title,
@@ -385,17 +440,22 @@ class PushNotificationSender:
                 data_payload=data_message,
             )
             logger.debug(
-                f'Notification sent successfully to device {masked_token}'
+                SenderLogMessages.SEND_SUCCESS.format(token=masked_token)
             )
             return True, 'success'
+
         except FCMError as e:
             error_occurred = True
-            m = f'FCM Error sending to {masked_token}: {str(e)}'
+            m = SenderLogMessages.FCM_SEND_ERROR.format(
+                token=masked_token, error=str(e)
+            )
             logger.warning(m, exc_info=True)
             return False, m
         except Exception as e:
             error_occurred = True
-            m = f'Unexpected error sending to {masked_token}: {str(e)}'
+            m = SenderLogMessages.UNEXPECTED_SEND_ERROR.format(
+                token=masked_token, error=str(e)
+            )
             logger.error(m, exc_info=True)
             return False, m
         finally:
@@ -410,13 +470,15 @@ class PushNotificationSender:
                         countdown=RETRY_PUSH_TIME,
                     )
                     logger.info(
-                        f'Scheduled retry task for token {masked_token} '
-                        f'in 60 seconds'
+                        SenderLogMessages.RETRY_SCHEDULED.format(
+                            token=masked_token, time=RETRY_PUSH_TIME
+                        )
                     )
                 except Exception as celery_error:
                     logger.error(
-                        f'Failed to schedule retry task for {masked_token}: '
-                        f'{str(celery_error)}'
+                        SenderLogMessages.RETRY_FAILED.format(
+                            token=masked_token, error=str(celery_error)
+                        )
                     )
 
 

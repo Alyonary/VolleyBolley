@@ -4,7 +4,8 @@ import pytest
 from pyfcm.errors import FCMError
 
 from apps.event.models import Game, Tourney
-from apps.notifications.constants import NotificationTypes, PushServiceMessages
+from apps.notifications.constants import NotificationTypes
+from apps.notifications.messages import PushServiceMessages
 from apps.notifications.models import Device, Notifications, NotificationsBase
 from apps.notifications.push_service import PushService
 from apps.players.models import Player

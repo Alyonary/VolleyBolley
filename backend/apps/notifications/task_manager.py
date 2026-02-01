@@ -1,6 +1,10 @@
 import logging
 from datetime import datetime
 
+from backend.apps.notifications.messages import (
+    CeleryInspectorMessages,
+    InfrastructureLogMessages,
+)
 from celery import current_app
 from celery.app.task import Task
 from django.conf import settings
@@ -11,7 +15,6 @@ from redis.exceptions import ConnectionError as RedisConnectionError
 from apps.core.base import BaseConnectionManager, BaseInspector
 from apps.notifications.constants import (
     CELERY_INSPECTOR_TIMEOUT,
-    CeleryInspectorMessages,
 )
 
 logger = logging.getLogger(__name__)
@@ -44,13 +47,17 @@ class CeleryInspector(BaseInspector):
             if workers_ping:
                 return True
             if not workers_ping:
-                logger.warning('No active Celery workers found')
+                logger.warning(InfrastructureLogMessages.CELERY_NO_WORKERS)
                 return False
         except (ConnectionError, OperationalError) as e:
-            logger.error(f'Celery not ready: {str(e)}')
+            logger.error(
+                InfrastructureLogMessages.CELERY_NOT_READY.format(error=e)
+            )
             return False
         except Exception as e:
-            logger.warning(f'Uknown error: {str(e)}')
+            logger.warning(
+                InfrastructureLogMessages.UNKNOWN_ERROR.format(error=str(e))
+            )
             return False
 
 
@@ -84,12 +91,16 @@ class RedisInspector(BaseInspector):
             return self.app.ping()
         except RedisConnectionError:
             logger.error(
-                f'DNS Error: Host {settings.REDIS_HOST} not found. '
-                'Check docker-compose or your hosts file.'
+                InfrastructureLogMessages.REDIS_DNS_ERROR.format(
+                    host=settings.REDIS_HOST
+                )
             )
             return False
         except Exception as e:
-            logger.error(f'Unknown error : {e}')
+            logger.warning(
+                InfrastructureLogMessages.UNKNOWN_ERROR.format(error=str(e))
+            )
+            return False
 
 
 class TaskManager(BaseConnectionManager):
@@ -118,7 +129,7 @@ class TaskManager(BaseConnectionManager):
         if not self.get_status():
             return {
                 'success': False,
-                'message': CeleryInspectorMessages.ERROR_CREATING_TASK,
+                'message': CeleryInspectorMessages.WORKERS_NOT_READY,
             }
         try:
             if task_args and eta:
@@ -134,8 +145,14 @@ class TaskManager(BaseConnectionManager):
                 'message': CeleryInspectorMessages.TASK_CREATED,
             }
         except OperationalError as e:
-            logger.error(f'Error connecting with workers: {str(e)}')
+            logger.error(
+                InfrastructureLogMessages.TASK_WORKER_ERROR.format(
+                    error=str(e)
+                )
+            )
             return {
                 'success': False,
-                'message': CeleryInspectorMessages.ERROR_CREATING_TASK,
+                'message': CeleryInspectorMessages.ERROR_CREATING_TASK.format(
+                    error=str(e)
+                ),
             }
