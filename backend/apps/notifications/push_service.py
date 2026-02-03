@@ -4,6 +4,10 @@ import os
 from functools import wraps
 
 import firebase_admin
+from backend.apps.notifications.inspectors import (
+    CeleryInspector,
+    RedisInspector,
+)
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError
@@ -28,7 +32,6 @@ from apps.notifications.models import (
     Notifications,
     NotificationsBase,
 )
-from apps.notifications.task_manager import CeleryInspector, RedisInspector
 
 logger = logging.getLogger(__name__)
 

@@ -11,6 +11,7 @@ pytest_plugins = [
     'tests.fixtures.core',
     'tests.fixtures.courts',
     'tests.fixtures.games',
+    'tests.fixtures.inspectors',
     'tests.fixtures.locations',
     'tests.fixtures.notifications',
     'tests.fixtures.players',

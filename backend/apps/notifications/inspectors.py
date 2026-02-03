@@ -2,7 +2,6 @@ import logging
 from datetime import datetime
 
 from backend.apps.notifications.messages import (
-    CeleryInspectorMessages,
     InfrastructureLogMessages,
 )
 from celery import current_app
@@ -98,7 +97,9 @@ class RedisInspector(BaseInspector):
             return False
         except Exception as e:
             logger.warning(
-                InfrastructureLogMessages.UNKNOWN_ERROR.format(error=str(e))
+                InfrastructureLogMessages.REDIS_UNKNOWN_ERROR.format(
+                    error=str(e)
+                )
             )
             return False
 
@@ -129,20 +130,13 @@ class TaskManager(BaseConnectionManager):
         if not self.get_status():
             return {
                 'success': False,
-                'message': CeleryInspectorMessages.WORKERS_NOT_READY,
+                'message': InfrastructureLogMessages.CELERY_NO_WORKERS,
             }
         try:
-            if task_args and eta:
-                task.apply_async(eta=eta, kwargs=task_args)
-            elif task_args and not eta:
-                task.apply_async(kwargs=task_args)
-            elif not task_args and eta:
-                task.apply_async(eta=eta)
-            else:
-                task.apply_async()
+            task.apply_async(kwargs=task_args or {}, eta=eta)
             return {
                 'success': True,
-                'message': CeleryInspectorMessages.TASK_CREATED,
+                'message': InfrastructureLogMessages.TASK_CREATED,
             }
         except OperationalError as e:
             logger.error(
@@ -152,7 +146,7 @@ class TaskManager(BaseConnectionManager):
             )
             return {
                 'success': False,
-                'message': CeleryInspectorMessages.ERROR_CREATING_TASK.format(
+                'message': InfrastructureLogMessages.TASK_ERROR.format(
                     error=str(e)
                 ),
             }

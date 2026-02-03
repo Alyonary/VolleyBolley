@@ -1,9 +1,9 @@
-from abc import ABC, abstractmethod
+from abc import ABCMeta, abstractmethod
 from threading import Lock
 from typing import Any
 
 
-class BaseSingleton:
+class SingletonMeta(ABCMeta):
     """
     A thread-safe implementation of the Singleton pattern.
 
@@ -11,22 +11,18 @@ class BaseSingleton:
     context, using a double-checked locking mechanism.
     """
 
-    _instance = None
+    _instances = {}
     _lock = Lock()
 
-    def __new__(cls, *args, **kwargs):
-        """
-        Create a new instance only if it doesn't exist yet.
-        """
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = super().__new__(cls)
-                    cls._instance._initialized = False
-        return cls._instance
+    def __call__(cls, *args, **kwargs):
+        with cls._lock:
+            if cls not in cls._instances:
+                instance = super().__call__(*args, **kwargs)
+                cls._instances[cls] = instance
+        return cls._instances[cls]
 
 
-class BaseInspector(BaseSingleton, ABC):
+class BaseInspector(metaclass=SingletonMeta):
     """
     Abstract base class for inspecting component connection health.
 
@@ -46,8 +42,6 @@ class BaseInspector(BaseSingleton, ABC):
         Args:
             app (Any): The application or library instance to monitor.
         """
-        if getattr(self, '_initialized', False):
-            return
         self.app = app
         self.ready = self.check_connection()
         self._initialized = True
@@ -63,10 +57,9 @@ class BaseInspector(BaseSingleton, ABC):
         Note:
             This method must be overridden by concrete subclasses.
         """
-        pass
 
 
-class BaseConnectionManager(BaseSingleton):
+class BaseConnectionManager(metaclass=SingletonMeta):
     """
     Manages and aggregates the connection status of system components.
 
@@ -87,8 +80,6 @@ class BaseConnectionManager(BaseSingleton):
             broker (BaseInspector): An inspector instance for the broker.
             worker (BaseInspector): An inspector instance for the worker.
         """
-        if getattr(self, '_initialized', False):
-            return
         self.broker = broker
         self.worker = worker
         self.ready = self.get_status()

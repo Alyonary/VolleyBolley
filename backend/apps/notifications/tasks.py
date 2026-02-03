@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
 
+from backend.apps.notifications.inspectors import TaskManager
 from celery import shared_task
 from celery.signals import worker_ready
 from django.utils import timezone
@@ -15,7 +16,6 @@ from apps.notifications.models import (
     NotificationsTime,
 )
 from apps.notifications.push_service import PushService
-from apps.notifications.task_manager import TaskManager
 from apps.notifications.utils import delete_old_devices
 
 logger = logging.getLogger('django.notifications')

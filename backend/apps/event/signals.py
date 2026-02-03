@@ -1,3 +1,4 @@
+from backend.apps.notifications.inspectors import TaskManager
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -5,7 +6,6 @@ from django.utils import timezone
 from apps.event.models import Game, GameInvitation, Tourney
 from apps.notifications.constants import NotificationTypes
 from apps.notifications.models import NotificationsTime
-from apps.notifications.task_manager import TaskManager
 from apps.notifications.tasks import (
     send_event_notification_task,
     send_invite_to_player_task,

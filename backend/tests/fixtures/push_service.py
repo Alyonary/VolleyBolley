@@ -2,9 +2,9 @@ import builtins
 from unittest.mock import Mock
 
 import pytest
+from backend.apps.notifications import inspectors as inspectors_module
 
 from apps.notifications import push_service as push_service_module
-from apps.notifications import task_manager as inspectors_module
 from apps.notifications.messages import PushServiceMessages
 from apps.notifications.push_service import PushService
 
