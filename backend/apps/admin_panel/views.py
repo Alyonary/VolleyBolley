@@ -18,6 +18,7 @@ from apps.admin_panel.services import FileUploadService
 from apps.core.models import DailyStats
 from apps.core.task import collect_full_project_stats
 from apps.notifications.push_service import PushService
+from apps.admin_panel.f_upload_v2 import get_upload_service
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,8 @@ def process_file_upload(
 
     file = form.cleaned_data['file']
     try:
-        upload_service = FileUploadService()
+        # upload_service = FileUploadService()
+        upload_service = get_upload_service()
         result = upload_service.process_file(file=file)
         summarize_results = upload_service.summarize_results(result)
         summary_message = summarize_results.get('message', '')

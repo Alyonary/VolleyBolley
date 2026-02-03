@@ -43,13 +43,7 @@ class FileUploadService:
         _extended_model_access (bool): Enable extended model processing.
     """
 
-    def __new__(cls):
-        """Singleton pattern implementation."""
-        if not hasattr(cls, 'instance'):
-            cls.instance = super(FileUploadService, cls).__new__(cls)
-        return cls.instance
-
-    def __init__(self):
+    def __init__(self, extended_model_access=settings.DEBUG):
         """Initialize model mapping for file processing."""
         self._model_mapping_class = {
             'countries': CountryModelMapping(),
@@ -72,7 +66,7 @@ class FileUploadService:
         )
         self._supported_file_types: tuple[str] = SUPPORTED_FILE_TYPES
         self.max_file_size: int = MAX_FILE_SIZE
-        self._extended_model_access: bool = settings.DEBUG
+        self._extended_model_access: bool = extended_model_access
 
     @property
     def model_mapping_class(self) -> Dict[str, Any]:
