@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 
+from apps.core.base import BaseModelMapping
 from apps.core.models import CurrencyType, GameLevel
 from apps.core.serializers import CurrencyCreateSerializer, GameLevelSerializer
 from apps.courts.models import Court
@@ -87,50 +88,6 @@ class MappingRegistry:
             bool: True if the model is considered private, False otherwise.
         """
         return name in self._private_mappings
-
-
-class BaseModelMapping:
-    """
-    Base class for model mapping.
-    Subclasses must set self.model, self.serializer, self.can_update.
-    """
-
-    def __init__(self):
-        self._model = None
-        self._serializer = None
-        self._name = ''
-        self._expected_xlsx_fields = ()
-
-    @property
-    def model(self):
-        return self._model
-
-    @property
-    def serializer(self):
-        return self._serializer
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def expected_fields(self):
-        return self._expected_xlsx_fields
-
-    def get_serializer_fields(self) -> list[str]:
-        """Get non-read-only fields from the serializer."""
-
-        if not self.serializer:
-            return []
-        return tuple(
-            name
-            for name, field in self._serializer().get_fields().items()
-            if not field.read_only
-        )
-
-    def agregate_model_fields(self, data: list[dict]) -> dict:
-        """Get model fields aggregation."""
-        return data
 
 
 class CountryModelMapping(BaseModelMapping):

@@ -11,14 +11,14 @@ from apps.admin_panel.constants import (
     MONTHS_STAT_PAGINATION,
     SUPPORTED_FILE_TYPES,
     SendType,
-    UploadServiceMessages,
 )
+from apps.admin_panel.f_upload_v2 import get_upload_service
 from apps.admin_panel.forms import FileUploadForm, NotificationSendForm
+from apps.admin_panel.messages import UploadServiceMessages
 from apps.admin_panel.services import FileUploadService
 from apps.core.models import DailyStats
 from apps.core.task import collect_full_project_stats
 from apps.notifications.push_service import PushService
-from apps.admin_panel.f_upload_v2 import get_upload_service
 
 logger = logging.getLogger(__name__)
 
@@ -121,7 +121,6 @@ def process_file_upload(
 
     file = form.cleaned_data['file']
     try:
-        # upload_service = FileUploadService()
         upload_service = get_upload_service()
         result = upload_service.process_file(file=file)
         summarize_results = upload_service.summarize_results(result)
@@ -138,8 +137,6 @@ def process_file_upload(
                 request,
                 _(UploadServiceMessages.SUCCESS_DOWNLOAD) + summary_message,
             )
-        if 'messages' in result:
-            request.session['upload_messages'] = result['messages']
         for msg in result.get('messages', []):
             msg_lower = msg.lower()
             if 'error' in msg_lower:

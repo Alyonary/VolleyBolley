@@ -12,16 +12,3 @@ SEND_TYPE_CHOICES = [
 class SendType(Enum):
     SEND_TO_PLAYER = 'send_to_player'
     SEND_TO_EVENT = 'send_to_event'
-
-
-class UploadServiceMessages:
-    EXCEL_MISSING_MODEL_FIELDS = 'Missing fields in model attrs: '
-    EXCEL_INVALID_MODEL_FIELDS = 'Invalid fields in model attrs: '
-    FILE_TYPE_NOT_SUPPORTED = 'Unsupported file type: '
-    RESTRICTED_UPLOAD = 'Restricted upload in production mode for model: '
-    UNKNOWN_MODEL_MAPPING = 'Unknown model mapping for file: '
-    NO_MODEL_SERIALIZER = 'No serializer for model:'
-    SUCCESS_DOWNLOAD = '✅ File processed successfully.'
-    ERROR_DOWNLOAD = '❌ File processing failed: '
-    UNEXPECTED_ERROR = '❌ Unexpected error: '
-    NO_DATA_IN_JSON = 'No data found in JSON file'

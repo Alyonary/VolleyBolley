@@ -9,8 +9,8 @@ from django.conf import settings
 from apps.admin_panel.constants import (
     MAX_FILE_SIZE,
     SUPPORTED_FILE_TYPES,
-    UploadServiceMessages,
 )
+from apps.admin_panel.messages import UploadServiceMessages
 from apps.admin_panel.model_mappings import (
     BaseModelMapping,
     CityModelMapping,

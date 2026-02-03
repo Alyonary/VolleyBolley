@@ -1,13 +1,13 @@
 import logging
 from typing import Any, Dict, List
 
-from apps.admin_panel.parsers import ExcelParser, JsonParser
-from apps.core.base import BaseParser
 from django.conf import settings
 
 from apps.admin_panel.model_mappings import (
     MappingRegistry,
 )
+from apps.admin_panel.parsers import ExcelParser, JsonParser
+from apps.core.base import BaseParser
 
 logger = logging.getLogger(__name__)
 

@@ -3,13 +3,13 @@ import os
 
 import openpyxl
 
-from apps.admin_panel.constants import UploadServiceMessages
 from apps.admin_panel.exceptions import (
     ExcelValidationError,
     MissingSerializerError,
     RestrictedFileError,
     UnknownMappingError,
 )
+from apps.admin_panel.messages import UploadServiceMessages
 from apps.admin_panel.model_mappings import BaseModelMapping, MappingRegistry
 from apps.core.base import BaseParser
 
@@ -79,16 +79,15 @@ class ExcelParser(BaseParser):
         expected_fields = set(mapping_class.expected_fields)
         if excel_fields != expected_fields:
             if expected_fields.issuperset(excel_fields):
-                missing = expected_fields - excel_fields
+                missing = str(expected_fields - excel_fields)
                 msg = (
-                    f'{UploadServiceMessages.EXCEL_MISSING_MODEL_FIELDS}'
-                    f'{list(missing)}'
+                    UploadServiceMessages.EXCEL_MISSING_MODEL_FIELDS + missing
                 )
             else:
-                invalid = excel_fields - expected_fields
+                invalid_field = str(excel_fields - expected_fields)
                 msg = (
-                    f'{UploadServiceMessages.EXCEL_INVALID_MODEL_FIELDS}'
-                    f'{list(invalid)}'
+                    UploadServiceMessages.EXCEL_INVALID_MODEL_FIELDS
+                    + invalid_field
                 )
             raise ExcelValidationError(msg)
         model_data = [

@@ -9,7 +9,7 @@ import openpyxl
 import pytest
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from apps.admin_panel.constants import UploadServiceMessages
+from apps.admin_panel.messages import UploadServiceMessages
 from apps.admin_panel.services import FileUploadService
 from apps.core.models import CurrencyType, GameLevel
 from apps.courts.models import Court, CourtLocation
