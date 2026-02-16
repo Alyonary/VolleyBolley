@@ -37,9 +37,7 @@ class EventMixin(m.Model):
         verbose_name=_('Game level'),
     )
     max_players = m.PositiveIntegerField(
-        verbose_name=_('Maximum of players'),
-        blank=True,
-        null=False
+        verbose_name=_('Maximum of players'), blank=True, null=False
     )
     price_per_person = m.DecimalField(
         verbose_name=_('Price per person'),

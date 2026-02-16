@@ -72,14 +72,16 @@ class GameQuerySet(m.query.QuerySet, StatsQuerySetMixin):
 
 
 class TourneyQuerySet(GameQuerySet, StatsQuerySetMixin):
-
     def player_related_games(self, player):
-        return self.player_located_games(player).filter(
-            (m.Q(host=player) | m.Q(teams__players=player))).distinct()
+        return (
+            self.player_located_games(player)
+            .filter((m.Q(host=player) | m.Q(teams__players=player)))
+            .distinct()
+        )
 
 
 class EventInvitesManager(m.Manager):
-    def count_events(self, player):
+    def count_events(self: 'GameInvitation', player):
         """
         The method retrieves the number of events which the player was invited.
 
@@ -90,11 +92,12 @@ class EventInvitesManager(m.Manager):
         The number of unique objects (games and tournaments)
         for which the player has received invitations.
         """
-        distinct_invites = self.filter(
-            invited=player).values(
-                'content_type', 'object_id').distinct().count()
-
-        return distinct_invites
+        return (
+            self.filter(invited=player, expiration__gt=now())
+            .values('content_type', 'object_id')
+            .distinct()
+            .count()
+        )
 
 
 class GameManager(m.Manager):
@@ -157,6 +160,7 @@ class TourneyManager(GameManager):
 class GameInvitation(m.Model):
     """Invitation to game or tourney model."""
 
+    expiration = m.DateTimeField(verbose_name=_('Expiration date and time'))
     host = m.ForeignKey(
         'players.Player', on_delete=m.CASCADE, related_name='invite_host'
     )
@@ -164,26 +168,27 @@ class GameInvitation(m.Model):
     invited = m.ForeignKey(
         'players.Player', on_delete=m.CASCADE, related_name='invited'
     )
-    content_type = m.ForeignKey(
-        ContentType,
-        on_delete=m.CASCADE
-    )
+    content_type = m.ForeignKey(ContentType, on_delete=m.CASCADE)
     object_id = m.PositiveBigIntegerField()
-
-    content_object = GenericForeignKey(
-        "content_type",
-        "object_id"
-    )
-    objects = EventInvitesManager()
+    content_object = GenericForeignKey('content_type', 'object_id')
+    objects: EventInvitesManager = EventInvitesManager()
 
     class Meta:
         verbose_name = _('Game invitation')
         verbose_name_plural = _('Game invitations')
 
     def __str__(self):
-        discription = str(_(
-            f'Invitation in {self.content_object.id} for {self.invited}'))
-        return discription
+        return str(
+            _(f'Invitation in {self.content_object.id} for {self.invited}')
+        )
+
+    def save(self, *args, **kwargs):
+        """Set the expiration time from related object's start_time."""
+        if not self.expiration:
+            start_time = getattr(self.content_object, 'start_time', None)
+            if start_time:
+                self.expiration = start_time
+        super().save(*args, **kwargs)
 
 
 class Game(EventMixin, CreatedUpdatedMixin):
@@ -201,7 +206,7 @@ class Game(EventMixin, CreatedUpdatedMixin):
         related_name='games_players',
         blank=True,
     )
-    objects = GameManager()
+    objects: GameManager = GameManager()
 
     def __str__(self):
         name = (
@@ -230,15 +235,11 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         blank=True,
         related_name='tournaments_host',
     )
-    is_individual = m.BooleanField(
-        verbose_name=_('Individual format')
-    )
+    is_individual = m.BooleanField(verbose_name=_('Individual format'))
     maximum_teams = m.PositiveIntegerField(
-        verbose_name=_('Maximum of teams'),
-        blank=True,
-        null=False
+        verbose_name=_('Maximum of teams'), blank=True, null=False
     )
-    objects = TourneyManager()
+    objects: TourneyManager = TourneyManager()
 
     @property
     def players(self):
@@ -247,9 +248,7 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
         """
         from apps.players.models import Player
 
-        return Player.objects.filter(
-            tourney_players__tourney=self
-        ).distinct()
+        return Player.objects.filter(tourney_players__tourney=self).distinct()
 
     class Meta:
         verbose_name = _('Tourney')
@@ -264,21 +263,18 @@ class Tourney(EventMixin, CreatedUpdatedMixin):
             f'time: {self.start_time}'
             f'host: {self.host}, '
         )
-        return name[:EventIntEnums.STR_MAX_LEN.value]
+        return name[: EventIntEnums.STR_MAX_LEN.value]
 
 
 class TourneyTeam(m.Model):
-
     tourney = m.ForeignKey(
-        'event.Tourney',
-        verbose_name=_('Tourney is from'),
-        on_delete=m.CASCADE
-        )
+        'event.Tourney', verbose_name=_('Tourney is from'), on_delete=m.CASCADE
+    )
     players = m.ManyToManyField(
         'players.Player',
         verbose_name=_('Players'),
         related_name='tourney_players',
-        blank=True
+        blank=True,
     )
 
     class Meta:
@@ -287,8 +283,5 @@ class TourneyTeam(m.Model):
         default_related_name = 'teams'
 
     def __str__(self):
-        name = (
-            f'Team #{self.id}, of '
-            f'{self.tourney} tourney'
-        )
-        return name[:EventIntEnums.STR_MAX_LEN.value]
+        name = f'Team #{self.id}, of {self.tourney} tourney'
+        return name[: EventIntEnums.STR_MAX_LEN.value]

@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
@@ -17,7 +18,10 @@ from apps.core.serializers import EmptyBodySerializer
 from apps.event.enums import EventIntEnums
 from apps.event.models import Game, GameInvitation, Tourney, TourneyTeam
 from apps.event.permissions import (
-    IsHostOrReadOnly, IsPlayerOrReadOnly, IsPlayerInEvent)
+    IsHostOrReadOnly,
+    IsPlayerInEvent,
+    IsPlayerOrReadOnly,
+)
 from apps.event.serializers import (
     # EventListShortSerializer,
     GameDetailSerializer,
@@ -34,7 +38,6 @@ from apps.players.serializers import PlayerListShortSerializer
 
 
 class InvitePlayersMixin:
-
     @swagger_auto_schema(
         tags=['games'],
         operation_summary='Invite list of players to game',
@@ -64,11 +67,13 @@ class InvitePlayersMixin:
         security=[{'Bearer': []}, {'JWT': []}],
     )
     @action(
-            methods=['post'],
-            detail=True,
-            url_path='invite-players',
-            permission_classes=[IsPlayerOrReadOnly,]
-        )
+        methods=['post'],
+        detail=True,
+        url_path='invite-players',
+        permission_classes=[
+            IsPlayerOrReadOnly,
+        ],
+    )
     def invite_players(self, request, *args, **kwargs):
         """
         Creates invitations to the game/tournament for players on the list.
@@ -78,19 +83,22 @@ class InvitePlayersMixin:
         content_type = ContentType.objects.get_for_model(obj.__class__)
         invited_list = request.data.get('players')
         if invited_list:
-            invites_data = [{
-                        'host': host_id,
-                        'invited': player_id,
-                        "content_type": content_type.id,
-                        "object_id": obj.id
-                    } for player_id in invited_list]
+            invites_data = [
+                {
+                    'host': host_id,
+                    'invited': player_id,
+                    'content_type': content_type.id,
+                    'object_id': obj.id,
+                }
+                for player_id in invited_list
+            ]
             serializer = self.get_serializer(data=invites_data, many=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(status=status.HTTP_201_CREATED)
         return Response(
             data={'players': 'Must be a list of players id'},
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     @swagger_auto_schema(
@@ -114,7 +122,9 @@ class InvitePlayersMixin:
         methods=['delete'],
         detail=True,
         url_path='invites',
-        permission_classes=[IsAuthenticated,]
+        permission_classes=[
+            IsAuthenticated,
+        ],
     )
     def delete_invitation(self, request, *args, **kwargs):
         event = self.get_object()
@@ -208,12 +218,14 @@ class RatePlayersMixin:
         return process_rate_players_request(self, request, *args, **kwargs)
 
 
-class GameViewSet(GenericViewSet,
-                  CreateModelMixin,
-                  RetrieveModelMixin,
-                  DestroyModelMixin,
-                  InvitePlayersMixin,
-                  RatePlayersMixin):
+class GameViewSet(
+    GenericViewSet,
+    CreateModelMixin,
+    RetrieveModelMixin,
+    DestroyModelMixin,
+    InvitePlayersMixin,
+    RatePlayersMixin,
+):
     """Provides CRUD operations for the Game model."""
 
     permission_classes = (IsHostOrReadOnly,)
@@ -221,41 +233,38 @@ class GameViewSet(GenericViewSet,
 
     def get_queryset(self):
         player = getattr(self.request.user, 'player', None)
-        if (player is None or
-                player.country is None or
-                self.action in (
-                    'joining_game',
-                    'delete_invitation',
-                    'rate_players'
-                    )):
-            return (Game.objects
-                    .all()
-                    .select_related('host', 'court')
-                    .prefetch_related('players')
-                    )
-        return (Game.objects
-                .player_located_games(player)
+        if (
+            player is None
+            or player.country is None
+            or self.action
+            in ('joining_game', 'delete_invitation', 'rate_players')
+        ):
+            return (
+                Game.objects.all()
                 .select_related('host', 'court')
                 .prefetch_related('players')
-                )
+            )
+        return (
+            Game.objects.player_located_games(player)
+            .select_related('host', 'court')
+            .prefetch_related('players')
+        )
 
     def get_serializer_class(self, *args, **kwargs):
-        if self.action in (
-                'retrieve',
-                'joining_game'):
+        if self.action in ('retrieve', 'joining_game'):
             return GameDetailSerializer
 
         if self.action == 'invite_players':
             return GameInviteSerializer
 
-        elif self.action in (
-                'my_games',
-                'archive_games',
-                'invited_games',
-                'upcoming_games'):
+        if self.action in (
+            'my_games',
+            'archive_games',
+            'invited_games',
+            'upcoming_games',
+        ):
             return GameTourneySerializer
-        else:
-            return GameSerializer
+        return GameSerializer
 
     @swagger_auto_schema(
         tags=['games'],
@@ -290,33 +299,36 @@ class GameViewSet(GenericViewSet,
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='preview'
-    )
+    @action(methods=['get'], detail=False, url_path='preview')
     def preview(self, request, *args, **kwargs):
         """Returns the time of the next game and the number of invitations."""
 
         upcoming_game = Game.objects.nearest_game(request.user.player)
         upcoming_tourney = Tourney.objects.nearest_game(request.user.player)
-        nearest_event_time_list = sorted([
-            obj.start_time for obj in (
-                upcoming_game, upcoming_tourney) if obj])
+        nearest_event_time_list = sorted(
+            [
+                obj.start_time
+                for obj in (upcoming_game, upcoming_tourney)
+                if obj
+            ]
+        )
         if len(nearest_event_time_list) == 0:
             upcoming_game_time = None
         else:
             upcoming_game_time = nearest_event_time_list[0]
-
         invites = GameInvitation.objects.count_events(request.user.player)
         return Response(
-            data={'upcoming_game_time': upcoming_game_time,
-                  'invites': invites}, status=status.HTTP_200_OK)
+            data={
+                'upcoming_game_time': upcoming_game_time,
+                'invites': invites,
+            },
+            status=status.HTTP_200_OK,
+        )
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary="Get lists of upcoming games and tournaments"
-                          " created by current player",
+        operation_summary='Get lists of upcoming games and tournaments'
+        ' created by current player',
         operation_description="""
         Get two lists of the upcoming games and the upcoming tournaments
         created by the current player.
@@ -325,33 +337,28 @@ class GameViewSet(GenericViewSet,
         **Returns:** game objects, tournament objects
         """,
         responses={
-            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response(
+                'Success', GameListShortSerializer
+            ),  # TODO: Change for EventListShortSerializer # noqa
             401: 'Unauthorized',
             403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='my-games'
-    )
+    @action(methods=['get'], detail=False, url_path='my-games')
     def my_games(self, request, *args, **kwargs):
         """Retrieves the list of games created by the user."""
 
         my_games = Game.objects.my_upcoming_games(request.user.player)
         my_tourneys = Tourney.objects.my_upcoming_games(request.user.player)
-        combined_data = {
-            'games': my_games,
-            'tournaments': my_tourneys
-        }
+        combined_data = {'games': my_games, 'tournaments': my_tourneys}
         serializer = self.get_serializer(combined_data)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary="Get lists of players archived games"
-                          " and tournaments",
+        operation_summary='Get lists of players archived games'
+        ' and tournaments',
         operation_description="""
         Get two lists of the archived games and tournaments
         related to the current player.
@@ -359,17 +366,15 @@ class GameViewSet(GenericViewSet,
         **Returns:** game objects, tournament objects
         """,
         responses={
-            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response(
+                'Success', GameListShortSerializer
+            ),  # TODO: Change for EventListShortSerializer # noqa
             401: 'Unauthorized',
             403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='archive'
-    )
+    @action(methods=['get'], detail=False, url_path='archive')
     def archive_games(self, request, *args, **kwargs):
         """Retrieves the list of archived games related to user."""
 
@@ -377,15 +382,15 @@ class GameViewSet(GenericViewSet,
         archived_tourneys = Tourney.objects.archive_games(request.user.player)
         combined_data = {
             'games': archived_games,
-            'tournaments': archived_tourneys
+            'tournaments': archived_tourneys,
         }
         serializer = self.get_serializer(combined_data)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary="Get lists of games and tournaments"
-                          " to which player has been invited",
+        operation_summary='Get lists of games and tournaments'
+        ' to which player has been invited',
         operation_description="""
         Get two lists of the games and the tournaments
         to which the current player has been invited.
@@ -394,17 +399,15 @@ class GameViewSet(GenericViewSet,
         **Returns:** game objects, tournament objects
         """,
         responses={
-            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response(
+                'Success', GameListShortSerializer
+            ),  # TODO: Change for EventListShortSerializer # noqa
             401: 'Unauthorized',
             403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='invites'
-    )
+    @action(methods=['get'], detail=False, url_path='invites')
     def invited_games(self, request, *args, **kwargs):
         """Retrieving upcoming games to which the player has been invited."""
 
@@ -412,15 +415,15 @@ class GameViewSet(GenericViewSet,
         invited_tourneys = Tourney.objects.invited_games(request.user.player)
         combined_data = {
             'games': invited_games,
-            'tournaments': invited_tourneys
+            'tournaments': invited_tourneys,
         }
         serializer = self.get_serializer(combined_data)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary="Get lists of upcoming games and tournaments"
-                          " in which player will participate",
+        operation_summary='Get lists of upcoming games and tournaments'
+        ' in which player will participate',
         operation_description="""
         Get two lists of the upcoming games and the upcoming tournaments
         in which the current player will participate.
@@ -429,34 +432,30 @@ class GameViewSet(GenericViewSet,
         **Returns:** game objects, tournament objects
         """,
         responses={
-            200: openapi.Response('Success', GameListShortSerializer),  # TODO: Change for EventListShortSerializer # noqa
+            200: openapi.Response(
+                'Success', GameListShortSerializer
+            ),  # TODO: Change for EventListShortSerializer # noqa
             401: 'Unauthorized',
             403: 'Forbidden',
         },
         security=[{'Bearer': []}, {'JWT': []}],
     )
-    @action(
-        methods=['get'],
-        detail=False,
-        url_path='upcoming'
-    )
+    @action(methods=['get'], detail=False, url_path='upcoming')
     def upcoming_games(self, request, *args, **kwargs):
         """Retrieving upcoming games that the player participates in."""
 
         upcoming_games = Game.objects.upcoming_games(request.user.player)
-        upcoming_tourneys = Tourney.objects.upcoming_games(
-            request.user.player
-        )
+        upcoming_tourneys = Tourney.objects.upcoming_games(request.user.player)
         combined_data = {
             'games': upcoming_games,
-            'tournaments': upcoming_tourneys
+            'tournaments': upcoming_tourneys,
         }
         serializer = self.get_serializer(combined_data)
         return Response(data=serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
         tags=['games'],
-        operation_summary="Accept invitation to game by player",
+        operation_summary='Accept invitation to game by player',
         operation_description="""
         The current player accepts an invitation to a game.
         The game id is given as a path-parameter of the request.
@@ -468,9 +467,9 @@ class GameViewSet(GenericViewSet,
             openapi.Parameter(
                 'id',
                 openapi.IN_PATH,
-                description="Game ID",
+                description='Game ID',
                 type=openapi.TYPE_INTEGER,
-                required=True
+                required=True,
             )
         ],
         responses={
@@ -491,8 +490,10 @@ class GameViewSet(GenericViewSet,
 
         game = self.get_object()
         player = request.user.player
-        if (game.event_invites.filter(invited=player).exists()
-                and game.max_players > game.players.count()):
+        if (
+            game.event_invites.filter(invited=player).exists()
+            and game.max_players > game.players.count()
+        ):
             is_joined = {'is_joined': True}
             game.players.add(player)
             game.event_invites.filter(invited=player).delete()
@@ -510,9 +511,10 @@ class TourneyViewSet(
     RetrieveModelMixin,
     DestroyModelMixin,
     InvitePlayersMixin,
-    RatePlayersMixin
+    RatePlayersMixin,
 ):
     """CRUD for tournaments."""
+
     permission_classes = (IsHostOrReadOnly,)
     http_method_names = ['get', 'post', 'delete']
     queryset = Tourney.objects.all()
@@ -520,16 +522,21 @@ class TourneyViewSet(
     def get_queryset(self):
         player = getattr(self.request.user, 'player', None)
         if player is None or player.country is None:
-            return Tourney.objects.all().select_related(
-                'host', 'court').prefetch_related('teams', 'teams__players')
-        return Tourney.objects.player_located_games(
-            player).select_related(
-                'host', 'court').prefetch_related('teams', 'teams__players')
+            return (
+                Tourney.objects.all()
+                .select_related('host', 'court')
+                .prefetch_related('teams', 'teams__players')
+            )
+        return (
+            Tourney.objects.player_located_games(player)
+            .select_related('host', 'court')
+            .prefetch_related('teams', 'teams__players')
+        )
 
     def get_serializer_class(self):
         if self.action in ('retrieve', 'joining_tournament'):
             return TourneyDetailSerializer
-        elif self.action == 'invite_players':
+        if self.action == 'invite_players':
             return GameInviteSerializer
         return TourneySerializer
 
@@ -537,7 +544,7 @@ class TourneyViewSet(
         methods=['post'],
         detail=True,
         url_path='join-tournament',
-        permission_classes=[IsAuthenticated]
+        permission_classes=[IsAuthenticated],
     )
     def joining_tournament(self, request, *args, **kwargs):
         """Adding a user to the tourney and removing the invitation."""
@@ -550,36 +557,40 @@ class TourneyViewSet(
         if not team:
             return Response(
                 data={'team_id': 'This team is not exists.'},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        elif TourneyTeam.objects.filter(
-                tourney=tourney, players=player).exists():
+        if TourneyTeam.objects.filter(
+            tourney=tourney, players=player
+        ).exists():
             return Response(
                 data={
                     'team_id': (
-                        'The player is already participate in tournament.')},
-                status=status.HTTP_400_BAD_REQUEST
+                        'The player is already participate in tournament.'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        elif not tourney.event_invites.filter(invited=player).exists():
+        if not tourney.event_invites.filter(
+            invited=player, expiration__gt=now()
+        ).exists():
             return Response(
                 data={
                     'team_id': (
-                        'The player have not invitation in this tournament.')},
-                status=status.HTTP_400_BAD_REQUEST
+                        'The player have not invitation in this tournament.'
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        elif (
-            (tourney.is_individual and
-             tourney.max_players > team.players.count()) or
-            (not tourney.is_individual and
-             capacity > team.players.count())
-        ):
+        if (
+            tourney.is_individual
+            and tourney.max_players > team.players.count()
+        ) or (not tourney.is_individual and capacity > team.players.count()):
             is_joined = {'is_joined': True}
             team.players.add(player)
             tourney.event_invites.filter(invited=player).delete()
         else:
             is_joined = {'is_joined': False}
-        serializer = self.get_serializer(
-            tourney, context={'request': request})
+        serializer = self.get_serializer(tourney, context={'request': request})
         data = serializer.data.copy()
         data.update(is_joined)
         return Response(data=data, status=status.HTTP_200_OK)

@@ -39,9 +39,7 @@ class TourneyAdmin(BaseEventAdmin):
         'is_individual',
         'maximum_teams',
     )
-    list_filter = BaseEventAdmin.list_filter + (
-        'is_individual',
-    )
+    list_filter = BaseEventAdmin.list_filter + ('is_individual',)
     filter_horizontal = ('player_levels',)
     inlines = [TeamInline]
 

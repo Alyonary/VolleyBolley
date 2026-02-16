@@ -1,3 +1,4 @@
+from backend.apps.notifications.push_service import PushService
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -51,21 +52,24 @@ def schedule_event_notifications(instance, event_type):  # noqa: RET503
 @receiver(post_save, sender=Game)
 def game_created_handler(sender, instance, created, **kwargs):
     if created:
-        schedule_event_notifications(instance, event_type='game')
+        if PushService():
+            schedule_event_notifications(instance, event_type='game')
 
 
 @receiver(post_save, sender=Tourney)
 def tourney_created_handler(sender, instance, created, **kwargs):
     if created:
-        schedule_event_notifications(instance, event_type='tourney')
+        if PushService():
+            schedule_event_notifications(instance, event_type='tourney')
 
 
 @receiver(post_save, sender=GameInvitation)
 def game_invitation_created_handler(sender, instance, created, **kwargs):
     if created:
-        send_event_notification_task.delay(
-            instance.game.id, NotificationTypes.GAME_INVITE
-        )
+        if PushService():
+            send_event_notification_task.delay(
+                instance.game.id, NotificationTypes.GAME_INVITE
+            )
 
 
 @receiver(post_save, sender=Tourney)

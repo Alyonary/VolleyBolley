@@ -8,4 +8,4 @@ class EventConfig(AppConfig):
     name = 'apps.event'
 
     def ready(self):
-        from apps.event import signals # noqa
+        from apps.event import signals  # noqa

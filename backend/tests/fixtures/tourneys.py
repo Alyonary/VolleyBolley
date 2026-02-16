@@ -27,10 +27,7 @@ def base_tourney_data(
         'start_time': start_time,
         'end_time': end_time,
         'gender': 'MEN',
-        'player_levels': [
-            game_levels_light,
-            game_levels_medium
-        ],
+        'player_levels': [game_levels_light, game_levels_medium],
         'price_per_person': '10.00',
         'payment_type': payment_account_revolut.payment_type,
         'host': player_thailand,
@@ -42,20 +39,16 @@ def base_tourney_data(
 @pytest.fixture
 def tourney_data_individual(base_tourney_data):
     individual_data = {
-        "is_individual": True,
-        "max_players": 5,
-        "maximum_teams": 1
+        'is_individual': True,
+        'max_players': 5,
+        'maximum_teams': 1,
     }
     return individual_data | base_tourney_data
 
 
 @pytest.fixture
 def tourney_data_team(base_tourney_data):
-    team_data = {
-        "is_individual": False,
-        "max_players": 8,
-        "maximum_teams": 4
-    }
+    team_data = {'is_individual': False, 'max_players': 8, 'maximum_teams': 4}
     return team_data | base_tourney_data
 
 
@@ -90,6 +83,7 @@ def create_custom_tourney(tourney_data_individual):
         tourney.player_levels.set(levels)
         tourney_data_individual['player_levels'] = levels
         return tourney
+
     return _create
 
 

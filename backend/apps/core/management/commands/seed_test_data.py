@@ -28,7 +28,8 @@ class Command(BaseCommand):
 
         paphos, _ = City.objects.get_or_create(name='Paphos', country=cyprus)
         pattaya, _ = City.objects.get_or_create(
-            name='Pattaya', country=thailand)
+            name='Pattaya', country=thailand
+        )
 
         # Валюты
         eur, _ = CurrencyType.objects.get_or_create(
@@ -60,10 +61,10 @@ class Command(BaseCommand):
             defaults={
                 'first_name': 'Test',
                 'last_name': 'User',
-                'email': 'test@test.com'
+                'email': 'test@test.com',
             },
         )
-        if not hasattr(user, "player"):
+        if not hasattr(user, 'player'):
             player = Player.objects.create(
                 user=user,
                 gender=Genders.MALE,
@@ -121,6 +122,8 @@ class Command(BaseCommand):
             host=player,
         )
 
-        self.stdout.write(self.style.SUCCESS(
-            '✅ Тестовые данные успешно созданы (включая турниры)!'
-        ))
+        self.stdout.write(
+            self.style.SUCCESS(
+                '✅ Тестовые данные успешно созданы (включая турниры)!'
+            )
+        )

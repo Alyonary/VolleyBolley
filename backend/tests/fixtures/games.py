@@ -263,8 +263,8 @@ def three_games_thailand(game_data):
         players = working_data.pop('players')
         levels = working_data.pop('player_levels')
 
-        start_time = working_data['start_time'] + timedelta(hours=i*4)
-        end_time = working_data['end_time'] + timedelta(hours=i*4)
+        start_time = working_data['start_time'] + timedelta(hours=i * 4)
+        end_time = working_data['end_time'] + timedelta(hours=i * 4)
         working_data['start_time'] = start_time
         working_data['end_time'] = end_time
 
