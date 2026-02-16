@@ -6,7 +6,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.core.views import CurrenciesView, FAQView
 from apps.courts.views import CourtViewSet
-from apps.event.views import GameViewSet
+from apps.event.views import GameViewSet, TourneyViewSet
 from apps.locations.views import CountryListView
 from apps.players.views import PlayerViewSet
 
@@ -16,6 +16,7 @@ api_v1 = DefaultRouter()
 api_v1.register(r'courts', CourtViewSet, basename='courts')
 api_v1.register(r'players', PlayerViewSet, basename='players')
 api_v1.register(r'games', GameViewSet, basename='games')
+api_v1.register(r'tournaments', TourneyViewSet, basename='tournaments')
 
 schema_view = get_schema_view(
     openapi.Info(

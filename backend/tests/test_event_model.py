@@ -82,16 +82,16 @@ class TestGameAPI:
         assert response.status_code == status.HTTP_201_CREATED
         assert GameInvitation.objects.count() == len(player_ids)
         for user in player_ids:
-            invite = GameInvitation.objects.filter(
-                host=game_thailand.host, invited=user, game=game_thailand
-            ).first()
+            invite = game_thailand.event_invites.filter(invited=user).first()
             assert invite is not None
 
     def test_for_game_joining(
         self, game_thailand, player_cyprus, api_client_cyprus
     ):
         GameInvitation.objects.create(
-            host=game_thailand.host, invited=player_cyprus, game=game_thailand
+            host=game_thailand.host,
+            invited=player_cyprus,
+            content_object=game_thailand,
         )
         url = reverse('api:games-joining-game', args=(game_thailand.id,))
         assert game_thailand.players.count() == 0
@@ -109,8 +109,11 @@ class TestGameAPI:
         player_cyprus,
     ):
         GameInvitation.objects.create(
-            host=game_thailand.host, invited=player_cyprus, game=game_thailand
+            host=game_thailand.host,
+            invited=player_cyprus,
+            content_object=game_thailand,
         )
+        url = reverse('api:games-delete-invitation', args=(game_thailand.id,))
         url = reverse('api:games-delete-invitation', args=(game_thailand.id,))
         assert game_thailand.players.count() == 0
         response = api_client_cyprus.delete(url)
@@ -127,7 +130,7 @@ class TestGameAPI:
     ):
         assert Game.objects.count() == 2
         response = api_client_thailand.get(reverse('api:games-upcoming-games'))
-        assert len(response.data) == 1
+        assert len(response.data['games']) == 1
         assert response.data['games'][0]['game_id'] == game_thailand.id
 
     def test_deleting_game_by_host(
@@ -310,7 +313,7 @@ class TestGameSerializers:
             },
         )
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data.get('invited')
+        assert response.data[0].get('invited')
 
     def test_game_short_serializer(
         self, game_thailand, game_thailand_with_players
@@ -363,7 +366,9 @@ class TestGameFiltering:
         self, api_client_thailand, player_thailand, game_cyprus
     ):
         GameInvitation.objects.create(
-            game=game_cyprus, host=game_cyprus.host, invited=player_thailand
+            content_object=game_cyprus,
+            host=game_cyprus.host,
+            invited=player_thailand,
         )
         response = api_client_thailand.get(reverse('api:games-preview'))
         assert response.json() == {'upcoming_game_time': None, 'invites': 1}
@@ -405,7 +410,7 @@ class TestGameFiltering:
         assert not games
 
         GameInvitation.objects.create(
-            game=game_thailand,
+            content_object=game_thailand,
             host=game_thailand.host,
             invited=player_thailand_female_pro,
         )
