@@ -2,14 +2,13 @@ from django.contrib.auth.models import AnonymousUser
 from django.db.models import Exists, OuterRef, Prefetch
 from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
 from apps.core.permissions import IsNotRegisteredPlayer, IsRegisteredPlayer
-from apps.core.serializers import EmptyBodySerializer
 from apps.event.models import Game
 from apps.players.constants import PlayerIntEnums
 from apps.players.models import Favorite, Payment, Player
@@ -232,7 +231,12 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        serializer = PlayerKeyDetailSerializer(instance={'player': instance})
+        serializer = PlayerKeyDetailSerializer(
+            instance={'player': instance},
+            context={
+                'request': request,
+            },
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @swagger_auto_schema(
@@ -440,7 +444,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         **Returns:** empty body response.
         """,
-        request_body=EmptyBodySerializer,
+        request_body=no_body,
         responses={
             201: 'Success',
             400: 'Bad request',

@@ -34,15 +34,18 @@ class BaseNameAdmin(admin.ModelAdmin):
 
 class BaseChoicesAdmin(admin.ModelAdmin):
     search_fields = ('name',)
-    list_display = ('id', 'name', 'get_display_name')
+    list_display = (
+        'id',
+        'name',
+    )
     list_filter = ('name',)
     ordering = ('name',)
     empty_value_display = _('Not defined')
     list_per_page = CoreFieldLength.ADMIN_LIST_PER_PAGE.value
 
-    @admin.display(description=_('Title'))
-    def get_display_name(self, obj):
-        return obj.get_name_display()
+    # @admin.display(description=_('Title'))
+    # def get_display_name(self, obj):
+    #     return obj.name
 
 
 @admin.register(Contact)

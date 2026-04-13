@@ -280,6 +280,7 @@ class PlayerListSerializer(PlayerBaseSerializer):
             'avatar',
             'level',
             'is_favorite',
+            'gender',
         ]
         read_only_fields = [
             'player_id',
@@ -288,13 +289,13 @@ class PlayerListSerializer(PlayerBaseSerializer):
             'avatar',
             'level',
             'is_favorite',
+            'gender',
         ]
 
     def get_is_favorite(self, obj) -> bool:
         """Retrieve if player is in favorite list."""
         return Favorite.objects.filter(
-            player=self.context.get('player'),
-            favorite=self.context.get('favorite'),
+            player=self.context.get('request').user.player, favorite=obj
         ).exists()
 
 

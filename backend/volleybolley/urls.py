@@ -3,6 +3,9 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic import TemplateView
+from rest_framework_simplejwt.views import (
+    TokenObtainPairView,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -23,8 +26,8 @@ urlpatterns = [
     ),
     path('', TemplateView.as_view(template_name='index.html'), name='index'),
     path('', include('django_prometheus.urls')),
+    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
 ]
-
 if settings.DEBUG:
     urlpatterns += static(
         settings.STATIC_URL, document_root=settings.STATIC_ROOT
@@ -36,4 +39,5 @@ if settings.DEBUG:
         # импортируем debug toolbar только если не в режиме тестирования
         # иначе будет ошибка при тестировании
         from debug_toolbar.toolbar import debug_toolbar_urls  # type: ignore
+
         urlpatterns.extend(debug_toolbar_urls())
