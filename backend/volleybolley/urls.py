@@ -26,7 +26,6 @@ urlpatterns = [
     ),
     path('', TemplateView.as_view(template_name='index.html'), name='index'),
     path('', include('django_prometheus.urls')),
-    path('token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
 ]
 if settings.DEBUG:
     urlpatterns += static(
