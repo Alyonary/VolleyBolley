@@ -1,7 +1,6 @@
 import logging
 
 from django.contrib.auth.models import AnonymousUser
-from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -16,6 +15,11 @@ from apps.notifications.serializers import (
     FCMTokenSerializer,
     NotificationListSerializer,
     NotificationSerializer,
+)
+from apps.notifications.swagger_schemas import (
+    NOTIFICATIONS_FCM_AUTH_PUT_SCHEMA,
+    NOTIFICATIONS_LIST_SCHEMA,
+    NOTIFICATIONS_MARK_READ_PATCH_SCHEMA,
 )
 from apps.players.models import Player
 
@@ -55,41 +59,13 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             context.update({'player': Player.objects.get(user=user)})
         return context
 
-    @swagger_auto_schema(
-        tags=['notifications'],
-        operation_summary='list of active notifications for current player',
-        operation_description="""
-        **Returns:** a list of active notifications for the current player.
-        """,
-        responses={
-            200: openapi.Response('Success', NotificationListSerializer),
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
+    @swagger_auto_schema(**NOTIFICATIONS_LIST_SCHEMA)
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer({'notifications': queryset})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(
-        tags=['notifications'],
-        method='put',
-        operation_summary='Register FCM device token for current player',
-        operation_description="""
-        **Returns:** empty body response.
-        """,
-        request_body=FCMTokenSerializer,
-        responses={
-            200: 'Token updated',
-            201: 'Token created',
-            400: 'Bad request',
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
+    @swagger_auto_schema(**NOTIFICATIONS_FCM_AUTH_PUT_SCHEMA)
     @action(
         methods=['put'],
         detail=False,
@@ -114,23 +90,7 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
             return Response(status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(
-        tags=['notifications'],
-        operation_summary='Mark list of notifications as read',
-        operation_description="""
-        Mark a list of the notifications for the current player as read
-
-        **Returns:** empty body response.
-        """,
-        request_body=NotificationListSerializer,
-        responses={
-            200: 'Success',
-            400: 'Bad request',
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
+    @swagger_auto_schema(**NOTIFICATIONS_MARK_READ_PATCH_SCHEMA)
     @action(
         methods=['patch'],
         detail=False,

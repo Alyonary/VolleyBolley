@@ -1,4 +1,3 @@
-from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.permissions import AllowAny
@@ -8,6 +7,7 @@ from rest_framework.views import APIView
 from apps.core.models import FAQ, CurrencyType
 from apps.core.permissions import IsRegisteredPlayer
 from apps.core.serializers import CurrencyListSerializer
+from apps.core.swagger_schemas import CURRENCIES_GET_SCHEMA, FAQ_GET_SCHEMA
 
 
 class FAQView(APIView):
@@ -17,40 +17,7 @@ class FAQView(APIView):
 
     permission_classes = [IsRegisteredPlayer]
 
-    @swagger_auto_schema(
-        tags=['faq'],
-        operation_summary='Get FAQ text',
-        operation_description="""
-        **Returns:** FAQ text in markdown format.
-        """,
-        responses={
-            200: openapi.Response(
-                'Success',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'faq': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            description='FAQ text in markdown format',
-                        )
-                    },
-                ),
-            ),
-            404: openapi.Response(
-                'Not found',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'faq': openapi.Schema(
-                            type=openapi.TYPE_STRING,
-                            default='No active FAQ available.',
-                        )
-                    },
-                ),
-            ),
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
+    @swagger_auto_schema(**FAQ_GET_SCHEMA)
     def get(self, request, *args, **kwargs):
         faq = FAQ.get_active()
         if faq:
@@ -68,16 +35,7 @@ class CurrenciesView(APIView):
 
     permission_classes = [AllowAny]
 
-    @swagger_auto_schema(
-        tags=['currencies'],
-        operation_summary='Get all currency types',
-        operation_description="""
-        **Returns:** List of all available currency types.
-        """,
-        responses={
-            200: openapi.Response('Success', CurrencyListSerializer()),
-        },
-    )
+    @swagger_auto_schema(**CURRENCIES_GET_SCHEMA)
     def get(self, request, *args, **kwargs):
         """Retrieve all currency types."""
 

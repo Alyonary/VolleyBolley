@@ -1,8 +1,7 @@
 from django.contrib.auth.models import AnonymousUser
 from django.db.models import Exists, OuterRef, Prefetch
 from django.shortcuts import get_object_or_404
-from drf_yasg import openapi
-from drf_yasg.utils import no_body, swagger_auto_schema
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -21,6 +20,19 @@ from apps.players.serializers import (
     PlayerKeyDetailSerializer,
     PlayerListSerializer,
     PlayerRegisterSerializer,
+)
+from apps.players.swagger_schemas import (
+    AVATAR_ME_PUT_SCHEMA,
+    FAVORITE_DELETE_SCHEMA,
+    FAVORITE_POST_SCHEMA,
+    PAYMENTS_ME_GET_SCHEMA,
+    PAYMENTS_ME_PUT_SCHEMA,
+    PLAYER_DETAIL_SCHEMA,
+    PLAYER_LIST_SCHEMA,
+    PLAYERS_ME_DELETE_SCHEMA,
+    PLAYERS_ME_PATCH_SCHEMA,
+    PLAYERS_ME_SCHEMA,
+    PLAYERS_REGISTER_SCHEMA,
 )
 from apps.users.models import User
 
@@ -129,105 +141,11 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         return super().get_object()
 
-    @swagger_auto_schema(
-        tags=['players'],
-        operation_summary='List of all players excluding current user',
-        operation_description="""
-        **Returns:** a sorted list of all players excluding the current user.
-        The favorite players are going first.
-        """,
-        responses={
-            200: openapi.Response('Success', PlayerListSerializer(many=True)),
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
+    @swagger_auto_schema(**PLAYER_LIST_SCHEMA)
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
-    @swagger_auto_schema(
-        tags=['players'],
-        operation_summary='Get info about player',
-        operation_description="""
-        **Returns:** information about the chosen player.
-        """,
-        responses={
-            200: openapi.Response(
-                description='Player details retrieved successfully',
-                schema=openapi.Schema(
-                    type=openapi.TYPE_OBJECT,
-                    properties={
-                        'player': openapi.Schema(
-                            type=openapi.TYPE_OBJECT,
-                            properties={
-                                'player_id': openapi.Schema(
-                                    type=openapi.TYPE_INTEGER, example=1
-                                ),
-                                'first_name': openapi.Schema(
-                                    type=openapi.TYPE_STRING, example='Ivan'
-                                ),
-                                'last_name': openapi.Schema(
-                                    type=openapi.TYPE_STRING, example='Petrov'
-                                ),
-                                'avatar': openapi.Schema(
-                                    type=openapi.TYPE_STRING,
-                                    format=openapi.FORMAT_URI,
-                                    example='https://storage.example.com/'
-                                    'avatars/1.jpg',
-                                ),
-                                'is_favorite': openapi.Schema(
-                                    type=openapi.TYPE_BOOLEAN, example=False
-                                ),
-                                'level': openapi.Schema(
-                                    type=openapi.TYPE_STRING, example='PRO'
-                                ),
-                                'latest_activity': openapi.Schema(
-                                    type=openapi.TYPE_ARRAY,
-                                    items=openapi.Schema(
-                                        type=openapi.TYPE_OBJECT,
-                                        properties={
-                                            'event_timestamp': openapi.Schema(
-                                                type=openapi.TYPE_STRING,
-                                                format=openapi.FORMAT_DATETIME,
-                                                example='2025-07-12T14:23:45Z',
-                                            ),
-                                            'court_location': openapi.Schema(
-                                                type=openapi.TYPE_OBJECT,
-                                                properties={
-                                                    'longitude': openapi.Schema(  # noqa
-                                                        type=openapi.TYPE_NUMBER,  # noqa
-                                                        format=openapi.FORMAT_FLOAT,  # noqa
-                                                        example=37.6173,
-                                                    ),
-                                                    'latitude': openapi.Schema(
-                                                        type=openapi.TYPE_NUMBER,  # noqa
-                                                        format=openapi.FORMAT_FLOAT,  # noqa
-                                                        example=55.7558,
-                                                    ),
-                                                    'court_name': openapi.Schema(  # noqa
-                                                        type=openapi.TYPE_STRING,  # noqa
-                                                        example='Karon Arena',
-                                                    ),
-                                                    'location_name': openapi.Schema(  # noqa
-                                                        type=openapi.TYPE_STRING,  # noqa
-                                                        example='Russia, Moscow',  # noqa
-                                                    ),
-                                                },
-                                            ),
-                                        },
-                                    ),
-                                ),
-                            },
-                        )
-                    },
-                ),
-            ),
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
+    @swagger_auto_schema(**PLAYER_DETAIL_SCHEMA)
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
 
@@ -239,60 +157,9 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(
-        tags=['me'],
-        method='get',
-        operation_summary='Get current player info',
-        operation_description="""
-        Get information about the current player
-
-        **Returns:** player object
-        """,
-        responses={
-            200: openapi.Response('Success', PlayerBaseSerializer()),
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
-    @swagger_auto_schema(
-        tags=['me'],
-        method='patch',
-        operation_summary='Update current player info',
-        operation_description="""
-        Update the current player object
-
-        **Notice:** All fields are optional.
-
-        **Returns:** empty body response.
-        """,
-        request_body=PlayerBaseSerializer(partial=True),
-        responses={
-            200: 'Success',
-            400: 'Bad request',
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
-    @swagger_auto_schema(
-        tags=['me'],
-        method='delete',
-        operation_summary='Delete current player',
-        operation_description="""
-        Delete current player by deleting the user associated with
-        the player. The player is deleted due to cascade relation.
-
-        **Returns:** empty body response.
-        """,
-        responses={
-            204: 'No Content',
-            400: 'Bad request',
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
+    @swagger_auto_schema(**PLAYERS_ME_SCHEMA)
+    @swagger_auto_schema(**PLAYERS_ME_PATCH_SCHEMA)
+    @swagger_auto_schema(**PLAYERS_ME_DELETE_SCHEMA)
     @action(['GET', 'PATCH', 'DELETE'], detail=False)
     def me(self, request):
         """Get, patch or delete current player."""
@@ -325,33 +192,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         return Response(status=status.HTTP_200_OK, data=serializer.data)
 
-    @swagger_auto_schema(
-        tags=['avatar'],
-        method='put',
-        operation_summary='Update or delete avatar',
-        operation_description="""
-        Update or delete avatar
-
-        To delete avatar set its value to 'null'.
-        """,
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'avatar': openapi.Schema(
-                    type=openapi.TYPE_STRING,
-                    description='Base64 encoded image',
-                ),
-            },
-            required=['avatar'],
-        ),
-        responses={
-            200: openapi.Response('Success', AvatarSerializer),
-            400: 'Bad request',
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
+    @swagger_auto_schema(**AVATAR_ME_PUT_SCHEMA)
     @action(
         detail=False,
         methods=['PUT'],
@@ -371,50 +212,8 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(
-        tags=['payments'],
-        method='get',
-        operation_summary='Get payment data of player',
-        operation_description="""
-        Get payment data of player
-
-        **Returns:** list of players payments.
-        """,
-        responses={
-            200: openapi.Response('Success', PaymentsSerializer()),
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
-    @swagger_auto_schema(
-        tags=['payments'],
-        method='put',
-        operation_summary='Update payment data of player',
-        operation_description="""
-        Update players payment data.
-
-        **Notice:**
-        - list of payments data should be provided;
-        - only one of the players payments must have the attribute
-        'is_preferred=True', the other payment with the attribute
-        'is_preferred=True' should be rewritten with the attribute
-        'is_preferred=False' during the same request;
-        - it is better to rewrite the whole collection of players payments
-        at once;
-        - all fields of a payment are required.
-
-        **Returns:** empty body response.
-        """,
-        request_body=PaymentsSerializer,
-        responses={
-            200: 'Success',
-            400: 'Bad request',
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
+    @swagger_auto_schema(**PAYMENTS_ME_GET_SCHEMA)
+    @swagger_auto_schema(**PAYMENTS_ME_PUT_SCHEMA)
     @action(
         detail=False,
         methods=['PUT', 'GET'],
@@ -435,41 +234,8 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         return Response(status=status.HTTP_200_OK)
 
-    @swagger_auto_schema(
-        tags=['favorite'],
-        method='post',
-        operation_summary='Add player to favorite list',
-        operation_description="""
-        Add a player to a favorite list
-
-        **Returns:** empty body response.
-        """,
-        request_body=no_body,
-        responses={
-            201: 'Success',
-            400: 'Bad request',
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
-    @swagger_auto_schema(
-        tags=['favorite'],
-        method='delete',
-        operation_summary='Delete player from favorite list',
-        operation_description="""
-        Add a player to a favorite list
-
-        **Returns:** empty body response.
-        """,
-        responses={
-            204: 'No Content',
-            400: 'Bad request',
-            401: 'Unauthorized',
-            403: 'Forbidden',
-        },
-        security=[{'Bearer': []}, {'JWT': []}],
-    )
+    @swagger_auto_schema(**FAVORITE_POST_SCHEMA)
+    @swagger_auto_schema(**FAVORITE_DELETE_SCHEMA)
     @action(detail=True, methods=['POST', 'DELETE'])
     def favorite(self, request, pk=None):
         """Add or delete player from favorite list."""
@@ -505,26 +271,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @swagger_auto_schema(
-        tags=['register'],
-        operation_summary='Register new player',
-        operation_description="""
-        Register a new player.
-
-        **Notice:**
-        - update the basic player instance generated after login
-        via social account or via phone number;
-        - all fields are required.
-
-        **Returns:** empty body response.
-        """,
-        request_body=PlayerRegisterSerializer,
-        responses={
-            200: 'Success',
-            400: 'Bad request',
-            401: 'Unauthorized',
-        },
-    )
+    @swagger_auto_schema(**PLAYERS_REGISTER_SCHEMA)
     @action(
         detail=False,
         methods=['POST'],
