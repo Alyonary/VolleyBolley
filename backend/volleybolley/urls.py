@@ -24,7 +24,6 @@ urlpatterns = [
     path('', TemplateView.as_view(template_name='index.html'), name='index'),
     path('', include('django_prometheus.urls')),
 ]
-
 if settings.DEBUG:
     urlpatterns += static(
         settings.STATIC_URL, document_root=settings.STATIC_ROOT
@@ -36,4 +35,5 @@ if settings.DEBUG:
         # импортируем debug toolbar только если не в режиме тестирования
         # иначе будет ошибка при тестировании
         from debug_toolbar.toolbar import debug_toolbar_urls  # type: ignore
+
         urlpatterns.extend(debug_toolbar_urls())

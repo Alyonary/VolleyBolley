@@ -51,10 +51,6 @@ class CurrencyCreateSerializer(serializers.ModelSerializer):
             ) from e
 
 
-class EmptyBodySerializer(serializers.Serializer):
-    pass
-
-
 class CurrencySerializer(serializers.ModelSerializer):
     """Serializer for the CurrencyType model."""
 

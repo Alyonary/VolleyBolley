@@ -1,7 +1,7 @@
 from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
+from drf_yasg.utils import no_body, swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action
 from rest_framework.mixins import (
@@ -13,7 +13,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
 
-from apps.core.serializers import EmptyBodySerializer
 from apps.event.models import Game, GameInvitation
 from apps.event.permissions import IsHostOrReadOnly, IsPlayerInEvent
 from apps.event.serializers import (
@@ -294,7 +293,7 @@ class GameViewSet(
 
         **Returns:** game object.
         """,
-        request_body=EmptyBodySerializer,
+        request_body=no_body,
         manual_parameters=[
             openapi.Parameter(
                 'id',
