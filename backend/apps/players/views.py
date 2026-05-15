@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
 from rest_framework.decorators import action
+from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.viewsets import ReadOnlyModelViewSet
 
@@ -142,11 +143,11 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         return super().get_object()
 
     @swagger_auto_schema(**PLAYER_LIST_SCHEMA)
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
     @swagger_auto_schema(**PLAYER_DETAIL_SCHEMA)
-    def retrieve(self, request, *args, **kwargs):
+    def retrieve(self, request: Request, *args, **kwargs):
         instance = self.get_object()
 
         serializer = PlayerKeyDetailSerializer(
@@ -161,7 +162,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @swagger_auto_schema(**PLAYERS_ME_PATCH_SCHEMA)
     @swagger_auto_schema(**PLAYERS_ME_DELETE_SCHEMA)
     @action(['GET', 'PATCH', 'DELETE'], detail=False)
-    def me(self, request):
+    def me(self, request: Request):
         """Get, patch or delete current player."""
         instance = self.get_object()
         if self.request.method == 'DELETE':
@@ -220,7 +221,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         url_path='me/payments',
         url_name='me-payments',
     )
-    def get_put_payments(self, request):
+    def get_put_payments(self, request: Request):
         """Get or put payment data of player."""
         if self.request.method == 'GET':
             payments = {'payments': self.get_queryset()}
@@ -237,7 +238,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
     @swagger_auto_schema(**FAVORITE_POST_SCHEMA)
     @swagger_auto_schema(**FAVORITE_DELETE_SCHEMA)
     @action(detail=True, methods=['POST', 'DELETE'])
-    def favorite(self, request, pk=None):
+    def favorite(self, request: Request, pk=None):
         """Add or delete player from favorite list."""
         player = self.get_object()
         favorite = get_object_or_404(Player, id=pk)
@@ -277,7 +278,7 @@ class PlayerViewSet(ReadOnlyModelViewSet):
         methods=['POST'],
         permission_classes=[IsNotRegisteredPlayer],
     )
-    def register(self, request):
+    def register(self, request: Request):
         """Register new player."""
         instance = self.get_object()
         serializer = self.get_serializer(instance=instance, data=request.data)

@@ -5,6 +5,7 @@ from apps.core.constants import ContactTypes
 from apps.core.models import Tag
 from apps.core.serializers import ContactCreateSerializer, ContactSerializer
 from apps.courts.models import Court, CourtLocation
+from apps.event.serializers import GameSerializer, TourneySerializer
 from apps.locations.models import City, Country
 
 
@@ -31,12 +32,9 @@ class CourtSerializer(serializers.ModelSerializer):
     """Court model serializer."""
 
     court_id = serializers.IntegerField(source='pk')
-
     tags = serializers.StringRelatedField(source='tag_list', many=True)
-
     contact_list = ContactSerializer(many=True, source='contacts')
     photo_url = serializers.ImageField(use_url=True, required=False)
-
     location = LocationSerializer()
 
     class Meta:
@@ -153,3 +151,13 @@ class CourtCreateSerializer(serializers.ModelSerializer):
             contact_serializer.is_valid(raise_exception=True)
             contact_serializer.save()
             return court
+
+
+class CourtWithEventsSerializer(CourtSerializer):
+    """Extended court serializer including nested games and tournaments."""
+
+    games = GameSerializer(many=True, read_only=True)
+    tourney = TourneySerializer(many=True, source='tourneys', read_only=True)
+
+    class Meta(CourtSerializer.Meta):
+        fields = list(CourtSerializer.Meta.fields) + ['games', 'tourney']

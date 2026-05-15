@@ -5,6 +5,7 @@ from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.core.permissions import IsRegisteredPlayer
@@ -60,7 +61,7 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         return context
 
     @swagger_auto_schema(**NOTIFICATIONS_LIST_SCHEMA)
-    def list(self, request, *args, **kwargs):
+    def list(self, request: Request, *args, **kwargs):
         queryset = self.get_queryset()
         serializer = self.get_serializer({'notifications': queryset})
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -72,7 +73,7 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         url_path='fcm-auth',
         serializer_class=FCMTokenSerializer,
     )
-    def fcm_auth(self, request):
+    def fcm_auth(self, request: Request):
         """
         Registers or updates FCM device token for current user.
         """
@@ -98,7 +99,7 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         url_name='mark-read',
         serializer_class=NotificationListSerializer,
     )
-    def mark_read(self, request):
+    def mark_read(self, request: Request):
         """
         Bulk mark notifications as read.
         PATCH /api/notifications/
@@ -126,7 +127,7 @@ class NotificationsViewSet(mixins.ListModelMixin, viewsets.GenericViewSet):
         url_path='fcm-test',
         permission_classes=[AllowAny],
     )
-    def fcm_test(self, request):
+    def fcm_test(self, request: Request):
         """
         Test view to send all notification types for game ID 1.
         Just creates notification tasks and returns response.

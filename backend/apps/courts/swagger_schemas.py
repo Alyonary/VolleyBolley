@@ -1,17 +1,46 @@
 from drf_yasg import openapi
 
-from apps.courts.serializers import CourtSerializer
+from apps.courts.serializers import (
+    CourtSerializer,
+    CourtWithEventsSerializer,
+)
 
 COURTS_LIST_SCHEMA = {
-    'tags': ['courts'],
-    'operation_summary': 'List of filtered courts',
-    'operation_description': """
-        **Returns:** a list of courts filtered depending on players location.
-    """,
+    'operation_description': (
+        'Get a list of courts with geographic filtering.'
+    ),
+    'manual_parameters': [
+        openapi.Parameter(
+            'active_events',
+            openapi.IN_QUERY,
+            description='True — return only courts that have events',
+            type=openapi.TYPE_BOOLEAN,
+        ),
+    ],
+    'responses': {200: CourtSerializer(many=True)},
+}
+
+
+COURTS_RETRIEVE_SCHEMA = {
+    'operation_description': (
+        'Get detailed information about a specific court.'
+    ),
+    'manual_parameters': [
+        openapi.Parameter(
+            'events_detail',
+            openapi.IN_QUERY,
+            description=(
+                "True — include 'games' and 'tourney' keys in the response"
+            ),
+            type=openapi.TYPE_BOOLEAN,
+        ),
+    ],
     'responses': {
-        200: openapi.Response('Success', CourtSerializer(many=True)),
-        401: 'Unauthorized',
-        403: 'Forbidden',
+        200: openapi.Response(
+            description=(
+                'Successful response. Structure depends on events_detail flag.'
+            ),
+            schema=CourtWithEventsSerializer,
+        )
     },
-    'security': [{'Bearer': []}, {'JWT': []}],
 }
