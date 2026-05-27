@@ -35,6 +35,7 @@ dependencies = [
     "django-jazzmin (>=3.0.1,<4.0.0)",
     "openpyxl (>=3.1.5,<4.0.0)",
     "django-debug-toolbar (>=6.1.0,<7.0.0)",
+    "faker (>=40.19.1,<41.0.0)",
 ]
 
 

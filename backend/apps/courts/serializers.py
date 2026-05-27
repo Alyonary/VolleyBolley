@@ -1,3 +1,5 @@
+from typing import Any
+
 from django.db import transaction
 from rest_framework import serializers
 
@@ -5,7 +7,6 @@ from apps.core.constants import ContactTypes
 from apps.core.models import Tag
 from apps.core.serializers import ContactCreateSerializer, ContactSerializer
 from apps.courts.models import Court, CourtLocation
-from apps.event.serializers import GameSerializer, TourneySerializer
 from apps.locations.models import City, Country
 
 
@@ -35,7 +36,7 @@ class CourtSerializer(serializers.ModelSerializer):
     tags = serializers.StringRelatedField(source='tag_list', many=True)
     contact_list = ContactSerializer(many=True, source='contacts')
     photo_url = serializers.ImageField(use_url=True, required=False)
-    location = LocationSerializer()
+    court_location = LocationSerializer(source='location')
 
     class Meta:
         model = Court
@@ -46,7 +47,7 @@ class CourtSerializer(serializers.ModelSerializer):
             'contact_list',
             'photo_url',
             'tags',
-            'location',
+            'court_location',
         )
         read_only_fields = (
             'court_id',
@@ -55,7 +56,7 @@ class CourtSerializer(serializers.ModelSerializer):
             'contact_list',
             'photo_url',
             'tags',
-            'location',
+            'court_location',
         )
 
 
@@ -156,8 +157,19 @@ class CourtCreateSerializer(serializers.ModelSerializer):
 class CourtWithEventsSerializer(CourtSerializer):
     """Extended court serializer including nested games and tournaments."""
 
-    games = GameSerializer(many=True, read_only=True)
-    tourney = TourneySerializer(many=True, source='tourneys', read_only=True)
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        """Import serializers inside to avoid circular dependencies."""
+        super().__init__(*args, **kwargs)
+
+        from apps.event.serializers import (
+            GameSerializer,
+            TourneySerializer,
+        )
+
+        self.fields['games'] = GameSerializer(many=True, read_only=True)
+        self.fields['tournaments'] = TourneySerializer(
+            many=True, read_only=True
+        )
 
     class Meta(CourtSerializer.Meta):
-        fields = list(CourtSerializer.Meta.fields) + ['games', 'tourney']
+        fields = list(CourtSerializer.Meta.fields) + ['games', 'tournaments']

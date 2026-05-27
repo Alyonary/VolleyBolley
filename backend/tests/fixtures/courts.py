@@ -1,10 +1,14 @@
-from typing import Any, Dict
-
+import random
+from typing import Any, Dict, List
 import pytest
+from faker import Faker
 from django.urls import reverse
-
 from apps.core.models import Contact, Tag
 from apps.courts.models import Court, CourtLocation
+from apps.locations.models import City, Country
+from tests.subfunctions.base import get_model_objects
+
+fake = Faker()
 
 
 @pytest.fixture
@@ -141,3 +145,60 @@ def court_api_response_data() -> Dict[str, Any]:
         },
         'court_id': 1,
     }
+
+
+@pytest.fixture
+def fake_courts_thailand(
+    country_thailand: Country,
+    city_in_thailand: City,
+    court_data: Dict[str, Any],
+    countries_cities: Any,
+) -> List[Court]:
+    """Generate few random courts in Thailand using Faker."""
+    courts = []
+    cities = get_model_objects(City, country=country_thailand)
+    for _ in range(random.randint(1, 9)):
+        location = CourtLocation.objects.create(
+            longitude=float(fake.longitude()),
+            latitude=float(fake.latitude()),
+            court_name=f'Court {fake.company()}',
+            country=country_thailand,
+            city=random.choice(cities),
+        )
+        data = court_data.copy()
+        data.update(
+            {
+                'description': fake.text(max_nb_chars=100),
+                'working_hours': '08:00 - 22:00',
+                'location': location,
+            }
+        )
+        courts.append(Court.objects.create(**data))
+    return courts
+
+
+@pytest.fixture
+def fake_courts_cyprus(
+    country_cyprus: Country, court_data: Dict[str, Any], countries_cities: Any
+) -> List[Court]:
+    """Generate few random courts in Cyprus using Faker."""
+    courts = []
+    cities = get_model_objects(City, country=country_cyprus)
+    for _ in range(random.randint(1, 9)):
+        location = CourtLocation.objects.create(
+            longitude=float(fake.longitude()),
+            latitude=float(fake.latitude()),
+            court_name=f'Court {fake.company()}',
+            country=country_cyprus,
+            city=random.choice(cities),
+        )
+        data = court_data.copy()
+        data.update(
+            {
+                'description': fake.text(max_nb_chars=100),
+                'working_hours': '09:00 - 21:00',
+                'location': location,
+            }
+        )
+        courts.append(Court.objects.create(**data))
+    return courts

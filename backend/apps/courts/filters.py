@@ -29,6 +29,6 @@ class CourtFilter(filters.FilterSet):
         """Filter courts that have at least one associated event."""
         if value:
             return queryset.filter(
-                Q(games__isnull=False) | Q(tourneys__isnull=False)
+                Q(games__isnull=False) | Q(tournaments__isnull=False)
             ).distinct()
         return queryset
