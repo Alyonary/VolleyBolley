@@ -1,9 +1,6 @@
 import pytest
 
 from apps.locations.models import City, Country
-from django.db.models import QuerySet
-
-import pytest
 
 
 @pytest.fixture

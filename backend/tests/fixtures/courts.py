@@ -1,12 +1,13 @@
 import random
 from typing import Any, Dict, List
+
 import pytest
-from faker import Faker
 from django.urls import reverse
+from faker import Faker
+
 from apps.core.models import Contact, Tag
 from apps.courts.models import Court, CourtLocation
 from apps.locations.models import City, Country
-from tests.subfunctions.base import get_model_objects
 
 fake = Faker()
 
@@ -156,7 +157,7 @@ def fake_courts_thailand(
 ) -> List[Court]:
     """Generate few random courts in Thailand using Faker."""
     courts = []
-    cities = get_model_objects(City, country=country_thailand)
+    cities = City.objects.filter(country=country_thailand)
     for _ in range(random.randint(1, 9)):
         location = CourtLocation.objects.create(
             longitude=float(fake.longitude()),
@@ -183,7 +184,7 @@ def fake_courts_cyprus(
 ) -> List[Court]:
     """Generate few random courts in Cyprus using Faker."""
     courts = []
-    cities = get_model_objects(City, country=country_cyprus)
+    cities = City.objects.filter(country=country_cyprus)
     for _ in range(random.randint(1, 9)):
         location = CourtLocation.objects.create(
             longitude=float(fake.longitude()),

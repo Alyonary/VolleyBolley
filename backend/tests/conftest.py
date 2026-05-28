@@ -1,8 +1,9 @@
-import pytest
 from typing import Tuple
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+
+import pytest
 from rest_framework.test import APIClient
+
+from apps.locations.models import City, Country
 from apps.players.models import Player
 from apps.users.models import User
 
@@ -53,3 +54,47 @@ def authenticated_client(api_client: APIClient) -> Tuple[APIClient, User]:
     Player.objects.create(user=user, is_registered=True)
     api_client.force_authenticate(user=user)
     return api_client, user
+
+
+@pytest.fixture
+def authenticated_client_thailand_player(
+    api_client: APIClient, country_thailand: Country, city_in_thailand: City
+) -> Tuple[APIClient, User]:
+    """
+    Create an authenticated API client with a player from Thailand.
+    Return a tuple of (client, user).
+    """
+    user: User = User.objects.create_user(
+        username='thaiuser',
+        password='password123',
+    )
+    player: Player = Player.objects.create(
+        user=user,
+        is_registered=True,
+        country=country_thailand,
+        city=city_in_thailand,
+    )
+    api_client.force_authenticate(user=user)
+    return api_client, player
+
+
+@pytest.fixture
+def authenticated_client_сyprus_player(
+    api_client: APIClient, country_cyprus: Country, city_in_cyprus: City
+) -> Tuple[APIClient, User]:
+    """
+    Create an authenticated API client with a player from Cyprus.
+    Return a tuple of (client, user).
+    """
+    user: User = User.objects.create_user(
+        username='cyprususer',
+        password='password123',
+    )
+    player: Player = Player.objects.create(
+        user=user,
+        is_registered=True,
+        country=country_cyprus,
+        city=city_in_cyprus,
+    )
+    api_client.force_authenticate(user=user)
+    return api_client, player

@@ -3,25 +3,9 @@ from typing import Any, Dict
 import pytest
 from django.db import transaction
 from django.db.utils import IntegrityError
-from rest_framework import status
-from rest_framework.test import APIClient
-from apps.core.models import Contact, Tag
-from apps.courts.models import Court, CourtLocation
-from apps.users.models import User
-from tests.subfunctions.base import get_model_objects
-
-
-from typing import Any, Dict
-import pytest
-from django.db import transaction
-from django.db.utils import IntegrityError
-from rest_framework import status
-from rest_framework.test import APIClient
 
 from apps.core.models import Contact, Tag
 from apps.courts.models import Court, CourtLocation
-from apps.users.models import User
-from tests.subfunctions.base import get_model_objects
 
 
 @pytest.mark.django_db
@@ -32,7 +16,7 @@ class TestLocationTagModel:
         country_thailand: Any,
         city_in_thailand: Any,
     ) -> None:
-        count_before: int = get_model_objects(CourtLocation).count()
+        count_before: int = CourtLocation.objects.count()
 
         location_for_court_data.update(
             {'country': country_thailand, 'city': city_in_thailand}
@@ -51,15 +35,15 @@ class TestLocationTagModel:
             f'{country_thailand.name}, {city_in_thailand.name}'
         )
         assert location.location_name == location_name
-        assert get_model_objects(CourtLocation).count() == count_before + 1
+        assert CourtLocation.objects.count() == count_before + 1
 
     def test_create_tag(self, tag_data: Dict[str, Any]) -> None:
-        count_before: int = get_model_objects(Tag).count()
+        count_before: int = Tag.objects.count()
 
         tag: Tag = Tag.objects.create(**tag_data)
 
         assert tag.name == tag_data['name']
-        assert get_model_objects(Tag).count() == count_before + 1
+        assert Tag.objects.count() == count_before + 1
 
 
 @pytest.mark.django_db
@@ -69,7 +53,7 @@ class TestCourtModel:
         court_data: Dict[str, Any],
         location_for_court_thailand: CourtLocation,
     ) -> None:
-        count_before: int = get_model_objects(Court).count()
+        count_before: int = Court.objects.count()
 
         court_data.update({'location': location_for_court_thailand})
         court: Court = Court.objects.create(**court_data)
@@ -77,18 +61,18 @@ class TestCourtModel:
         assert court.price_description == court_data['price_description']
         assert court.description == court_data['description']
         assert court.working_hours == court_data['working_hours']
-        assert get_model_objects(Court).count() == count_before + 1
+        assert Court.objects.count() == count_before + 1
 
     def test_create_court_without_location(
         self, court_data: Dict[str, Any]
     ) -> None:
-        count_before: int = get_model_objects(Court).count()
+        count_before: int = Court.objects.count()
 
         with transaction.atomic():
             with pytest.raises(IntegrityError):
                 Court.objects.create(**court_data)
 
-        assert get_model_objects(Court).count() == count_before
+        assert Court.objects.count() == count_before
 
     def test_create_court_with_tags(
         self,
@@ -96,7 +80,7 @@ class TestCourtModel:
         tag_obj: Tag,
         location_for_court_thailand: CourtLocation,
     ) -> None:
-        count_before: int = get_model_objects(Court).count()
+        count_before: int = Court.objects.count()
 
         court_data.update({'location': location_for_court_thailand})
         court: Court = Court.objects.create(**court_data)
@@ -109,12 +93,12 @@ class TestCourtModel:
         for tag in tags:
             assert tag == tag_obj
 
-        assert get_model_objects(Court).count() == count_before + 1
+        assert Court.objects.count() == count_before + 1
 
     def test_create_contact(
         self, contact_data: Dict[str, Any], court_thailand: Court
     ) -> None:
-        count_before: int = get_model_objects(Contact).count()
+        count_before: int = Contact.objects.count()
 
         contact_data.update({'court': court_thailand})
         contact: Contact = Contact.objects.create(**contact_data)
@@ -124,4 +108,4 @@ class TestCourtModel:
         assert contact.contact == contact_data['contact']
         assert contact.court == court_thailand
         assert contact_rel_court == contact
-        assert get_model_objects(Contact).count() == count_before + 1
+        assert Contact.objects.count() == count_before + 1

@@ -1,11 +1,10 @@
 from django.db.models import QuerySet
+from django.http import Http404
 from django_filters import rest_framework as filters
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import mixins
 from rest_framework.request import Request
-
 from rest_framework.viewsets import GenericViewSet
-from django.http import Http404
 
 from apps.core.permissions import IsRegisteredPlayer
 from apps.courts.filters import CourtFilter
@@ -36,30 +35,38 @@ class CourtViewSet(
     filterset_class = CourtFilter
     permission_classes = [IsRegisteredPlayer]
 
-    def _has_events_detail(self) -> bool:
-        """Check if the events_detail flag is requested."""
-        val = self.request.query_params.get('events_detail', '')
+    def _has_active_events(self) -> bool:
+        """Check if the active_events flag is true."""
+        val = self.request.query_params.get('active_events', '')
         return val.lower() in ('true', '1')
 
+    def _has_events_detail(self) -> bool:
+        """Check if both events_detail and active_events are true."""
+        val = self.request.query_params.get('events_detail', '')
+        return self._has_active_events() and val.lower() in ('true', '1')
+
     def get_serializer_class(self):
-        """Return detailed serializer only if requested on retrieve action."""
         if self.action == 'retrieve' and self._has_events_detail():
             return CourtWithEventsSerializer
         return CourtSerializer
 
     def get_queryset(self):
-        """Filter queryset by geography and prefetch events conditionally."""
         queryset: QuerySet = super().get_queryset()
         user = self.request.user
-        if self.action == 'retrieve' and self._has_events_detail():
-            queryset = queryset.prefetch_related('games', 'tournaments')
         player = getattr(user, 'player', None)
         country = getattr(player, 'country', None)
-        city = getattr(player, 'city', None)
-        if country is None or city is None:
+        if country is None:
             return Court.objects.none()
-
-        return queryset.filter(location__country=country)
+        queryset = queryset.filter(location__country=country)
+        if self.action == 'retrieve':
+            if self._has_events_detail():
+                queryset = queryset.prefetch_related('games', 'tournaments')
+            if self._has_active_events():
+                queryset = queryset.filter(
+                    games__isnull=False
+                ) | queryset.filter(tournaments__isnull=False)
+                queryset = queryset.distinct()
+        return queryset
 
     @swagger_auto_schema(**COURTS_LIST_SCHEMA)
     def list(self, request: Request, *args, **kwargs):

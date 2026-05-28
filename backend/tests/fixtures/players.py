@@ -1,6 +1,7 @@
 from typing import Any, Dict, List
+
 import pytest
-from django.db.models.query import QuerySet
+
 from apps.players.models import Player
 from apps.users.models import User
 

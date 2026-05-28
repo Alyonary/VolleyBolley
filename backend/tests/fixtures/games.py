@@ -7,7 +7,6 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.event.models import Game
-from apps.locations.models import City, Country
 from apps.players.constants import Grades
 from apps.players.models import Payment, Player
 
