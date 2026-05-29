@@ -35,40 +35,17 @@ class CourtViewSet(
     filterset_class = CourtFilter
     permission_classes = [IsRegisteredPlayer]
 
-    def _has_active_events(self) -> bool:
-        """Check if the active_events flag is true."""
-        val = self.request.query_params.get('active_events', '')
-        return val.lower() in ('true', '1')
-
-    def _has_events_detail(self) -> bool:
-        """Check if both events_detail and active_events are true."""
-        val = self.request.query_params.get('events_detail', '')
-        return self._has_active_events() and val.lower() in ('true', '1')
-
     def get_serializer_class(self):
         if self.action == 'retrieve' and self._has_events_detail():
             return CourtWithEventsSerializer
         return CourtSerializer
 
-    def get_queryset(self):
-    user = self.request.user
-    player = getattr(user, 'player', None)
-    country = getattr(player, 'country', None)
-    if country is None:
-        return Court.objects.none()
-    queryset = super().get_queryset().filter(location__country=country)
-    if self.action == 'retrieve':
-        has_details = self._has_events_detail()
-        has_active = self._has_active_events()
-        if has_active:
-            queryset = queryset.filter(
-                Q(games__isnull=False) | Q(tournaments__isnull=False)
-            )
-        if has_details:
-            queryset = queryset.prefetch_related('games', 'tournaments')
-        if has_active or has_details:
-            queryset = queryset.distinct()
-    return queryset
+    def get_queryset(self) -> QuerySet:
+        player = getattr(self.request.user, 'player', None)
+        country = getattr(player, 'country', None)
+        if country is None:
+            return Court.objects.none()
+        return super().get_queryset().filter(location__country=country)
 
     @swagger_auto_schema(**COURTS_LIST_SCHEMA)
     def list(self, request: Request, *args, **kwargs):
