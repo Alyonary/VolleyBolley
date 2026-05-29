@@ -1,4 +1,4 @@
-from django.db.models import Q, QuerySet
+from django.db.models import Prefetch, Q, QuerySet
 from django_filters import rest_framework as filters
 
 from apps.courts.models import Court
@@ -26,9 +26,31 @@ class CourtFilter(filters.FilterSet):
     def filter_active_events(
         self, queryset: QuerySet, name: str, value: bool
     ) -> QuerySet:
-        """Filter courts that have at least one associated event."""
-        if value:
-            return queryset.filter(
-                Q(games__isnull=False) | Q(tournaments__isnull=False)
-            ).distinct()
+        if not value:
+            return queryset
+        now = timezone.now()
+        has_future_games = Game.objects.filter(
+            court_id=OuterRef('pk'),
+            start_time__gte=now
+        )
+        has_future_tournaments = Tournament.objects.filter(
+            court_id=OuterRef('pk'),
+            start_time__gte=now
+        )
+        queryset = queryset.filter(
+            Exists(has_future_games) | Exists(has_future_tournaments)
+        )
+
+        events_detail = self.data.get('events_detail', '')
+        if str(events_detail).lower() in ('true', '1'):
+            queryset = queryset.prefetch_related(
+                Prefetch(
+                    'games', 
+                    queryset=Game.objects.filter(start_time__gte=now).order_by('start_time')
+                ),
+                Prefetch(
+                    'tournaments', 
+                    queryset=Tournament.objects.filter(start_time__gte=now).order_by('start_time')
+                )
+            )
         return queryset
