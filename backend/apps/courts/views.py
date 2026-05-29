@@ -51,22 +51,24 @@ class CourtViewSet(
         return CourtSerializer
 
     def get_queryset(self):
-        queryset: QuerySet = super().get_queryset()
-        user = self.request.user
-        player = getattr(user, 'player', None)
-        country = getattr(player, 'country', None)
-        if country is None:
-            return Court.objects.none()
-        queryset = queryset.filter(location__country=country)
-        if self.action == 'retrieve':
-            if self._has_events_detail():
-                queryset = queryset.prefetch_related('games', 'tournaments')
-            if self._has_active_events():
-                queryset = queryset.filter(
-                    games__isnull=False
-                ) | queryset.filter(tournaments__isnull=False)
-                queryset = queryset.distinct()
-        return queryset
+    user = self.request.user
+    player = getattr(user, 'player', None)
+    country = getattr(player, 'country', None)
+    if country is None:
+        return Court.objects.none()
+    queryset = super().get_queryset().filter(location__country=country)
+    if self.action == 'retrieve':
+        has_details = self._has_events_detail()
+        has_active = self._has_active_events()
+        if has_active:
+            queryset = queryset.filter(
+                Q(games__isnull=False) | Q(tournaments__isnull=False)
+            )
+        if has_details:
+            queryset = queryset.prefetch_related('games', 'tournaments')
+        if has_active or has_details:
+            queryset = queryset.distinct()
+    return queryset
 
     @swagger_auto_schema(**COURTS_LIST_SCHEMA)
     def list(self, request: Request, *args, **kwargs):
