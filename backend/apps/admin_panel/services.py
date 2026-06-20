@@ -6,7 +6,11 @@ from typing import Any, Dict, List
 import openpyxl
 from django.conf import settings
 
-from apps.admin_panel.constants import MAX_FILE_SIZE, SUPPORTED_FILE_TYPES
+from apps.admin_panel.constants import (
+    MAX_FILE_SIZE,
+    SUPPORTED_FILE_TYPES,
+    UploadServiceMessages,
+)
 from apps.admin_panel.model_mappings import (
     BaseModelMapping,
     CityModelMapping,
@@ -32,6 +36,9 @@ class FileUploadService:
             handlers.
         _model_processing_order (tuple[str]): Order in which models should be
             processed.
+        _private_models_mapping_class (Dict[str, Any]): Mapping for private
+            models only accessible in debug mode.
+        max_file_size (int): Maximum allowed file size for upload.
         _supported_file_types (tuple[str]): Supported file types for upload.
         _extended_model_access (bool): Enable extended model processing.
     """
@@ -57,10 +64,10 @@ class FileUploadService:
             'tourneys': TourneyModelMapping(),
         }
         self._model_processing_order: tuple[str] = (
-            'currencies',
             'levels',
             'countries',
             'cities',
+            'currencies',
             'courts',
         )
         self._supported_file_types: tuple[str] = SUPPORTED_FILE_TYPES
@@ -83,6 +90,10 @@ class FileUploadService:
                 self._private_models_mapping_class.keys()
             )
         return self._model_processing_order
+
+    @property
+    def private_models_mapping_class(self) -> Dict[str, Any]:
+        return self._private_models_mapping_class
 
     @property
     def supported_file_types(self) -> tuple[str]:
@@ -108,7 +119,9 @@ class FileUploadService:
             return self._process_excel_file(file)
         return {
             'success': False,
-            'messages': 'Unsupported file type {file_type}',
+            'messages': [
+                UploadServiceMessages.FILE_TYPE_NOT_SUPPORTED + file_type
+            ],
         }
 
     def download_file_by_path(self, file_path: str) -> bytes:
@@ -130,21 +143,31 @@ class FileUploadService:
             data = json.loads(content)
             available_models = list(data.keys())
             if not available_models:
-                logger.error('No data found in JSON file')
+                logger.error(UploadServiceMessages.NO_DATA_IN_JSON)
                 return {
                     'success': False,
-                    'messages': ['No data found in JSON file'],
+                    'messages': [UploadServiceMessages.NO_DATA_IN_JSON],
                 }
             messages = []
             for model_name in self.model_processing_order:
                 if model_name in data and data[model_name]:
+                    if self.model_mapping_class[model_name].serializer is None:
+                        m = f'Skipped - {model_name} with no serializer'
+                        if model_name in self.private_models_mapping_class:
+                            m = (
+                                f'Skipped - {model_name} private model'
+                                'in production mode'
+                            )
+                        logger.warning(m)
+                        messages.append(m)
+                        continue
                     result = self._process_model_data(
                         model_name,
                         data[model_name],
                     )
                     messages.extend(result['messages'])
             return {
-                'success': not any('Ошибка' in msg for msg in messages),
+                'success': any('created' in msg.lower() for msg in messages),
                 'messages': messages,
             }
         except Exception as e:
@@ -162,7 +185,7 @@ class FileUploadService:
     ) -> Dict[str, Any]:
         """Process data for specific model using serializer validation."""
         mapping_class: BaseModelMapping = self.model_mapping_class[model_name]
-        messages = []
+        messages: list[dict[str]] = []
         for obj_data in model_data:
             serializer = mapping_class.serializer(data=obj_data)
             logger.info(f'Validating {model_name}: {obj_data}')
@@ -196,12 +219,21 @@ class FileUploadService:
         Turn execel data into list of dicts and call _process_model_data.
         """
         filename = os.path.splitext(file.name)[0].lower()
-        mapping_class = self.model_mapping_class.get(filename)
+        mapping_class: BaseModelMapping = self.model_mapping_class.get(
+            filename
+        )
         if not mapping_class:
+            if filename in self.private_models_mapping_class:
+                return {
+                    'success': False,
+                    'messages': [
+                        UploadServiceMessages.RESTRICTED_UPLOAD + filename
+                    ],
+                }
             return {
                 'success': False,
                 'messages': [
-                    f'Unknown model mapping for file: {filename}',
+                    UploadServiceMessages.UNKNOWN_MODEL_MAPPING + filename
                 ],
             }
         serializer_class = mapping_class.serializer
@@ -209,7 +241,7 @@ class FileUploadService:
             return {
                 'success': False,
                 'messages': [
-                    f'No serializer for model: {filename}',
+                    UploadServiceMessages.NO_MODEL_SERIALIZER + filename,
                 ],
             }
         wb = openpyxl.load_workbook(file)
@@ -220,27 +252,23 @@ class FileUploadService:
         excel_fields = set(headers)
         expected_fields = set(mapping_class.expected_fields)
         if excel_fields != expected_fields:
-            missing = expected_fields - excel_fields
+            if expected_fields.issuperset(excel_fields):
+                missing = str(expected_fields - excel_fields)
+                m = UploadServiceMessages.EXCEL_MISSING_MODEL_FIELDS + missing
+            else:
+                invalid_field = str(excel_fields - expected_fields)
+                m = (
+                    UploadServiceMessages.EXCEL_INVALID_MODEL_FIELDS
+                    + invalid_field
+                )
             return {
                 'success': False,
-                'messages': [f'Missing model fields: {missing}'],
+                'messages': [m],
             }
         model_data = []
         for row in ws.iter_rows(min_row=2, values_only=True):
             obj_data = dict(zip(headers, row, strict=False))
-            if filename == 'courts':
-                location_keys = [
-                    'longitude',
-                    'latitude',
-                    'court_name',
-                    'country',
-                    'city',
-                ]
-                location_data = {
-                    k: obj_data.pop(k) for k in location_keys if k in obj_data
-                }
-                obj_data['location'] = location_data
-            model_data.append(obj_data)
+            model_data.append(mapping_class.agregate_model_fields(obj_data))
         return self._process_model_data(filename, model_data)
 
     def summarize_results(self, result: dict) -> dict:
@@ -257,5 +285,4 @@ class FileUploadService:
             f'Created: {summary["created"]} db objects',
             f'Errors(skipped): {summary["errors"]}',
         ]
-        result['messages'] = summary_messages
-        return result
+        return {'success': summary['created'] > 0, 'message': summary_messages}

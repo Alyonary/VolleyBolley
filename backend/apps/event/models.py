@@ -64,10 +64,6 @@ class GameQuerySet(m.query.QuerySet, StatsQuerySetMixin):
         """Returns recent past games in which the user is a host or player."""
         return self.archive_games(player).order_by('-start_time')[:limit]
 
-    def get_stats_for_day(self, day: date) -> int:
-        """Returns number of games created on a specific day."""
-        return self.filter(created_at__date=day).count()
-
 
 class GameManager(m.Manager):
     def get_queryset(self):

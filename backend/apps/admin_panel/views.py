@@ -8,15 +8,29 @@ from django.views.decorators.http import require_POST
 
 from apps.admin_panel.constants import (
     MAX_FILE_SIZE,
+    MONTHS_STAT_PAGINATION,
     SUPPORTED_FILE_TYPES,
     SendType,
+    UploadServiceMessages,
 )
 from apps.admin_panel.forms import FileUploadForm, NotificationSendForm
 from apps.admin_panel.services import FileUploadService
-from apps.core.task import collect_daily_stats
+from apps.core.models import DailyStats
+from apps.core.task import collect_full_project_stats
 from apps.notifications.push_service import PushService
 
 logger = logging.getLogger(__name__)
+
+
+@require_POST
+def run_stats_task_view(request):
+    """View to trigger the daily stats collection task."""
+    if PushService():
+        collect_full_project_stats.delay()
+        messages.success(request, 'Daily stats task has been started!')
+    else:
+        messages.error(request, 'Failed to collect stats: Celery unavailable.')
+    return redirect('admin_panel:admin_dashboard')
 
 
 @staff_member_required
@@ -67,8 +81,10 @@ def upload_file(request):
     if request.method == 'POST':
         form = FileUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            stats_detail = form.cleaned_data.get('stats_detail', False)
-            return process_file_upload(request, form, stats_detail)
+            show_only_failure = form.cleaned_data.get(
+                'show_only_failure', False
+            )
+            return process_file_upload(request, form, show_only_failure)
     else:
         form = FileUploadForm()
 
@@ -97,42 +113,46 @@ def upload_file(request):
     return render(request, 'admin_panel/upload.html', context)
 
 
-def process_file_upload(request, form: FileUploadForm, stats_detail: bool):
+def process_file_upload(
+    request, form: FileUploadForm, show_only_failure: bool
+):
     """Process uploaded file."""
 
     file = form.cleaned_data['file']
     try:
         upload_service = FileUploadService()
         result = upload_service.process_file(file=file)
-        if not stats_detail:
-            result = upload_service.summarize_results(result)
-        if not result.get('success', False):
+        summarize_results = upload_service.summarize_results(result)
+        summary_message = summarize_results.get('message', '')
+        if not summarize_results.get('success', False):
             messages.error(
                 request,
-                _('❌ File processing failed: %(error)s')
-                % {'error': result.get('error', 'Unknown error')},
+                _(UploadServiceMessages.ERROR_DOWNLOAD + ' %(error)s')
+                % {'error': result.get('error', 'Unknown error')}
+                + f' {summary_message}',
             )
-            if result.get('messages'):
-                messages.info(
-                    request,
-                    _('Details: %(details)s')
-                    % {'details': '; '.join(result['messages'])},
-                )
-            return redirect('admin_panel:upload_file')
+        else:
+            messages.success(
+                request,
+                _(UploadServiceMessages.SUCCESS_DOWNLOAD) + summary_message,
+            )
         if 'messages' in result:
             request.session['upload_messages'] = result['messages']
         for msg in result.get('messages', []):
             msg_lower = msg.lower()
             if 'error' in msg_lower:
                 messages.error(request, msg)
-            elif 'created' in msg_lower:
-                messages.success(request, msg)
-            else:
-                messages.info(request, msg)
-
+                continue
+            if 'created' in msg_lower:
+                if show_only_failure:
+                    messages.success(request, msg)
+                continue
+            messages.info(request, msg)
     except Exception as e:
         messages.error(
-            request, _('❌ Unexpected error: %(error)s') % {'error': str(e)}
+            request,
+            _(UploadServiceMessages.UNEXPECTED_ERROR + '  %(error)s')
+            % {'error': str(e)},
         )
 
     return redirect('admin_panel:upload_file')
@@ -164,58 +184,40 @@ def get_model_expected_fields() -> list[dict[str, list[str] | str]]:
     return result
 
 
-@require_POST
-def run_stats_task_view(request):
-    """View to trigger the daily stats collection task."""
-    if PushService():
-        collect_daily_stats.delay()
-        messages.success(request, 'Daily stats task has been started!')
-    else:
-        messages.error(request, 'Failed to collect stats: Celery unavailable.')
-    return redirect('admin_panel:admin_dashboard')
-
-
 @staff_member_required
 def dashboard_view(request):
     """Admin dashboard view showing key metrics."""
 
-    # временно
-    # Тестовые данные для демонстрации дашборда
-    dashboard_test_data = {
-        'players_chart_labels': [
-            '2025-07',
-            '2025-08',
-            '2025-09',
-            '2025-10',
-            '2025-11',
-            '2025-12',
-        ],
-        'players_chart_data': [120, 150, 180, 210, 250, 300],
-        'games_chart_labels': [
-            '2025-07',
-            '2025-08',
-            '2025-09',
-            '2025-10',
-            '2025-11',
-            '2025-12',
-        ],
-        'games_chart_data': [45, 60, 80, 100, 130, 170],
-        'total_players': 300,
-        'total_games': 170,
-        'total_tourneys': 25,
-        'active_games': 7,
-        'active_tourneys': 2,
-    }
+    stats = DailyStats.objects.get_stats_by_month(MONTHS_STAT_PAGINATION)
+    players_chart_labels = []
+    players_chart_data = []
+    games_chart_labels = []
+    games_chart_data = []
+    total_players = 0
+    total_games = 0
+    total_tourneys = 0
+    active_games = 0
+    active_tourneys = 0
+
+    for stat in stats:
+        label = stat['month'].strftime('%Y-%m')
+        players_chart_labels.append(label)
+        players_chart_data.append(stat.get('players_registered', 0))
+        games_chart_labels.append(label)
+        games_chart_data.append(stat.get('games_created', 0))
+        total_players += stat.get('players_registered', 0)
+        total_games += stat.get('games_created', 0)
+        total_tourneys += stat.get('tourneys_created', 0)
 
     context = {
-        'total_players': dashboard_test_data['total_players'],
-        'total_games': dashboard_test_data['total_games'],
-        'total_tourneys': dashboard_test_data['total_tourneys'],
-        'active_games': dashboard_test_data['active_games'],
-        'active_tourneys': dashboard_test_data['active_tourneys'],
-        'players_chart_labels': dashboard_test_data['players_chart_labels'],
-        'players_chart_data': dashboard_test_data['players_chart_data'],
-        'games_chart_labels': dashboard_test_data['games_chart_labels'],
-        'games_chart_data': dashboard_test_data['games_chart_data'],
+        'total_players': total_players,
+        'total_games': total_games,
+        'total_tourneys': total_tourneys,
+        'active_games': active_games,
+        'active_tourneys': active_tourneys,
+        'players_chart_labels': players_chart_labels,
+        'players_chart_data': players_chart_data,
+        'games_chart_labels': games_chart_labels,
+        'games_chart_data': games_chart_data,
     }
     return render(request, 'admin_panel/admin_dashboard.html', context)

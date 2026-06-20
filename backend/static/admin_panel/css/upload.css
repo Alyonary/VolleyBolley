@@ -190,16 +190,16 @@
 }
 
 .btn-upload, #send-btn {
-    background: linear-gradient(135deg, #0073aa, #005a87);
+    background: linear-gradient(135deg, #086404, #08bd11);
     color: #fff;
-    border: none;
+    border: 5px;
     padding: 15px 0;
     border-radius: 8px;
     font-size: 1.15rem;
     font-weight: 600;
     width: 100%;
     margin-top: 18px;
-    box-shadow: 0 4px 16px rgba(0,115,170,0.10);
+    box-shadow: 0 4px 16px rgba(7, 208, 30, 0.91);
     cursor: pointer;
     transition: background 0.2s, transform 0.15s;
     letter-spacing: 0.5px;
@@ -211,10 +211,29 @@
     cursor: not-allowed;
     box-shadow: none;
 }
+.btn-secondary, #send-btn-secondary {
+    background: linear-gradient(135deg, #d07575cb, #d46666ae);
+    color: #ffffff;
+    border: none;
+    padding: 9px 0;
+    border-radius: 4px;
+    font-size: 1.15rem;
+    font-weight: 600;
+    width: 50%;
+    box-shadow: 0 4px 16px rgba(211, 20, 45, 0.953);
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    letter-spacing: 1px;
+    margin-left: 0;
+    margin-top: 10px;
+    display: block;
+    text-align: center;
+    }
+
 
 .btn-upload:hover:not(:disabled), #send-btn:hover:not(:disabled),
 .btn-upload:focus:not(:disabled), #send-btn:focus:not(:disabled) {
-    background: linear-gradient(135deg, #005a87, #0073aa);
+    background: linear-gradient(135deg, #0ae144, #0870c5);
     transform: translateY(-2px) scale(1.03);
 }
 
@@ -235,13 +254,6 @@
     .checkbox-container {
         flex-direction: column;
         gap: 10px;
-    }
-    
-    .btn-secondary {
-        margin-left: 0;
-        margin-top: 10px;
-        display: block;
-        text-align: center;
     }
 }
 

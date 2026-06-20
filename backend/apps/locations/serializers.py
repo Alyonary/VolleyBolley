@@ -33,18 +33,30 @@ class CountryListSerializer(serializers.Serializer):
 
 
 class CountryCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating Country instances.
+    Validates that the country name is provided and is a string of letters.
+    """
+
     class Meta:
         model = Country
         fields = ['name']
 
     def validate_name(self, value):
-        value = value.strip()
-        if not value:
-            raise serializers.ValidationError('Country name is required.')
+        if not isinstance(value, str) or not value.isalpha():
+            raise serializers.ValidationError(
+                'Country name must be a string of letters.'
+            )
         return value
 
 
 class CityCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer for creating City instances.
+    Validates that the city name is provided and the associated country exists.
+
+    """
+
     country = serializers.CharField()
 
     class Meta:
